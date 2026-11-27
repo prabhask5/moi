@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot`, `moi log`, `moi diff`, `moi notes`, `moi audit`, `moi context`, `moi context share` and `moi check` (resources, storage, services with edge probes, custom checks); every other command still exits with "not implemented yet".
+> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot`, `moi log`, `moi diff`, `moi notes`, `moi audit`, `moi context`, `moi context share` `moi check` (resources, storage, services with edge probes, custom checks), `moi monitors list` and `moi monitors sync --dry-run`; every other command still exits with "not implemented yet".
 
 ## What it does
 

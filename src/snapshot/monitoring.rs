@@ -7,7 +7,6 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use rusqlite::{Connection, OpenFlags};
 use serde_json::{Map, Value, json};
 
 use super::collect::is_text;
@@ -134,26 +133,6 @@ fn integrations(cx: &Ctx) -> Vec<Value> {
     found
 }
 
-/// Open Kuma's database without ever writing to it: read-only first, and if SQLite cannot even do that
-/// (WAL files it may not create), as an immutable file.
-fn open_read_only(real: &Path) -> Option<Connection> {
-    for uri in [format!("file:{}?mode=ro", real.display()), format!("file:{}?mode=ro&immutable=1", real.display())] {
-        let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI | OpenFlags::SQLITE_OPEN_NO_MUTEX;
-        if let Ok(conn) = Connection::open_with_flags(&uri, flags)
-            && conn.query_row("SELECT 1 FROM monitor LIMIT 1", [], |_| Ok(())).is_ok_and(|()| true)
-        {
-            return Some(conn);
-        }
-        // an empty monitor table is still a Kuma database
-        if let Ok(conn) = Connection::open_with_flags(&uri, flags)
-            && conn.prepare("SELECT 1 FROM monitor LIMIT 1").is_ok()
-        {
-            return Some(conn);
-        }
-    }
-    None
-}
-
 fn sql_value(v: rusqlite::types::ValueRef<'_>) -> Value {
     use rusqlite::types::ValueRef;
     match v {
@@ -167,7 +146,7 @@ fn sql_value(v: rusqlite::types::ValueRef<'_>) -> Value {
 /// (stable monitor list, volatile last heartbeat per monitor name).
 fn kuma_inventory(host: &dyn Host, db_host_path: &str) -> Option<(Value, Value)> {
     let real = host.real_path(Path::new(db_host_path)).ok()?;
-    let conn = open_read_only(&real)?;
+    let conn = crate::monitors::inventory::open_read_only(&real)?;
     let columns: Vec<String> = conn
         .prepare("PRAGMA table_info(monitor)")
         .and_then(|mut s| s.query_map([], |r| r.get::<_, String>(1)).map(|rows| rows.flatten().collect()))

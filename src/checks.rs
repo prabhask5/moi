@@ -152,6 +152,9 @@ pub trait Check: Send + Sync {
     /// Longest it may run.
     fn timeout(&self, config: &Config) -> Duration;
 
+    /// How often the daemon runs it.
+    fn interval(&self, config: &Config) -> Duration;
+
     /// The Uptime Kuma monitor it reports to, if any.
     fn monitor(&self, config: &Config) -> Option<String>;
 

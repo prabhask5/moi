@@ -1,0 +1,58 @@
+ACTION  MONITOR                     TYPE     DETAIL
+adopt   Server Resources            push     token …ok01 (fed by /opt/scripts/resource-check.sh — migration map)
+adopt   Server Storage              push     token …0003 (fed by /opt/scripts/storage-check.sh — migration map)
+adopt   Server Internal Services    push     token …k002 (fed by /opt/scripts/service-check.sh — migration map)
+adopt   Server Backup               push     token …0004 (fed by /opt/scripts/backup.sh — migration map)
+create  cestmoi: snapshot           push     interval 93600s
+create  cestmoi: adguard            docker   host local
+create  cestmoi: cloudflared        docker   host local
+create  cestmoi: ddns               docker   host local
+create  cestmoi: dozzle             docker   host local
+create  cestmoi: homepage           docker   host local
+create  cestmoi: host-logs          docker   host local
+create  cestmoi: outline            docker   host local
+create  cestmoi: outline-postgres   docker   host local
+create  cestmoi: outline-redis      docker   host local
+create  cestmoi: seerr              docker   host local
+create  cestmoi: supabase-db        docker   host local
+create  cestmoi: supabase-envoy     docker   host local
+create  cestmoi: supabase-auth      docker   host local
+create  cestmoi: supabase-rest      docker   host local
+create  cestmoi: supabase-realtime  docker   host local
+create  cestmoi: supabase-storage   docker   host local
+create  cestmoi: supabase-meta      docker   host local
+create  cestmoi: supabase-studio    docker   host local
+create  cestmoi: supabase-pooler    docker   host local
+create  cestmoi: glances            docker   host local
+create  cestmoi: scrutiny           docker   host local
+create  cestmoi: uptime-kuma        docker   host local
+create  cestmoi: gluetun            docker   host local
+create  cestmoi: qbittorrent        docker   host local
+create  cestmoi: sabnzbd            docker   host local
+create  cestmoi: jellyfin           docker   host local
+create  cestmoi: sonarr             docker   host local
+create  cestmoi: radarr             docker   host local
+create  cestmoi: prowlarr           docker   host local
+create  cestmoi: bazarr             docker   host local
+create  cestmoi: bookorbit          docker   host local
+create  cestmoi: bookorbit-db       docker   host local
+create  cestmoi: portainer          docker   host local
+create  cestmoi: watchtower         docker   host local
+create  cestmoi: dokploy-traefik    docker   host local
+keep    Cloudflare DDNS             push     not managed by moi
+keep    Notes                       http     not managed by moi
+keep    Books                       http     not managed by moi
+keep    Media                       http     not managed by moi
+keep    Status                      http     not managed by moi
+keep    Database                    keyword  not managed by moi
+keep    Shortless                   keyword  not managed by moi
+keep    Compiler                    http     not managed by moi
+keep    Gluetun leak check          keyword  not managed by moi
+keep    AdGuard DNS                 dns      not managed by moi
+keep    cloudflared ready           http     not managed by moi
+keep    devbox                      ping     not managed by moi
+keep    healthchecks.io watchdog    http     not managed by moi (watchdog)
+keep    Jellyfin (LAN)              http     not managed by moi
+keep    Dokploy                     http     not managed by moi
+keep    Homepage                    http     not managed by moi
+keep    Outline                     keyword  not managed by moi

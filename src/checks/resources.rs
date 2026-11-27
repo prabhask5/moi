@@ -22,6 +22,10 @@ impl Check for Resources {
         config.checks.resources.common.timeout.as_duration()
     }
 
+    fn interval(&self, config: &Config) -> Duration {
+        config.checks.resources.common.interval.as_duration()
+    }
+
     fn monitor(&self, config: &Config) -> Option<String> {
         config.checks.resources.common.monitor.clone()
     }
