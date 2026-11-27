@@ -43,6 +43,8 @@ pub struct Metadata {
     pub gid: u32,
     pub mtime: SystemTime,
     pub inode: u64,
+    /// Device the file is on: differs between filesystems (used to stay on one).
+    pub dev: u64,
 }
 
 /// An external command to run. Built with the chained setters; never goes through a shell.
@@ -172,6 +174,13 @@ pub trait Host: fmt::Debug + Send + Sync {
     fn create_dir_all(&self, path: &Path, mode: u32) -> io::Result<()>;
 
     fn remove_file(&self, path: &Path) -> io::Result<()>;
+
+    /// Remove an empty directory.
+    fn remove_dir(&self, path: &Path) -> io::Result<()>;
+
+    /// Create a symlink at `path` pointing to `target` (stored as given), replacing a file or symlink
+    /// already there.
+    fn symlink(&self, target: &Path, path: &Path) -> io::Result<()>;
 
     /// `chmod`.
     fn set_mode(&self, path: &Path, mode: u32) -> io::Result<()>;

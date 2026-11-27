@@ -29,7 +29,10 @@ fn fake_secrets(config: &str) -> String {
     names.dedup();
     let mut out = String::from("[secrets]\n");
     for n in names {
-        out.push_str(&format!("{n} = \"FAKE-{n}-value\"\n"));
+        // endpoints are validated as URLs
+        let value =
+            if n.ends_with("endpoint") { format!("https://FAKE-{n}.example.com") } else { format!("FAKE-{n}-value") };
+        out.push_str(&format!("{n} = \"{value}\"\n"));
     }
     out
 }

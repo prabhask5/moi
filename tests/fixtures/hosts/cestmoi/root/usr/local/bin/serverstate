@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# serverstate prototype (replaced by moi)
+exec /opt/serverstate/serverstate "$@"

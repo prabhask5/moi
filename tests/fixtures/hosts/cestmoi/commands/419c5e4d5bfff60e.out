@@ -1,0 +1,6 @@
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+enp1s0           UP             192.168.1.10/24 fe80::1/64
+docker0          DOWN           172.17.0.1/16
+br-1c1c1c1c1c1c  UP             172.19.0.1/16
+veth1a2b3c4@if2  UP             fe80::2/64
+incusbr0         UP             10.143.9.1/24

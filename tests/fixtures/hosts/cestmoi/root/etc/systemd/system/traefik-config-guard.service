@@ -1,0 +1,6 @@
+[Unit]
+Description=Re-apply local traefik settings
+
+[Service]
+Type=oneshot
+ExecStart=/opt/scripts/traefik-config-guard.py

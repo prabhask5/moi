@@ -1,0 +1,186 @@
+# moi.toml for cestmoi — the first real deployment (redacted: domains -> example.com, all secrets are secret: refs).
+# It reproduces the legacy scripts in reference/cestmoi/scripts/ exactly (spec 05 parity) and replaces
+# every legacy cron job, script and helper unit (spec 11).
+
+[server]
+name = "cestmoi"
+
+[capture]
+data_roots = ["/opt", "/mnt/storage", "/home"]
+etc_exclude = ["/etc/dokploy/applications", "/etc/dokploy/logs", "/etc/dokploy/compose", "/etc/dokploy/volume-backups", "/etc/ssl/certs"]
+
+[data]
+fungible = ["/mnt/storage/media", "/var/lib/incus"]
+fungible_reason = { "/mnt/storage/media" = "media library — temporary, re-downloadable", "/var/lib/incus" = "devbox VM — rebuilt from github.com/prabhask5/dotfiles" }
+
+[context]
+copies = ["/home/prabhas/SERVER_CONTEXT.md"]
+claude_pointer = true
+
+[context.share]                    # `moi context share` -> expiring link to paste into AI chats
+endpoint = "secret:share_endpoint"
+bucket = "moi-share"               # private bucket, R2 token scoped to this bucket only
+access_key_id = "secret:share_key_id"
+secret_access_key = "secret:share_secret"
+default_ttl = "1h"
+
+# ------------------------------------------------------------------ checks (parity with the legacy scripts)
+[checks.resources]
+monitor = "Server Resources"
+journal_tag = "resource-check"
+cpu_limit = 90
+mem_limit = 90
+swap_limit = 80
+temp_limit = 85
+
+[checks.storage]
+monitor = "Server Storage"
+journal_tag = "storage-check"
+mounts = ["/", "/mnt/storage"]
+writable = ["/mnt/storage"]
+disk_limit = 85
+inode_limit = 85
+nvme_wear_limit = 90
+allowed_bad_sectors = 0
+disks = [
+  { device = "/dev/nvme0n1", type = "nvme", temp_max = 70 },
+  { device = "/dev/sda", type = "sat", temp_max = 55 },
+]
+
+[checks.services]
+monitor = "Server Internal Services"
+journal_tag = "service-check"
+network = "homelab"
+ignore = []
+http = [
+  # Media
+  { name = "jellyfin", target = "jellyfin", path = "8096/health" },
+  { name = "seerr", target = "seerr", path = "5055/api/v1/status" },
+  { name = "sonarr", target = "sonarr", path = "8989/api/v3/health", api_key = "secret:sonarr_key", trouble = '"error"' },
+  { name = "radarr", target = "radarr", path = "7878/api/v3/health", api_key = "secret:radarr_key", trouble = '"error"' },
+  { name = "prowlarr", target = "prowlarr", path = "9696/api/v1/health", api_key = "secret:prowlarr_key", trouble = '"error"' },
+  { name = "bazarr", target = "bazarr", path = "6767/" },
+  # Downloaders (inside Gluetun's network)
+  { name = "qbittorrent", target = "gluetun", path = "8081/" },
+  { name = "sabnzbd", target = "gluetun", path = "8080/" },
+  { name = "gluetun-portforward", target = "gluetun", path = "8000/v1/portforward", trouble = '"port":0' },
+  # Apps
+  { name = "outline", target = "outline", path = "3000/_health" },
+  { name = "bookorbit", target = "bookorbit", path = "3000/api/v1/health" },
+  { name = "supabase", target = "supabase-envoy", path = "8000/auth/v1/health" },
+  # Infrastructure
+  { name = "adguard", target = "localhost", path = "8085/" },
+  { name = "scrutiny", target = "scrutiny", path = "8080/api/health" },
+  { name = "portainer", target = "portainer", path = "9000/" },
+  { name = "homepage", target = "homepage", path = "3000/" },
+  { name = "glances", target = "glances", path = "61208/" },
+]
+exec = [
+  { name = "outline-postgres", container = "outline-postgres", cmd = "pg_isready -q" },
+  { name = "bookorbit-db", container = "bookorbit-db", cmd = "pg_isready -q" },
+  { name = "supabase-db", container = "supabase-db", cmd = "pg_isready -q -U postgres" },
+  { name = "outline-redis", container = "outline-redis", cmd = "redis-cli ping", expect = "PONG" },
+]
+
+[checks.edge]
+proxy_container = "dokploy-traefik"
+lan_hosts = ["home", "dokploy.home", "jellyfin.home"]
+public_urls = [
+  "https://notes.example.com/",
+  "https://books.example.com/",
+  "https://media.example.com/",
+  "https://status.example.com/",
+  "https://database.example.com/auth/v1/health",
+  "https://shortless.example.com/api/health",
+  "https://compiler.example.com/healthz",
+]
+public_log = "/var/log/service-check-public.log"
+firewall_required = ["Intra-network container traffic", "Swarm outbound Internet", "devbox: VM to Internet", "-A DOCKER-USER -j DROP"]
+
+[checks.backup]
+monitor = "Server Backup"
+
+# ------------------------------------------------------------------ self-healing (replaces traefik-homelab.service, traefik-config-guard.path, VPN auto-fix)
+[[heal]]
+name = "traefik-homelab"
+when = { docker_event = { container = "dokploy-traefik", action = "start" } }
+check = { container_on_network = { container = "dokploy-traefik", network = "homelab" } }
+action = { network_connect = { container = "dokploy-traefik", network = "homelab" } }
+report = "[traefik had lost the homelab network: reconnected; next check confirms the fix]"
+
+[[heal]]
+name = "traefik-config-guard"
+when = { path_changed = "/etc/dokploy/traefik/traefik.yml" }
+action = { run = "/etc/moi/hooks/traefik-config-guard.py" }
+report_stdout = true
+
+[[heal]]
+name = "vpn-stack"
+when = { failing = ["gluetun", "qbittorrent", "sabnzbd"] }
+action = { restart = ["gluetun"], wait_healthy = { container = "gluetun", timeout = "2m" }, then_restart = ["qbittorrent", "sabnzbd"] }
+cooldown = "30m"
+report = "[auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix]"
+report_cooldown = "[auto-restart already tried in the last 30 min, needs a look]"
+
+# ------------------------------------------------------------------ boot (replaces homelab-services, yams.service, homelab-selfcheck)
+[boot]
+wait_for_mounts = ["/mnt/storage"]
+compose_up = ["/opt/services/**", "/opt/yams"]
+verify_after = "4m"
+
+# ------------------------------------------------------------------ firewall (replaces host-firewall.service)
+[firewall]
+manage = true
+chains = ["INPUT", "DOCKER-USER"]
+rules_v4 = "/etc/moi/firewall/rules4.txt"
+rules_v6 = "/etc/moi/firewall/rules6.txt"
+
+# ------------------------------------------------------------------ backup (replaces backup.sh + offsite-backup.sh + server-backup.timer)
+[backup]
+schedule = "03:30"
+local_dir = "/mnt/storage/backups"
+require_mount = "/mnt/storage"
+keep_local = "7d"
+max_local = "20GB"
+paths = ["/opt/services", "/opt/yams", "/etc/dokploy", "/etc/iptables", "/etc/ssh/sshd_config.d", "/etc/systemd/system", "/etc/docker",
+         "/mnt/storage/database/db-config", "/mnt/storage/database/storage", "/mnt/storage/outline/data", "/etc/moi"]
+exclude = ["*/cache", "*/Cache", "*/transcodes", "*/logs", "*/log", "/etc/dokploy/applications", "/etc/dokploy/compose", "/etc/dokploy/logs"]
+databases = "auto"
+volumes = "auto"
+special_users = { "supabase/postgres" = "supabase_admin" }
+log_file = "/var/log/server-backup.log"
+
+[backup.offsite]
+repository = "secret:restic_repository"
+password = "secret:restic_password"
+env = { AWS_ACCESS_KEY_ID = "secret:r2_access_key_id", AWS_SECRET_ACCESS_KEY = "secret:r2_secret_access_key" }
+tag = "nightly"
+min_interval = "20h"
+pack_size = "64MB"
+keep = { daily = 7, weekly = 4, monthly = 6 }
+prune_on = "Sun"
+check_subset = "2%"
+max_repo = "8GB"
+
+[backup.offsite.r2_guard]
+account_id = "secret:cf_account_id"
+api_token = "secret:cf_api_token"
+max_class_a = 500000
+max_class_b = 5000000
+max_storage = "8GB"
+
+# ------------------------------------------------------------------ restore
+[restore]
+etc_paths = ["/etc/dokploy", "/etc/systemd/resolved.conf"]
+
+# ------------------------------------------------------------------ monitors
+[monitors.kuma]
+url = "http://uptime.home"
+username = "secret:kuma_username"
+password = "secret:kuma_password"
+notifications = ["Email"]
+containers = true
+freshness = true
+
+[monitors.healthchecks]
+expect_watchdog = true

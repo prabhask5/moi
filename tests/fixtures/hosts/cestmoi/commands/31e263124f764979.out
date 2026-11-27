@@ -1,0 +1,5 @@
+default via 192.168.1.1 dev enp1s0 proto static
+10.143.9.0/24 dev incusbr0 proto kernel scope link src 10.143.9.1
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
+172.19.0.0/16 dev br-1c1c1c1c1c1c proto kernel scope link src 172.19.0.1
+192.168.1.0/24 dev enp1s0 proto kernel scope link src 192.168.1.10

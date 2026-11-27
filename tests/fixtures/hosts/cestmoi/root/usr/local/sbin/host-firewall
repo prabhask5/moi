@@ -1,0 +1,3 @@
+#!/bin/bash
+# applies rules files to INPUT and DOCKER-USER only
+iptables-restore --noflush < "$2"

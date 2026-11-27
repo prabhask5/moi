@@ -1,0 +1,11 @@
+[Unit]
+Description=Host firewall (INPUT + DOCKER-USER)
+After=network-pre.target docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/host-firewall apply /etc/host-firewall/rules4.txt /etc/host-firewall/rules6.txt
+
+[Install]
+WantedBy=multi-user.target

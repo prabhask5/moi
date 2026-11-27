@@ -1,0 +1,1 @@
+*/5 * * * * root flock -n /run/storage-check.lock /opt/scripts/storage-check.sh 2>&1 | systemd-cat -t storage-check

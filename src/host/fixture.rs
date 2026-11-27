@@ -178,9 +178,16 @@ impl FixtureHost {
         let mut md = rooted::to_metadata(&fs::symlink_metadata(&r.real)?);
         // Checked-out fixtures belong to whoever ran git; a server's files belong to root unless stated.
         (md.uid, md.gid) = (0, 0);
-        if let Some(&(mode, uid, gid)) = self.modes.get(&r.logical) {
-            let in_overlay = self.overlay.is_some() && r.layer == Some(0);
-            if !in_overlay {
+        let in_overlay = self.overlay.is_some() && r.layer == Some(0);
+        if !in_overlay {
+            // …and their permission bits depend on the umask at checkout. Fixture files are 0644 (0755
+            // when executable) and directories 0755 unless the modes manifest says otherwise.
+            md.mode = match md.kind {
+                super::FileKind::File if md.mode & 0o111 == 0 => 0o644,
+                super::FileKind::Symlink => 0o777,
+                _ => 0o755,
+            };
+            if let Some(&(mode, uid, gid)) = self.modes.get(&r.logical) {
                 (md.mode, md.uid, md.gid) = (mode, uid, gid);
             }
         }
@@ -258,7 +265,9 @@ impl Host for FixtureHost {
             let real = layer.join(relative);
             if real.is_dir() {
                 found = true;
-                names.extend(rooted::dir_names(&real)?);
+                // `.gitkeep` only exists so git stores an otherwise empty fixture directory
+                let placeholder = |name: &String| layer == self.base && name == ".gitkeep";
+                names.extend(rooted::dir_names(&real)?.into_iter().filter(|n| !placeholder(n)));
             }
         }
         if found {
@@ -288,6 +297,19 @@ impl Host for FixtureHost {
 
     fn remove_file(&self, path: &Path) -> io::Result<()> {
         fs::remove_file(self.overlay_only(path)?)
+    }
+
+    fn remove_dir(&self, path: &Path) -> io::Result<()> {
+        fs::remove_dir(self.overlay_only(path)?)
+    }
+
+    fn symlink(&self, target: &Path, path: &Path) -> io::Result<()> {
+        // Resolve the parent only: the link itself must not be followed.
+        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("not a file path: {}", path.display())));
+        };
+        let placeholder = self.writable(&parent.join(".moi-link"))?;
+        rooted::symlink(target, &placeholder.with_file_name(name))
     }
 
     fn set_mode(&self, path: &Path, mode: u32) -> io::Result<()> {

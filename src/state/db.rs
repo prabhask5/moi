@@ -21,10 +21,11 @@ pub struct Migration {
 }
 
 /// Every schema step moi has shipped, oldest first. Append only.
-pub const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    name: "checks, monitors, heal and schedule state",
-    sql: "
+pub const MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        name: "checks, monitors, heal and schedule state",
+        sql: "
         -- last N results per check (05)
         CREATE TABLE check_results (
             id          INTEGER PRIMARY KEY,
@@ -78,7 +79,29 @@ pub const MIGRATIONS: &[Migration] = &[Migration {
             last_status TEXT
         ) WITHOUT ROWID;
     ",
-}];
+    },
+    Migration {
+        version: 2,
+        name: "snapshot file table and capture cache",
+        sql: "
+        -- every file in state/snapshot and state/volatile: which collector owns it, and for copies of
+        -- host files the (size, mtime, inode) -> sha256 cache that lets unchanged files be skipped (02)
+        CREATE TABLE snapshot_files (
+            path      TEXT    PRIMARY KEY,                -- relative to state/, e.g. snapshot/files/etc/hosts
+            collector TEXT    NOT NULL,
+            kind      TEXT    NOT NULL CHECK (kind IN ('gen', 'file', 'link', 'skipped')),
+            source    TEXT    NOT NULL DEFAULT '',        -- host path of a copied file
+            size      INTEGER NOT NULL DEFAULT 0,
+            mtime_ns  INTEGER NOT NULL DEFAULT 0,
+            inode     INTEGER NOT NULL DEFAULT 0,
+            mode      INTEGER NOT NULL DEFAULT 0,
+            uid       INTEGER NOT NULL DEFAULT 0,
+            gid       INTEGER NOT NULL DEFAULT 0,
+            sha256    TEXT    NOT NULL DEFAULT ''         -- '-> target' for symlinks, '-' if not hashed
+        ) WITHOUT ROWID;
+    ",
+    },
+];
 
 /// An open `moi.db` at the current schema.
 #[derive(Debug)]

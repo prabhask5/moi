@@ -1,0 +1,12 @@
+22 1 252:0 / / rw,relatime shared:1 - ext4 /dev/mapper/ubuntu--vg-ubuntu--lv rw
+23 22 0:21 / /proc rw,nosuid,nodev,noexec,relatime shared:12 - proc proc rw
+24 22 0:22 / /sys rw,nosuid,nodev,noexec,relatime shared:6 - sysfs sysfs rw
+25 22 0:5 / /dev rw,nosuid,relatime shared:2 - devtmpfs udev rw,size=8040000k
+26 22 0:25 / /run rw,nosuid,nodev,noexec,relatime shared:5 - tmpfs tmpfs rw,size=1616344k
+30 22 259:2 / /boot rw,relatime shared:30 - ext4 /dev/nvme0n1p2 rw
+31 30 259:1 / /boot/efi rw,relatime shared:31 - vfat /dev/nvme0n1p1 rw,fmask=0077
+40 22 8:1 / /mnt/storage rw,relatime shared:40 - ext4 /dev/sda1 rw
+41 22 7:0 / /var/lib/incus/storage-pools/default rw,relatime shared:41 - btrfs /dev/loop0 rw,ssd,space_cache=v2
+50 22 0:60 / /var/lib/docker/overlay2/abc123/merged rw,relatime - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/X
+51 22 0:61 / /var/lib/docker/overlay2/def456/merged rw,relatime - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/Y
+60 26 0:70 / /run/user/1000 rw,nosuid,nodev,relatime - tmpfs tmpfs rw,size=1616340k

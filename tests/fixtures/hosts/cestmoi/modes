@@ -1,0 +1,26 @@
+# mode uid gid path — what git cannot store (owners, 0600/0640 files, directory modes)
+0600 0 0 /etc/moi/secrets.toml
+0640 0 42 /etc/shadow
+0750 1000 1000 /home/prabhas
+0644 1000 1000 /home/prabhas/.bashrc
+0644 1000 1000 /home/prabhas/.cargo/.crates.toml
+0600 1000 1000 /home/prabhas/.config/rclone/rclone.conf
+0644 1000 1000 /home/prabhas/.gitconfig
+0644 1000 1000 /home/prabhas/.profile
+0700 1000 1000 /home/prabhas/.ssh
+0600 1000 1000 /home/prabhas/.ssh/authorized_keys
+0755 1000 1000 /home/prabhas/bin/weekly-note.sh
+0644 1000 1000 /home/prabhas/notes.txt
+0755 1000 1000 /mnt/storage
+0755 1000 1000 /mnt/storage/database
+0755 1000 1000 /mnt/storage/database/db-config
+0700 0 0 /mnt/storage/lost+found
+0755 1000 1000 /mnt/storage/media
+0755 1000 1000 /mnt/storage/media/movies
+0755 1000 1000 /mnt/storage/media/tv
+0755 1000 1000 /mnt/storage/media/tv/Show A
+0755 1000 1000 /mnt/storage/media/tv/Show A/Season 1
+0755 1000 1000 /mnt/storage/media/tv/Show A/Season 1/extras
+0755 1000 1000 /mnt/storage/outline/data
+0700 0 0 /root
+0600 1000 101 /var/spool/cron/crontabs/prabhas

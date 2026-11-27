@@ -1,0 +1,1 @@
+*/5 * * * * root flock -n /run/resource-check.lock /opt/scripts/resource-check.sh 2>&1 | systemd-cat -t resource-check

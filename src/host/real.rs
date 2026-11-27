@@ -98,6 +98,14 @@ impl Host for RealHost {
         fs::remove_file(self.real(path, false)?)
     }
 
+    fn remove_dir(&self, path: &Path) -> io::Result<()> {
+        fs::remove_dir(self.real(path, false)?)
+    }
+
+    fn symlink(&self, target: &Path, path: &Path) -> io::Result<()> {
+        rooted::symlink(target, &self.real(path, false)?)
+    }
+
     fn set_mode(&self, path: &Path, mode: u32) -> io::Result<()> {
         rooted::set_mode(&self.real(path, true)?, mode)
     }

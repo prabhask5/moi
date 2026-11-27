@@ -1,0 +1,4 @@
+/dev/mapper/ubuntu--vg-ubuntu--lv / ext4 defaults 0 1
+UUID=1111-2222 /boot/efi vfat umask=0077 0 1
+LABEL=storage /mnt/storage ext4 defaults,nofail 0 2
+/swap.img none swap sw 0 0

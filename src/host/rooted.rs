@@ -122,6 +122,7 @@ pub(crate) fn to_metadata(md: &fs::Metadata) -> Metadata {
         gid: md.gid(),
         mtime: md.modified().unwrap_or(std::time::UNIX_EPOCH),
         inode: md.ino(),
+        dev: md.dev(),
     }
 }
 
@@ -178,6 +179,16 @@ pub(crate) fn create_dir_all(real: &Path, mode: u32) -> io::Result<()> {
     } else {
         Err(io::Error::new(io::ErrorKind::AlreadyExists, format!("not a directory: {}", real.display())))
     }
+}
+
+/// Replace whatever is at `real` (file or symlink, not a directory) with a symlink to `target`.
+pub(crate) fn symlink(target: &Path, real: &Path) -> io::Result<()> {
+    match fs::remove_file(real) {
+        Ok(()) => {}
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+        Err(e) => return Err(e),
+    }
+    std::os::unix::fs::symlink(target, real)
 }
 
 pub(crate) fn set_mode(real: &Path, mode: u32) -> io::Result<()> {

@@ -63,6 +63,29 @@ One collector per area, run concurrently, each with its own timeout (default 60 
 | incus | `incus admin init --dump`, `incus config show <i>`, snapshot names (if `incus` exists and responds) | strip `volatile.*` |
 | monitoring | `kuma.db` read-only (located via the Kuma container's `/app/data` mount; open `mode=ro`, fall back to `immutable=1`), integrations scan (§ below) | push tokens kept in stable files (state dir is root-only) |
 
+### Decisions (M2)
+
+**Engine**
+- Collectors only describe what to store (generated files as bytes, host files as paths); the engine does all writing. A file is rewritten only when its content differs, so a no-op snapshot writes nothing.
+- Every file under `snapshot/` and `volatile/` has a row in `moi.db` (`snapshot_files`) naming the collector that owns it. After a run, files no collector produced are removed (and empty directories with them) — except those of a collector that failed, panicked or timed out: its rows and files are kept and it is listed in `volatile/collector-errors.json` as `[{"collector": "…", "error": "…", "stale": true}]` (the file is absent when everything worked). A failure is never a change.
+- When two collectors name the same file, the first in collector order owns it.
+- Collectors run on one thread each and are joined with a shared deadline (default 60 s). A collector still running at the deadline is abandoned, not killed: it only reads, and its late result is dropped.
+- Copies under `snapshot/files/` are written 0600 whatever the original's mode; modes, owners and groups live in `files.manifest.tsv` (`mode owner group path size sha256`, tab-separated, sorted by path). Symlinks are copied as symlinks, with `-> target` in the hash column. A file over `capture.max_file` is not copied but listed with its hash if it is at most 64 MB, else with `-`.
+- The capture cache is the same table: a host file whose size, mtime, inode, mode and owner are unchanged is neither read nor rewritten.
+
+**Sources** (where this file's table says otherwise, this list wins until the noted milestone)
+- `systemd`: read with `systemctl` (read-only verbs, one `show` call for all running services). The D-Bus client replaces these calls in M6, when the daemon needs it anyway; the files written do not change.
+- `network`: `ip -br addr|link`, `ip route`, `resolvectl dns` (fallback `/etc/resolv.conf`), `ss -tulpnH`; no netlink dependency.
+- `storage`: mounts from `/proc/self/mountinfo`; `lsblk -J`, `blkid`, LVM/mdadm/zfs/btrfs/`smartctl` when installed.
+- `meta`: `kernel` is `ostype osrelease arch` from `/proc/sys/kernel`; `cpu` is model, sockets, cores per socket and threads from `/proc/cpuinfo`; `locale` from `/etc/default/locale` or `/etc/locale.conf`; `virt` from `systemd-detect-virt` (no file on bare metal).
+- `packages`: dpkg status and apt's `extended_states` parsed directly (`apt-manual.txt` = installed and not auto-installed, `apt-hold.txt` = held); snap = directories in `/snap`; flatpak = `/var/lib/flatpak/app`; pipx = venv directories; npm = global `node_modules` directories; cargo = `.crates.toml`. No `pip3 freeze` (it would mean running pip). `usr-local-bin.tsv` describes each entry as ELF executable, script (with its interpreter), symlink or data.
+- `scripts`: the "package-owned" exclusion checks dpkg file lists only for paths under `/opt` and `/usr` (nothing else a script dir holds can be package-owned).
+- `users` also captures `capture.home_files` (the table's `home` row). User crontabs are both copied and listed as `cron/user-<name>.crontab`.
+- Data roots with `capture.data_roots = "auto"`: every mounted data filesystem that is not `/`, `/boot*`, `/var`, `/var/log`, `/tmp`, `/usr*`, `/run*`, `/snap*` or under `/var/lib/docker`, plus `/srv`, `/opt`, `/data`, `/home`, `/mnt`, `/media` when they exist.
+- Volatile additions: `loadavg`; `uptime` and `free` are the raw `/proc` values.
+
+**`moi snapshot`** prints `snapshot saved to <state>: N files, M files changed` (or `no configuration changes`), warns per failed collector, and with `--json` prints `{ "ok": true, "state": "…", "snapshot": { "collectors": [{name, error, duration_ms}], "changed": […], "stable_files": N, "files_read": N } }`.
+
 ### Docker client
 
 The Engine API is spoken directly over `/var/run/docker.sock` with unversioned paths (the engine's own current API version), one request per connection. Payloads are kept as JSON values and only the fields listed below are read, so an engine that adds or drops fields breaks nothing. An unreachable engine is "docker not available" (compose files on disk are still captured), never a failed snapshot. Reading state sends only `GET` requests; the only `POST`s moi ever sends while capturing or checking are `exec` create/start.
