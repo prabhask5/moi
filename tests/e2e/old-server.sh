@@ -9,7 +9,7 @@ apt-get update -q
 apt-get install -y -q docker.io docker-compose-v2 restic iptables curl
 
 # ---- a compose stack: a database with a row that must survive, and a web server
-mkdir -p /opt/services/app/html /opt/scripts /srv/backups /srv/repo /etc/moi/firewall
+mkdir -p /opt/services/app/html /opt/scripts /srv/backups /srv/repo
 echo "moi e2e" > /opt/services/app/html/index.html
 cat > /opt/services/app/docker-compose.yml <<'YAML'
 services:
@@ -62,7 +62,10 @@ systemctl daemon-reload
 systemctl enable --now hello.service
 useradd -m -u 1500 -s /bin/bash alice
 
-# ---- moi
+# ---- moi: installed as its owner would, then given the configuration this test needs
+moi init --non-interactive
+systemctl is-active moi.service
+mkdir -p /etc/moi/firewall
 cat > /etc/moi/firewall/rules4.txt <<'RULES'
 -A INPUT -i lo -j ACCEPT
 -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
@@ -107,8 +110,8 @@ install -m 600 /dev/null /etc/moi/secrets.toml
 printf '[secrets]\nrestic_password = "fake-e2e-repository-password"\n' > /etc/moi/secrets.toml
 RESTIC_PASSWORD=fake-e2e-repository-password restic -r /srv/repo init
 
-moi config check
-moi init --non-interactive
+moi config check > /dev/null
+systemctl restart moi.service
 moi firewall apply
 moi snapshot
 moi backup
