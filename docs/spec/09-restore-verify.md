@@ -24,7 +24,7 @@ Rules carried over: each phase asks before running (`--yes` skips the questions 
 | config | `/etc` paths in `restore.etc_paths` (default list: ssh incl. host keys, sysctl, modules, sudoers.d, environment, logrotate, fail2ban/ufw/nftables, wireguard, cloudflared, samba/exports, docker, dokploy…) **plus** `/etc` files read by custom units/scripts **plus** all modified package conffiles (diff shown, e.g. `resolved.conf`); hostname; timezone; sshd reload after `sshd -t` |
 | scripts | script dirs + every script referenced by units/cron |
 | incus | if captured: install incus, `incus admin init --preseed` from the captured preseed (pools/networks/profiles); instances: configs restored, disks only if not fungible — otherwise print the declared rebuild note (cestmoi: devbox from the dotfiles repo) |
-| docker | networks with original subnets (compose-owned networks pre-created with their compose labels so compose adopts them); **databases first**: for each stack with DB services, `up -d <db services>`, wait healthy, import the dump if the data dir is empty (`psql -f` / `mysql <`), then `up -d` the rest; stacks in `boot.compose_up` order; standalone containers via reviewed scripts; **swarm/Dokploy**: `docker swarm init`, Dokploy installed at the captured version with its official installer, then Dokploy's Postgres restored from its dump and `/etc/dokploy` from the backup, then Dokploy redeploys its apps (research spike in M8 decides the exact sequence and whether services are recreated from captured specs instead) |
+| docker | networks with original subnets (compose-owned networks pre-created with their compose labels so compose adopts them); **databases first**: for each stack with DB services, `up -d <db services>`, wait healthy, import the dump if the data dir is empty (`psql -f` / `mysql <`), then `up -d` the rest; stacks in `boot.compose_up` order; standalone containers via reviewed scripts; **swarm/Dokploy**: `docker swarm init`, overlay networks, services recreated from their captured descriptions with databases loaded from their dumps (see Decisions: Dokploy) |
 | moi | install `moi.service` with the restored `/etc/moi`; the daemon takes over boot tasks, firewall, checks, heal, backups |
 | systemd | remaining custom units not replaced by moi; re-enable units that were enabled |
 | cron | crontabs + /etc/cron.* (warns about backup jobs first; moi's own schedule replaces legacy ones) |
@@ -67,6 +67,22 @@ Output: a checklist with ✓/✗ and the fix hint for each ✗; exit 1 if any �
 - **incus**: the preseed is applied; instance disks are not restored by moi — a fungible `/var/lib/incus` prints the owner's rebuild note, otherwise a warning says the disk must come from the owner's own pool backup.
 - **verify** holds the machine to the *bundle's* state (what ran on the old server), not to a snapshot of the half-built new one.
 
+### Decisions (M8, swarm and Dokploy)
+
+The research spike read Dokploy's installer (`dokploy.com/install.sh`) and its backup documentation. Findings:
+
+- The installer is not a restore tool. It runs `docker swarm leave --force`, removes and recreates `dokploy-network`, generates new secrets, refuses to run when ports 80/443/3000 are taken, and exits 0 even when a service was not created. Running it on a half-rebuilt machine would sever what the earlier phases built.
+- Dokploy's own backup is its Postgres database plus `/etc/dokploy`, restored from its web UI — which needs a running Dokploy first. moi already has both: the dump of `dokploy-postgres` and `/etc/dokploy` in the data backup.
+- Everything the installer creates is visible to the Docker API afterwards: the swarm, the attachable overlay network, the services `dokploy-postgres` (and `dokploy-redis` on older versions) and `dokploy`, and the standalone `dokploy-traefik` container.
+
+So **moi does not run the installer; it recreates what the snapshot saw**, which is the same for Dokploy as for any other swarm workload: one-node swarm, overlay networks, services from their captured descriptions (image at the captured tag, environment, command and arguments, mounts, networks, published ports, constraints, replicas), `dokploy-postgres` loaded from its dump while its volume is empty, `dokploy-traefik` from its generated script. Dokploy then starts against its own database and `/etc/dokploy` and shows every application as it was.
+
+Limits, each reported as a warning during the restore, never silently skipped:
+
+- **Application images built by Dokploy** exist only on the old server (image repository = service name). Those services are not recreated; they are listed, and the owner redeploys them from Dokploy (one click each: Dokploy rebuilds from git). Services with registry images are recreated directly.
+- **Docker secrets and configs**: Docker never returns their values, so neither the snapshot nor the backup holds them. A service that uses them (current Dokploy installs keep the Postgres password and the auth secret this way) is listed with the names to create first; cestmoi's Dokploy predates this and passes them in the environment.
+- **A changed address**: git providers and domains configured by IP need Dokploy's "Update IP" (its documentation says so); moi prints nothing about it because it cannot know.
+
 ### Guided reboot
 
 The final phase records "verify after next boot", asks the owner to reboot (`moi restore` prints the exact command and does not reboot by itself), and on the next boot the daemon runs `moi verify` after `boot.verify_after`, writes the result to the journal and `/run/motd.d/50-moi`, and pushes `boot.verify_monitor`. The same post-boot verify runs on **every** boot afterwards (replacing cestmoi's `homelab-selfcheck`), so "survives a reboot" is continuously proven, not assumed.
@@ -74,5 +90,5 @@ The final phase records "verify after next boot", asks the owner to reboot (`moi
 ## Acceptance
 
 - [x] Full dry run against the cestmoi fixture bundle lists every action without touching the host.
-- [ ] VM-based end-to-end test (nightly CI, not per-PR): build a server with compose + a Postgres stack + a swarm service + custom unit + firewall rules, back up to a local restic repo, restore onto a fresh VM, reboot, `moi verify` all ✓.
+- [x] VM-based end-to-end test (nightly CI, not per-PR; `tests/e2e/`, `.github/workflows/nightly.yml` — also on PRs that touch the restore): build a server with compose + a Postgres stack + a swarm service + custom unit + firewall rules, back up to a local restic repo, restore onto a fresh VM, reboot, `moi verify` all ✓.
 - [x] Moved-disk recognition, FORMAT confirmation, firewall rollback, DB-first import each have tests.
