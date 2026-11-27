@@ -41,7 +41,9 @@ WANT=$(awk -v f="$NAME.tar.gz" '$2 == f || $2 == "*" f { print $1 }' "$TMP/SHA25
 HAVE=$(sha256sum "$TMP/$NAME.tar.gz" | awk '{ print $1 }')
 [ "$WANT" = "$HAVE" ] || { echo "checksum mismatch for $NAME.tar.gz — aborting, nothing was installed" >&2; exit 1; }
 tar -xzf "$TMP/$NAME.tar.gz" -C "$TMP"
-SUDO=""; [ "$(id -u)" -eq 0 ] || SUDO=sudo
+# root's help only where it is needed: a prefix of one's own is written as oneself
+SUDO=""
+if [ "$(id -u)" -ne 0 ] && ! { mkdir -p "$PREFIX/bin" 2>/dev/null && [ -w "$PREFIX/bin" ]; }; then SUDO=sudo; fi
 $SUDO install -d "$PREFIX/bin"
 $SUDO install -m 755 "$TMP/$NAME/moi" "$PREFIX/bin/moi"
 echo "installed $PREFIX/bin/moi ($("$PREFIX/bin/moi" --version))"
@@ -58,7 +60,7 @@ if ! command -v restic >/dev/null 2>&1; then
     read -r ANSWER </dev/tty || ANSWER=n
   fi
   case $ANSWER in
-    y|Y|yes) $SUDO $GET ;;
+    y|Y|yes) if [ "$(id -u)" -eq 0 ]; then $GET; else sudo $GET; fi ;;
     *) echo "note: restic is not installed; off-site backups need it${GET:+ ($GET)}" ;;
   esac
 fi
