@@ -192,6 +192,9 @@ pub trait Host: fmt::Debug + Send + Sync {
     /// Run an external command and wait for it. A non-zero exit is not an error; failing to start is.
     fn run(&self, cmd: &Cmd) -> io::Result<CmdOutput>;
 
+    /// Run a command attached to the user's terminal (an editor) and return its exit code.
+    fn run_interactive(&self, cmd: &Cmd) -> io::Result<i32>;
+
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
 

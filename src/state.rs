@@ -5,6 +5,7 @@
 pub mod db;
 pub mod diff;
 pub mod history;
+pub mod notes;
 
 use std::path::{Path, PathBuf};
 

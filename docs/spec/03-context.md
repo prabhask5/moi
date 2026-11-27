@@ -43,6 +43,8 @@ Content caps keep the file usable: tables ≤ 200 rows, code blocks ≤ 150 line
 - Notes render inline next to the thing they describe; leftovers go to section 22.
 - `moi notes` opens `$EDITOR`, then commits and regenerates.
 
+Decisions (M3): `NOTES.md` is created by the first snapshot (so it is part of the first commit) and stubs are appended by every snapshot and by `moi notes`. Headings are matched exactly; a heading the owner wrote twice is theirs and both are kept. Drop-in `.conf` files get no `Unit:` stub (they belong to their unit); `Script:` stubs are only for scripts a cron job or one of the owner's units runs. `moi notes` uses `$VISUAL`, then `$EDITOR` (arguments allowed), then `nano`, then `vi`; with none available it says which file to edit. An editor that exits non-zero records nothing. Before the first snapshot it refuses and says to run `moi snapshot`.
+
 ## Copies and Claude Code pointer
 
 `context.copies` are written 0644 owned by the target dir's owner. With `claude_pointer = true`, a block between `<!-- moi:begin -->` and `<!-- moi:end -->` is maintained in `~/.claude/CLAUDE.md` of each copy owner and root, pointing to the copy (root: to the state dir file) and stating the change rules. Uninstall removes exactly that block (and the file if it becomes empty).

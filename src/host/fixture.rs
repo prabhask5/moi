@@ -366,6 +366,11 @@ impl Host for FixtureHost {
         Ok(CmdOutput { status, stdout, stderr: fs::read(file("err")).unwrap_or_default(), timed_out: false })
     }
 
+    fn run_interactive(&self, cmd: &Cmd) -> io::Result<i32> {
+        // nobody is at the keyboard: the canned exit code is all there is
+        self.run(cmd).map(|out| out.status)
+    }
+
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
         match fake_docker::engine_dir(&self.dir) {
             Some(dir) if path == Path::new(crate::docker::DEFAULT_SOCKET) => {

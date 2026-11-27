@@ -163,6 +163,14 @@ impl Host for RealHost {
         })
     }
 
+    fn run_interactive(&self, cmd: &Cmd) -> io::Result<i32> {
+        if !self.is_system() {
+            return Err(self.refuse(&format!("run `{}`", cmd.line())));
+        }
+        let status = Command::new(&cmd.program).args(&cmd.args).envs(cmd.env.iter().map(|(k, v)| (k, v))).status()?;
+        Ok(status.code().or_else(|| status.signal().map(|s| 128 + s)).unwrap_or(-1))
+    }
+
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
         if !self.is_system() {
             return Err(self.refuse(&format!("connect to {}", path.display())));
