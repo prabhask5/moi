@@ -76,7 +76,10 @@ fn every_collector_succeeds_and_nothing_is_written_outside_the_state_dir() {
     assert!(report.stable_files > 60, "{}", report.stable_files);
     // the overlay holds every write made to the host: only the state dir may appear
     assert_eq!(std::fs::read_dir(&s.overlay).unwrap().map(|e| e.unwrap().file_name()).collect::<Vec<_>>(), ["var"]);
-    assert_eq!(s.host.read_dir(Path::new("/var/lib")).unwrap(), ["apt", "dpkg", "incus", "moi"]);
+    assert_eq!(
+        std::fs::read_dir(s.overlay.join("var/lib")).unwrap().map(|e| e.unwrap().file_name()).collect::<Vec<_>>(),
+        ["moi"]
+    );
     // only read-only tools run, and none of the package managers that write logs or caches
     let allowed = [
         "systemctl",
@@ -311,7 +314,7 @@ fn packages_come_from_state_files() {
         ["bash", "chrony", "docker-compose-v2", "docker.io", "incus", "linux-image-generic", "restic", "smartmontools"]
     );
     assert_eq!(s.read("snapshot/packages/apt-hold.txt"), "linux-image-generic\n");
-    assert_eq!(lines(&s.read("volatile/apt-all.tsv")).len(), 10);
+    assert_eq!(lines(&s.read("volatile/apt-all.tsv")).len(), 12);
     assert_eq!(s.read("snapshot/packages/snap.txt"), "core22\n");
     assert_eq!(s.read("snapshot/packages/pipx.txt"), "yt-dlp\n");
     assert_eq!(s.read("snapshot/packages/npm-global.txt"), "@anthropic-ai/claude-code\n");
@@ -609,7 +612,7 @@ fn containers_are_normalized_to_their_configuration() {
     s.snapshot();
     let containers = json(&s, "snapshot/docker/containers.json");
     let names: Vec<&str> = containers.as_array().unwrap().iter().map(|c| c["name"].as_str().unwrap()).collect();
-    assert_eq!(names.len(), 34);
+    assert_eq!(names.len(), 35);
     assert!(names.is_sorted());
     // swarm task containers never appear: the service describes them
     assert!(!names.iter().any(|n| n.contains(".1.")), "{names:?}");

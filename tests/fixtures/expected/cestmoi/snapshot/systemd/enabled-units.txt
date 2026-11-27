@@ -4,6 +4,7 @@ docker.service
 homelab-selfcheck.timer
 homelab-services.service
 host-firewall.service
+incus-startup.service
 server-backup.timer
 ssh.socket
 traefik-config-guard.path

@@ -32,6 +32,10 @@ services:
     image: supabase/studio:2026.11.03
     container_name: supabase-studio
     restart: unless-stopped
+  pooler:
+    image: supabase/supavisor:2.7.4
+    container_name: supabase-pooler
+    restart: unless-stopped
 networks:
   homelab:
     external: true

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1039
+  "Pid": 1040
  },
  "Image": "sha256:fc51d830e8cc81cfc06d3767aca2635b488fabc22344ac566856fd1ba4fb6d14",
  "Name": "/compiler-ui-a5b6.1.92a3925352edf88002c619712",
@@ -71,9 +71,9 @@
     "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
     "EndpointID": "2c08ce20433c788167642b8f44bbc9a9b38179cc7f8da2c28eea3d1034577207",
     "Gateway": "10.0.0.1",
-    "IPAddress": "10.0.0.52",
+    "IPAddress": "10.0.0.53",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:34"
+    "MacAddress": "02:42:ac:13:00:35"
    }
   },
   "Ports": {}

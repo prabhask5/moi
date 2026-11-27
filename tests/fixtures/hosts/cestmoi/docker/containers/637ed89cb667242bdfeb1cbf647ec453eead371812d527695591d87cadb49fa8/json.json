@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1020
+  "Pid": 1021
  },
  "Image": "sha256:fcb89daf7bd03ff707c40403b1ab7ea8546195b9a74c0ba68814aea6d108a77a",
  "Name": "/uptime-kuma",
@@ -99,9 +99,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "bdc5813dcaee703d7b56486cc5898596dafae21257fc1e17a3ae9bd078653dee",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.32",
+    "IPAddress": "172.19.0.33",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:20"
+    "MacAddress": "02:42:ac:13:00:21"
    }
   },
   "Ports": {}

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1031
+  "Pid": 1032
  },
  "Image": "sha256:ff2134dda14979366fa44ba2a58e93920208c14f6cb6f8dc94e071d7a17f6ba0",
  "Name": "/portainer",
@@ -90,9 +90,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "5968d6d2850b6f53eb13b6e1f9c039deee444ac39174099905b6ce176980adcb",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.43",
+    "IPAddress": "172.19.0.44",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:2b"
+    "MacAddress": "02:42:ac:13:00:2c"
    }
   },
   "Ports": {}

@@ -254,6 +254,12 @@ impl Docker {
         self.list(if all { "/containers/json?all=true" } else { "/containers/json" })
     }
 
+    /// Container summaries with `SizeRw` (bytes written inside the container) and `SizeRootFs`. The engine
+    /// walks every container's layer for this: audits ask, snapshots do not.
+    pub fn containers_with_sizes(&self) -> Result<Vec<Value>> {
+        self.list("/containers/json?all=true&size=true")
+    }
+
     /// Full description of one container, by id or name.
     pub fn container(&self, id: &str) -> Result<Value> {
         self.get(&format!("/containers/{}/json", http::encode(id)))

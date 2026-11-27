@@ -11,7 +11,7 @@ use crate::host::Host;
 pub(crate) struct Firewall;
 
 /// `iptables-save` output without counters, comments, Docker-generated chains and ban entries.
-pub(crate) fn stable_rules(raw: &str) -> String {
+pub fn stable_rules(raw: &str) -> String {
     let mut out = Vec::new();
     for line in raw.lines() {
         if line.starts_with('#') {

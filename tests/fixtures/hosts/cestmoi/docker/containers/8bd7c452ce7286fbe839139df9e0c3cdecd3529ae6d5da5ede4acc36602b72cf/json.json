@@ -1,0 +1,85 @@
+{
+ "Id": "8bd7c452ce7286fbe839139df9e0c3cdecd3529ae6d5da5ede4acc36602b72cf",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1018
+ },
+ "Image": "sha256:57e37d746e72b32e835ee7c5e4640f862057bdab20ad516f7f349d1c51abce23",
+ "Name": "/supabase-pooler",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "database_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [],
+ "Config": {
+  "Hostname": "8bd7c452ce72",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "DATABASE_URL=ecto://supabase_admin:FAKEsupabasedbpass00@supabase-db:5432/_supabase",
+   "SECRET_KEY_BASE=FAKEsupavisorsecretkeybase0000000000000000"
+  ],
+  "Cmd": null,
+  "Image": "supabase/supavisor:2.7.4",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "pooler",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "database_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "supabase-pooler",
+     "pooler",
+     "8bd7c452ce72"
+    ],
+    "NetworkID": "0df5c6b9e1d294ae96fc93aff276922b13798fe59083a05d9afead223628b872",
+    "EndpointID": "f6b6ff8d097587a7da7b0fce4e808de9c4b8dfd61df4e502174fdb99b52b3ad4",
+    "Gateway": "172.21.0.1",
+    "IPAddress": "172.21.0.30",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:1e"
+   }
+  },
+  "Ports": {}
+ }
+}

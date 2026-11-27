@@ -1,0 +1,14 @@
+40802189312	/var/lib/docker/overlay2
+3221225472	/var/lib/docker/volumes
+629145600	/var/lib/docker/image
+45097156608	/var/lib/docker
+22548578304	/var/lib/incus/disks
+22548578304	/var/lib/incus
+314572800	/var/lib/apt/lists
+325058560	/var/lib/apt
+262144000	/var/lib/private-app/data
+263192576	/var/lib/private-app
+83886080	/var/lib/dpkg
+20480	/var/lib/AdGuardHome-legacy
+4096	/var/lib/chrony
+68719476736	/var/lib

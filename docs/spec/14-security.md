@@ -21,6 +21,7 @@ Each dependency and why (keep this list current when adding one):
 | serde, toml, serde_json | config, state files, Docker/Kuma payloads |
 | thiserror | library errors |
 | sha2 | SHA-256 of captured files (manifest, change detection) |
+| md-5 | comparing package config files with the MD5 sums dpkg records (audit § 4); never used for security |
 | tokio | daemon runtime, async I/O |
 | *(none)* for the Docker Engine API | Decided in M2: a ~200-line blocking HTTP/1.1 client over the unix socket (`docker::http`) instead of hyper/hyperlocal or bollard. moi makes a handful of local requests per run; an async HTTP stack would be most of the dependency tree for no measurable gain |
 | (planned) rustls, tokio-rustls, webpki-roots or rustls-native-certs | staged HTTPS probes, Kuma, R2 guard |

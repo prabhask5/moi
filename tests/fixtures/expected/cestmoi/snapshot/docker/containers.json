@@ -1518,6 +1518,48 @@
   },
   {
     "env": [
+      "DATABASE_URL=ecto://supabase_admin:FAKEsupabasedbpass00@supabase-db:5432/_supabase",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "SECRET_KEY_BASE=FAKEsupavisorsecretkeybase0000000000000000"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/supavisor:2.7.4",
+    "image_id": "sha256:57e37d746e72b32e835ee7c5e4640f862057bdab20ad516f7f349d1c51abce23",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "pooler",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-pooler",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "pooler",
+          "supabase-pooler"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
       "DB_PASSWORD=FAKEsupabasedbpass00",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     ],

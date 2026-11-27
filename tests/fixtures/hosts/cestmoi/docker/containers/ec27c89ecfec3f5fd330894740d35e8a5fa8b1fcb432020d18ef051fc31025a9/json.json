@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1019
+  "Pid": 1020
  },
  "Image": "sha256:ac98300bf5c38d6bcf293aab05e07087003b664f35ef37acde8bbb6221ba9ebc",
  "Name": "/scrutiny",
@@ -104,9 +104,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "b629b334507a4b2857d14f28600e6137be65e20665a18e789639a317fd84f516",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.31",
+    "IPAddress": "172.19.0.32",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:1f"
+    "MacAddress": "02:42:ac:13:00:20"
    }
   },
   "Ports": {}

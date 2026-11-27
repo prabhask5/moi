@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1021
+  "Pid": 1022
  },
  "Image": "sha256:9ba87916e5d731108d99ec4b7b660d190f0df1745ba3a566f357261cf347aad6",
  "Name": "/gluetun",
@@ -119,9 +119,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "f95309b703a465504f310d81ca6d1bf47e1fbc2f5f5e33be07d8e359f871ac96",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.33",
+    "IPAddress": "172.19.0.34",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:21"
+    "MacAddress": "02:42:ac:13:00:22"
    },
    "yams_default": {
     "IPAMConfig": null,
@@ -133,9 +133,9 @@
     "NetworkID": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
     "EndpointID": "d79245fcb58c0df7db97e3549add9237baf1955b2a16fe709054fff1b1106891",
     "Gateway": "172.22.0.1",
-    "IPAddress": "172.22.0.34",
+    "IPAddress": "172.22.0.35",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:22"
+    "MacAddress": "02:42:ac:13:00:23"
    }
   },
   "Ports": {}

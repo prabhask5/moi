@@ -1,0 +1,11 @@
+/etc/os-release
+/etc/hostname
+/etc/hosts
+/etc/default
+/etc/default/locale
+/etc/apparmor.d/local/usr.sbin.cupsd
+/etc/timezone
+/var/lib/dpkg
+/var/lib/apt
+/opt
+/srv

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1025
+  "Pid": 1026
  },
  "Image": "sha256:c27f1245f24770b50489272cb9807bfd01036a8592fd30d413d8ab0e1c6f4d9e",
  "Name": "/sonarr",
@@ -93,9 +93,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "78c89e830a47ff59f7252eeb4a567ee5f25bf54be43aae532afedf933fc73f96",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.36",
+    "IPAddress": "172.19.0.37",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:24"
+    "MacAddress": "02:42:ac:13:00:25"
    }
   },
   "Ports": {}

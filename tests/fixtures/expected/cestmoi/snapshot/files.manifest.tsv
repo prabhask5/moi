@@ -1,3 +1,5 @@
+644	root	root	/etc/apparmor.d/local/usr.sbin.cupsd	17	11d09e09e758fdc3681462ef63bde462167edcd5bdeb4cd70be577f818cbbf58
+644	root	root	/etc/chrony/chrony.conf	27	095745ad665a60333d25c2b09a82a7a28804cb1146a5698ee74e4ad1970d255d
 644	root	root	/etc/cron.d/resource-check	119	30241f2dd5bf175fcfb1cddc7b44b6a6d98151c32f35e705bf17a11ba35350b1
 644	root	root	/etc/cron.d/service-check	116	857b74057cf413bcadb43473324788eae3a3e888d3883e1470ead772d366ab3e
 644	root	root	/etc/cron.d/storage-check	116	48b45f03255343ca7e7f7cdda1911f3c33798b6f176004f6b2917191a6cc5c0b
@@ -13,12 +15,15 @@
 644	root	root	/etc/hostname	8	ac8c4ab5ae6bd1c674a84b6cfa0e5a0f42a573b2f8634c7b382fa8a9a5c3666b
 644	root	root	/etc/hosts	38	386bf1364241a3b1d498297935ec242936586447521c93575348dfc8ef6fbc8f
 777	root	root	/etc/localtime	36	-> /usr/share/zoneinfo/America/New_York
-644	root	root	/etc/moi/moi.toml	7670	5177f05f6fa495b11854612b19a9914e77acb8ac9efc299cbf68a38e796991a8
+644	root	root	/etc/machine-id	33	6ed6653dba3d6aee8110c6e23de37f15c609b8a6e29aa164d1acace604e5cb7e
+644	root	root	/etc/moi/moi.toml	7686	dbdcb6cd2002728ed228e39a43e6590c1095de27625e634c16d78ebd2305ba48
 600	root	root	/etc/moi/secrets.toml	643	06485da957caf8af688413357a5bb4bc6ecd91a564668801fa41080b9233f92d
 644	root	root	/etc/os-release	117	fed9a2e4a314d6a8f57e3df2dddcbaad4072aa6c541a111ae54cee88d32a4503
 644	root	root	/etc/passwd	353	84d866a60770d2a8977c512d840be3be5bb88152a8f6407cf6198b61e227d868
 640	root	shadow	/etc/shadow	110	7893735342cb9998604c961f7b27f3a54cd2c1c4a79fa62d88f6cae520c85474
 644	root	root	/etc/ssh/sshd_config	64	ef795b42e8332846abd4f5c244189bc9e532bac05da9945c979891080e90ce8d
+644	root	root	/etc/ssh/sshd_config.d/50-cloud-init.conf	26	474ef6932d6b998ec97b122a9d86af024b988d64c243f3caf01dd9e5ed41618e
+644	root	root	/etc/sysctl.d/99-homelab.conf	39	4e71c88cb1d01c52ecd531c03300041fd0c940e7f05995bcffb034ec8a414e62
 644	root	root	/etc/systemd/resolved.conf	43	70f6197897dc7042247ced3444d940a3f985f05ba95faa1c950c9b750b10f07a
 644	root	root	/etc/systemd/system/docker.service.d/10-boot-order.conf	35	3c27d0b1baa9e1a11fa9c17b2f16b41b58a15f3113b4fc8a1e07c9c1c0ef2e6f
 644	root	root	/etc/systemd/system/docker.service.d/storage.conf	60	ffaab5dd0f8d5b96b45e6b4115f3c04a485013176fdfd05f834222ca4d8720d7
@@ -60,7 +65,8 @@
 644	root	root	/opt/services/cloudflared/.env	45	d7f5aae8c7c98efb44371738b5b3f5f4e9bd7466a93a5a6e75ece44c8c5c77cf
 644	root	root	/opt/services/cloudflared/docker-compose.yml	188	38ee005db63e12e7984f157f8915881d80978d6ba1791b58b642c4e62ac3b028
 644	root	root	/opt/services/database/.env	92	b3b4b01676d8775bcebb6e55e983b9abd4503ab2259fa9893ba76a30767b5e04
-644	root	root	/opt/services/database/docker-compose.yml	951	628e323d9bed6d972838deb40f79b75488cf6df12f4ce03ced58adf62410cc06
+644	root	root	/opt/services/database/docker-compose.yml	1061	9611bc1861fd1d35a51d9aea7d0ac1cf1a3452e9931cfa16668b57a40029a94d
+644	root	root	/opt/services/database/volumes/api/envoy.yaml	21	6b9dfd96fbb077f7e4cabcb5c1be57761b474afc18499d77b6bd49cfb03b3466
 644	root	root	/opt/services/ddns/.env	104	350ad408f60c57f9f9c0fd8e7827c991f805f968de12590085e01a4de5f1f76f
 644	root	root	/opt/services/ddns/docker-compose.yml	172	66adfcec17b1c2ab1ac8033080cc2094d12d056f019619463f25b1c1abf30cf1
 644	root	root	/opt/services/dozzle/docker-compose.yml	148	17a369a6919ff76c43bc35bc2fc2c08e921c14d1417d9926dd201634af2b1b37

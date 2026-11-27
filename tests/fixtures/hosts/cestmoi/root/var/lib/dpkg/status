@@ -62,4 +62,24 @@ Package: chrony
 Status: install ok installed
 Architecture: amd64
 Version: 4.7-1
+Conffiles:
+ /etc/chrony/chrony.conf 55ad57ac76a9c8696af32cb3c0b79578
 Description: chrony
+
+Package: systemd-resolved
+Status: install ok installed
+Architecture: amd64
+Version: 259-1ubuntu3
+Conffiles:
+ /etc/systemd/resolved.conf 04182ba8db022f3a42f4399a0a16d53a
+Description: systemd-resolved
+
+Package: openssh-server
+Status: install ok installed
+Architecture: amd64
+Version: 1:10.2p1-2ubuntu1
+Conffiles:
+ /etc/ssh/sshd_config c9191076bf883996e0931ae4842718b9
+ /etc/ssh/moduli 0000000000000000000000000000dead obsolete
+Description: openssh-server
+

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1034
+  "Pid": 1035
  },
  "Image": "sha256:2af5a4f9977f067fdb9bccea89509249da5e2b4c91b5f9722b5c5ce415d9ac7a",
  "Name": "/dokploy.1.95aca2b6ec54770bef3e7fc04",
@@ -98,9 +98,9 @@
     "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
     "EndpointID": "561c3ba7f8a4515404275487b4f53cd9a191d8e628bae8fb7ed498a15505cade",
     "Gateway": "10.0.0.1",
-    "IPAddress": "10.0.0.47",
+    "IPAddress": "10.0.0.48",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:2f"
+    "MacAddress": "02:42:ac:13:00:30"
    }
   },
   "Ports": {}

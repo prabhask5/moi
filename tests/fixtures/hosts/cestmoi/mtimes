@@ -1,0 +1,8 @@
+# RFC 3339 mtime and path — fixture files are otherwise 30 days older than the clock
+2026-05-01T10:00:00Z /etc/machine-id
+2026-05-01T10:00:00Z /etc/chrony/chrony.conf
+2026-05-01T10:00:00Z /etc/ssh/sshd_config
+2026-05-01T10:00:00Z /etc/ssh/sshd_config.d/50-cloud-init.conf
+2026-05-01T10:00:00Z /etc/os-release
+2026-05-01T10:00:00Z /etc/hostname
+2026-05-01T10:00:00Z /etc/default/locale
