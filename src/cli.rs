@@ -323,7 +323,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Diff { rev, show_secrets } => return diff(cli, rev, *show_secrets, host, out),
         Command::Notes => return notes(cli, host, out),
         Command::Audit => return audit(cli, host, out),
-        Command::Context { .. } => ("context", "M3"),
+        Command::Context { action: None } => return context(cli, host, out),
+        Command::Context { action: Some(_) } => ("context share", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
@@ -433,7 +434,7 @@ fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn W
     let state = StateDir::new(state_root);
     state.ensure(host.as_ref())?;
     let db = state.open_db(host.as_ref())?;
-    let (report, commit) = crate::snapshot::capture(&host, &Arc::new(loaded.config), &state, &db)?;
+    let (report, commit) = crate::snapshot::capture(&host, &Arc::new(loaded.config), &state, &db, &loaded.masker)?;
 
     for failed in report.failed() {
         let error = failed.error.as_deref().unwrap_or_default();
@@ -586,9 +587,11 @@ fn audit(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Erro
     if !host.exists(&state.snapshot()) {
         state.ensure(host.as_ref())?;
         let db = state.open_db(host.as_ref())?;
-        crate::snapshot::capture(&host, &config, &state, &db)?;
+        crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
     }
     let audit = crate::audit::run(&host, &config, &state)?;
+    // the context file embeds the audit and lists its gaps under "Attention"
+    crate::context::write(host.as_ref(), &config, &state, &loaded.masker)?;
     let gaps = audit.gaps();
     if cli.json {
         print_json(out, &json!({ "ok": true, "gaps": gaps, "file": state.audit(), "audit": audit }));
@@ -615,4 +618,34 @@ fn audit(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Erro
         let _ = writeln!(out, "{gaps} gap(s), {reviews} to review — full report: {}", state.audit().display());
     }
     if gaps > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+fn context(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let log = cli.logger(Arc::clone(&host)).with_masker(loaded.masker.clone());
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let config = Arc::new(loaded.config);
+    if !host.exists(&state.snapshot()) {
+        state.ensure(host.as_ref())?;
+        let db = state.open_db(host.as_ref())?;
+        crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
+    }
+    let written = crate::context::write(host.as_ref(), &config, &state, &loaded.masker)?;
+    for failed in &written.failed_copies {
+        log.warn(&format!("copy not written: {failed}"), &[]);
+    }
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "context": written }));
+    } else {
+        let attention = match written.warnings {
+            0 => "nothing needs attention".to_string(),
+            1 => "1 item needs attention".to_string(),
+            n => format!("{n} items need attention"),
+        };
+        let _ = writeln!(out, "{} written ({} KB, {attention})", written.path.display(), written.bytes.div_ceil(1024));
+        for copy in &written.copies {
+            let _ = writeln!(out, "copy: {copy}");
+        }
+    }
+    Ok(())
 }

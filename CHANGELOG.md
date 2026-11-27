@@ -17,6 +17,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - Change history: every snapshot that changed something is a git commit in the state directory, with a subject and body that say what changed (containers and services in words). `moi log`, and `moi diff [rev]` with secrets masked unless `--show-secrets` is given by root.
 - Owner notes: `NOTES.md` with a stub heading for every stack, standalone container, swarm service, VM, unit and scheduled script; `moi notes` opens it in your editor and records the change. What you write is never modified.
 - `moi audit`: what would not survive a reboot, what the backup does not cover (fungible paths declared once, never reported as gaps), what a restore would not put back, storage placement (port of `disk-audit.sh`), secrets in scripts, host listeners, monitoring integrity. Exit code 1 when there are gaps.
+- `CONTEXT.md`: the whole server in one Markdown file for AI assistants — attention list, owner notes inline, system, storage, network, reverse-proxy routes, Docker, Incus, monitoring, moi's own configuration, firewall, jobs, units, scripts, software, users, backups and coverage, the audit, recent changes. Secrets masked by shape and by value. Regenerated after every snapshot and audit; `moi context` on demand. Copies for non-root readers and a pointer block in `~/.claude/CLAUDE.md`.
 
 ### Changed
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

@@ -698,7 +698,11 @@
       "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
       "com.docker.compose.project.working_dir": "/opt/yams",
       "com.docker.compose.service": "jellyfin",
-      "com.docker.compose.version": "2.40.3"
+      "com.docker.compose.version": "2.40.3",
+      "traefik.enable": "true",
+      "traefik.http.routers.jellyfin-public.rule": "Host(`media.example.com`) || Host(`tv.example.com`)",
+      "traefik.http.routers.jellyfin.rule": "Host(`jellyfin.home`)",
+      "traefik.http.services.jellyfin.loadbalancer.server.port": "8096"
     },
     "mounts": [
       {
@@ -765,7 +769,10 @@
       "com.docker.compose.project.environment_file": "/opt/services/outline/.env",
       "com.docker.compose.project.working_dir": "/opt/services/outline",
       "com.docker.compose.service": "outline",
-      "com.docker.compose.version": "2.40.3"
+      "com.docker.compose.version": "2.40.3",
+      "traefik.enable": "true",
+      "traefik.http.routers.outline.rule": "Host(`notes.example.com`)",
+      "traefik.http.services.outline.loadbalancer.server.port": "3000"
     },
     "mounts": [
       {

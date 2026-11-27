@@ -29,6 +29,19 @@
 
 Content caps keep the file usable: tables ≤ 200 rows, code blocks ≤ 150 lines, env vars ≤ 40 per container (with "+N"). Target size for cestmoi: < 120 KB.
 
+### Decisions (M3)
+
+- The file is rendered only from what is on disk (snapshot, volatile files, `NOTES.md`, `audit.md`, the configuration): nothing is probed live. It is rewritten after every `moi snapshot`, `moi audit`, `moi notes` run through the daemon, and by `moi context`, which prints `<path> written (N KB, M items need attention)` and the copies (`--json`: `{ "ok": true, "context": { path, bytes, copies, failed_copies, warnings } }`). Without a snapshot, `moi context` takes one first.
+- Sections that have nothing to show are left out (no Docker → no Docker section; no routes → no routes section). On cestmoi the order is exactly the list above, with **moi** (12) placed right after Monitoring.
+- Section 9 does not list volume sizes (not measured during snapshots, see 02); section 6 lists the fungible paths with their reasons after the directory structure.
+- "Swarm services below replicas" counts running task containers (`<service>.<slot>.<id>`) against the replicas the service asks for.
+- "Which moi check owns which monitor" is taken from the configured `monitor` names until bindings exist in `moi.db` (06); a push monitor counts as fed when a captured script, a container, or an enabled moi check reports to it.
+- "Backup/snapshot older than expected": a snapshot older than two days is flagged; backup age is added with the backup itself (07).
+- Dates are UTC. The version shown in section 12 is the running binary's.
+- Copies: a copy is written only when its directory exists (a missing directory is reported, never created); it is owned by that directory's owner.
+- Claude Code pointer: the block is created at the end of an existing `~/.claude/CLAUDE.md` (or as a new file owned by the user), and replaced in place afterwards; text outside the markers is never changed. `context::remove_pointer` (used by `moi uninstall`) removes exactly the block and deletes the file if nothing else is left.
+- Secrets: values are masked where they are printed (rules below) and the finished document is masked once more by value against everything in `secrets.toml`. The fixture file `tests/fixtures/hosts/cestmoi/secrets` lists every secret planted in the fixture; the no-leak test checks the document and its copies against it.
+
 ## Redaction (`redact` module)
 
 - Env values whose key matches `PASS|PWD|SECRET|TOKEN|KEY|PRIVATE|CRED|AUTH|SALT|COOKIE|SESSION|SIGNATURE|DSN|WEBHOOK|LICENSE|ACCESS` → `***`.
@@ -68,8 +81,8 @@ moi context share --list       # active shares and their expiry
 
 ## Acceptance
 
-- [ ] Golden test: fixture `cestmoi` → `tests/fixtures/expected/cestmoi/CONTEXT.md`.
-- [ ] No fixture secret leaks (env, URLs, push tokens, hc-ping key, API keys in scripts).
-- [ ] Notes stubs appended once; owner text preserved byte for byte across 100 regenerations.
-- [ ] Generation < 200 ms on the fixture.
+- [x] Golden test: fixture `cestmoi` → `tests/fixtures/expected/cestmoi/CONTEXT.md`.
+- [x] No fixture secret leaks (env, URLs, push tokens, hc-ping key, API keys in scripts).
+- [x] Notes stubs appended once; owner text preserved byte for byte across 100 regenerations.
+- [x] Generation < 200 ms on the fixture (`context_ms` in `scripts/budgets.sh`).
 - [ ] `context share`: presigned URL verified against a local S3-compatible server in the integration job (MinIO); TTL above `max_ttl` refused; `--revoke` deletes every `ctx/` object; nothing but CONTEXT.md is uploaded; no secret appears in the uploaded file.

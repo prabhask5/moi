@@ -6,6 +6,7 @@
 644	root	root	/etc/crontab	215	e2fff7f13308537c607002676322f3247eb0d5b4486af77f9bfc8f04fcea7927
 644	root	root	/etc/default/locale	19	6908ed1fdb7829167265e379e83e5f41c84c8ae34be5d85e2369a7648c9dbd2d
 644	root	root	/etc/docker/daemon.json	86	5bb5556f01badcb813d5ed1c690cf5002775b27262b928794e7b6c65801fe437
+644	root	root	/etc/dokploy/traefik/dynamic/dokploy.yml	101	4215879c133ba278aae55c6c0a15dfcdd2b9ac1ccd2b2f619612775f9257ba12
 644	root	root	/etc/dokploy/traefik/dynamic/middlewares.yml	88	283577f607a718bae9cd0072b34eaef6e5536c4c825133ec540d9187367d8c18
 644	root	root	/etc/dokploy/traefik/traefik.yml	72	0b90799e25c5564bc6d73c41bfbf11e2d4d77d4b7f52611bf849c5f6e90486b4
 644	root	root	/etc/fstab	178	6304401bbfbcba122ce32c2bb7b8f1ba69abaa7378667bc1491524c16dab82fe
@@ -63,6 +64,7 @@
 755	root	root	/opt/scripts/traefik-homelab.sh	570	a097b545df768bde7fac6c9d9099520646ec1080a1169797e1853c7338a7efb7
 644	root	root	/opt/services/adguard/docker-compose.yml	158	43958323eb0b23aa018fe8ede268a8aba2dbff2c30994f96c1fc8a5278381228
 644	root	root	/opt/services/cloudflared/.env	45	d7f5aae8c7c98efb44371738b5b3f5f4e9bd7466a93a5a6e75ece44c8c5c77cf
+644	root	root	/opt/services/cloudflared/config.yml	201	c17720efebf44d9de73381f6e3543bf2ea662b29c34c31278c8a62d29833e46f
 644	root	root	/opt/services/cloudflared/docker-compose.yml	188	38ee005db63e12e7984f157f8915881d80978d6ba1791b58b642c4e62ac3b028
 644	root	root	/opt/services/database/.env	92	b3b4b01676d8775bcebb6e55e983b9abd4503ab2259fa9893ba76a30767b5e04
 644	root	root	/opt/services/database/docker-compose.yml	1061	9611bc1861fd1d35a51d9aea7d0ac1cf1a3452e9931cfa16668b57a40029a94d

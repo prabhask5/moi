@@ -110,16 +110,19 @@ pub fn collectors() -> Vec<Arc<dyn Collector>> {
 }
 
 /// What `moi snapshot` and the daemon do: capture, add note stubs for new things, commit if something
-/// changed. Returns the capture report and the commit, if one was made.
+/// changed, and regenerate the context file. Returns the capture report and the commit, if one was made.
+/// `masker` knows the configured secrets, so none of them can reach the context file.
 pub fn capture(
     host: &Arc<dyn Host>,
     config: &Arc<Config>,
     state: &StateDir,
     db: &Db,
+    masker: &crate::redact::Masker,
 ) -> Result<(Report, Option<crate::state::history::Entry>), Error> {
     let report = run(host, config, state, db)?;
     crate::state::notes::update(host.as_ref(), state)?;
     let commit = crate::state::history::record(host.as_ref(), state)?;
+    crate::context::write(host.as_ref(), config, state, masker)?;
     Ok((report, commit))
 }
 

@@ -185,6 +185,9 @@ pub trait Host: fmt::Debug + Send + Sync {
     /// `chmod`.
     fn set_mode(&self, path: &Path, mode: u32) -> io::Result<()>;
 
+    /// `chown`.
+    fn set_owner(&self, path: &Path, uid: u32, gid: u32) -> io::Result<()>;
+
     /// Where a host path really is on this machine's filesystem, for libraries that need a path to open
     /// (SQLite, gitoxide). The file itself may not exist yet; its directory must.
     fn real_path(&self, path: &Path) -> io::Result<PathBuf>;

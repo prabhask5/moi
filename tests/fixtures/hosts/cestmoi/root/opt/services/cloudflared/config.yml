@@ -1,0 +1,7 @@
+tunnel: FAKEtunnelid-0000-0000
+ingress:
+  - hostname: ssh.example.com
+    service: ssh://localhost:22
+  - hostname: status.example.com
+    service: http://uptime-kuma:3001
+  - service: http_status:404

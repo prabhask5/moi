@@ -54,6 +54,8 @@ an Incus loop mount, read-only and log bind mounts, fungible media, a stale `bac
 
 `mtimes` (optional) gives fixture files a modification time (`<RFC 3339> /path` per line); every other fixture file is 30 days older than the clock.
 
-`expected/cestmoi/audit.md` is the golden audit of this host. `expected/cestmoi/snapshot/` is the golden stable tree of a snapshot of this host (without `files/`, which the manifest pins by hash).
+`secrets` lists every secret value planted in the fixture (one per line); no-leak tests check output against it. Add a line whenever a fixture gains a `FAKE…` credential.
+
+`expected/cestmoi/CONTEXT.md` is the golden context file (after an audit) and `expected/cestmoi/audit.md` the golden audit of this host. `expected/cestmoi/snapshot/` is the golden stable tree of a snapshot of this host (without `files/`, which the manifest pins by hash).
 
 Golden files are regenerated with `MOI_UPDATE_GOLDEN=1 cargo test` and reviewed in the PR diff.

@@ -29,13 +29,17 @@ cold = run(); print(cold, min(run() for _ in range(3)))' "$bin")
   # audit of the same state (sizes are canned in the fixture, so this is the audit without sizing)
   audit=$(MOI_ROOT=tests/fixtures/hosts/cestmoi MOI_ROOT_OVERLAY="$overlay" python3 -c 'import subprocess, sys, time
 t = time.perf_counter_ns(); subprocess.run([sys.argv[1], "audit", "--quiet"], stdout=subprocess.DEVNULL); print((time.perf_counter_ns() - t) // 1000000)' "$bin")
+  context=$(MOI_ROOT=tests/fixtures/hosts/cestmoi MOI_ROOT_OVERLAY="$overlay" python3 -c 'import subprocess, sys, time
+def run():
+    t = time.perf_counter_ns(); subprocess.run([sys.argv[1], "context"], stdout=subprocess.DEVNULL, check=True); return (time.perf_counter_ns() - t) // 1000000
+print(min(run() for _ in range(3)))' "$bin")
   rm -rf "$overlay"
-  for pair in "snapshot_cold_ms:$cold" "snapshot_warm_ms:$warm" "audit_ms:$audit"; do
+  for pair in "snapshot_cold_ms:$cold" "snapshot_warm_ms:$warm" "audit_ms:$audit" "context_ms:$context"; do
     k=${pair%%:*}; m=${pair##*:}
     ok=$(awk -v m="$m" -v b="$(val "$k")" 'BEGIN{print (m <= b*1.1) ? "ok" : "OVER"}'); [[ $ok == ok ]] || fail=1
     report "$k" "$(val "$k")" "$m" "$ok"
   done
-  for k in check_resources_storage_ms check_services_ms context_ms daemon_rss_mb daemon_cpu_percent; do
+  for k in check_resources_storage_ms check_services_ms daemon_rss_mb daemon_cpu_percent; do
     report "$k" "$(val "$k")" "—" "pending"
   done
 } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
