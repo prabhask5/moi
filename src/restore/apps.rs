@@ -330,6 +330,19 @@ impl Run<'_> {
     }
 }
 
+/// Host directories that hold a database's raw data. Nothing may be put into them before the
+/// database has started for the first time: it initializes only a directory that is empty.
+pub(super) fn database_dirs(run: &Run<'_>) -> Vec<String> {
+    parsed(run, "docker/containers.json")
+        .iter()
+        .chain(&parsed(run, "docker/services.json"))
+        .filter_map(database)
+        .flat_map(|db| db.data)
+        .filter(|(kind, _)| kind != "volume")
+        .map(|(_, source)| source)
+        .collect()
+}
+
 pub(super) fn docker(run: &mut Run<'_>) {
     let docker = Docker::new(Arc::clone(run.host));
     if !run.dry() && !docker.ping() {

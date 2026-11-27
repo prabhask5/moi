@@ -512,3 +512,20 @@ fn a_service_with_docker_secrets_is_named_not_recreated() {
     assert!(!out.contains("create service dokploy-postgres"), "{out}");
     assert!(out.contains("create service dokploy (dokploy/dokploy:v0.31.0)"), "{out}");
 }
+
+#[test]
+fn the_directory_tree_stops_at_a_database_data_directory() {
+    // a database initializes only an empty directory: its subdirectories are its own to create
+    let host = new_machine("restore-dirs-db");
+    let trees = Path::new(BUNDLE).join("var/lib/moi/state/volatile/trees");
+    let file = host.read_dir(&trees).unwrap().into_iter().find(|n| n.contains("opt")).expect("a tree of /opt");
+    let mut tree = host.read_to_string(&trees.join(&file)).unwrap();
+    tree.push_str(
+        "0700\troot\troot\t/opt/services/outline/pgdata\n0700\troot\troot\t/opt/services/outline/pgdata/base\n",
+    );
+    host.write(&trees.join(&file), tree.as_bytes(), 0o600).unwrap();
+    host.create_dir_all(Path::new("/opt"), 0o755).unwrap();
+    let (_, out) = run(&host, &only(&["dirs"]));
+    assert!(host.exists(Path::new("/opt/services/outline/pgdata")), "{out}");
+    assert!(!host.exists(Path::new("/opt/services/outline/pgdata/base")), "{out}");
+}
