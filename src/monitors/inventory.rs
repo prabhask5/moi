@@ -200,3 +200,38 @@ pub fn read(host: &dyn Host, db: &str) -> Option<Inventory> {
         docker_hosts,
     })
 }
+
+/// One result a push monitor received.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Heartbeat {
+    /// Unix seconds.
+    pub at: i64,
+    pub status: String,
+    pub message: String,
+}
+
+/// The latest heartbeats of the monitor with this push token, newest first. Read-only.
+pub fn heartbeats(host: &dyn Host, db: &str, token: &str, limit: usize) -> Vec<Heartbeat> {
+    let Some(conn) = host.real_path(Path::new(db)).ok().and_then(|real| open_read_only(&real)) else {
+        return Vec::new();
+    };
+    let limit = i64::try_from(limit).unwrap_or(i64::MAX);
+    // Kuma writes `2026-11-26 16:55:03.123` in UTC; SQLite turns it into seconds
+    conn.prepare(
+        "SELECT CAST(strftime('%s', h.time) AS INTEGER), h.status, COALESCE(h.msg, '')
+         FROM heartbeat h JOIN monitor m ON m.id = h.monitor_id
+         WHERE m.push_token = ?1 ORDER BY h.time DESC LIMIT ?2",
+    )
+    .and_then(|mut s| {
+        s.query_map((token, limit), |r| {
+            let status: i64 = r.get(1)?;
+            Ok(Heartbeat {
+                at: r.get::<_, Option<i64>>(0)?.unwrap_or(0),
+                status: if status == 1 { "up" } else { "down" }.to_string(),
+                message: r.get(2)?,
+            })
+        })
+        .map(|rows| rows.flatten().collect())
+    })
+    .unwrap_or_default()
+}

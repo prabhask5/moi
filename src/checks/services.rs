@@ -300,7 +300,9 @@ impl Check for Services {
             host: cx.host.clone(),
             docker: cx.docker.clone(),
             state: cx.state.clone(),
-            act: cx.mode == Mode::Record,
+            // in the shadow of the legacy script the healing is still its job
+            act: cx.mode == Mode::Record
+                && !cx.state.open_db(cx.host.as_ref()).is_ok_and(|db| crate::migrate::shadow::held(&db, "services")),
         };
         let edge = &cx.config.checks.edge;
         let mut bad = Failing::default();

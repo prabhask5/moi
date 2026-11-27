@@ -358,6 +358,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Verify => return verify(cli, host, out),
         Command::Restore(args) => return restore(cli, args, host, out),
         Command::Migrate(MigrateCommand::Plan) => return migrate_plan(cli, host, out),
+        Command::Migrate(MigrateCommand::Shadow) => return migrate_shadow(cli, host, out),
+        Command::Migrate(MigrateCommand::Compare) => return migrate_compare(cli, host, out),
         Command::Migrate(_) => ("migration", "M9"),
     };
     Err(Error::NotImplemented { what, milestone })
@@ -1473,6 +1475,78 @@ fn migrate_plan(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(
         let _ = write!(out, "{}", loaded.masker.mask(&crate::migrate::render(&plan)));
     }
     Ok(())
+}
+
+fn migrate_shadow(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::migrate::{self, shadow};
+    // first, because a configuration that refers to a secret nobody has entered yet does not load
+    let secrets = shadow::import_secrets(host.as_ref(), &cli.paths())?;
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    if !host.exists(&state.snapshot()) {
+        return Err(Error::Usage(
+            "no snapshot yet: run `moi snapshot` first — the plan is made from what it records".to_string(),
+        ));
+    }
+    let db = state.open_db(host.as_ref())?;
+    let plan = migrate::plan(host.as_ref(), &loaded.config, &state);
+    if plan.items.is_empty() {
+        let _ =
+            writeln!(out, "nothing to migrate: no legacy script, cron job or unit does what moi is configured to do");
+        return Ok(());
+    }
+    shadow::start(&db, &plan.items);
+    let imported = shadow::import(host.as_ref(), &loaded.config, &db, &plan.items)?;
+    let switched = shadow::switched(&db);
+    let held: Vec<&str> =
+        plan.items.iter().map(|i| i.name.as_str()).filter(|n| !switched.iter().any(|s| s == n)).collect();
+    let daemon = host.exists(Path::new(crate::daemon::SOCKET));
+    if cli.json {
+        print_json(
+            out,
+            &json!({ "ok": true, "held": held, "switched": switched, "imported": imported, "secrets": secrets, "daemon": daemon }),
+        );
+        return Ok(());
+    }
+    let _ = writeln!(out, "shadow: the legacy setup keeps doing these, moi runs alongside and only watches");
+    for name in &held {
+        let _ = writeln!(out, "  held      {name}");
+    }
+    for name in &switched {
+        let _ = writeln!(out, "  switched  {name}");
+    }
+    if !secrets.is_empty() {
+        let _ = writeln!(
+            out,
+            "secrets taken from the legacy scripts into {}: {}",
+            cli.paths().secrets.display(),
+            secrets.join(", ")
+        );
+    }
+    for line in &imported {
+        let _ = writeln!(out, "imported  {line}");
+    }
+    if !daemon {
+        let _ =
+            writeln!(out, "the daemon is not running: `systemctl start moi` — without it there is nothing to compare");
+    }
+    let _ = writeln!(out, "next: let both run for an hour, then `moi migrate compare`");
+    Ok(())
+}
+
+fn migrate_compare(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::migrate::compare;
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let db = state.open_db(host.as_ref())?;
+    let docker = crate::docker::Docker::new(Arc::clone(&host));
+    let all = compare::compare(host.as_ref(), &loaded.config, &state, &db, &docker);
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "checks": all }));
+    } else {
+        let _ = write!(out, "{}", loaded.masker.mask(&compare::render(&all)));
+    }
+    if all.iter().any(|c| c.count(compare::Verdict::Different) > 0) { Err(Error::ProblemsFound) } else { Ok(()) }
 }
 
 fn verify(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
