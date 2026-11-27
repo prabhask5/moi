@@ -92,9 +92,9 @@ Specs: 11
 
 ## M10 — Distribution
 Specs: 12
-- [ ] Release workflow end to end, installer with checksum verification, deb/rpm, crates.io, Homebrew tap
-- [ ] Shell completions, man page, `moi --version` build info
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Release workflow end to end, installer with checksum verification, deb/rpm, crates.io, Homebrew tap
+- [x] Shell completions, man page, `moi --version` build info
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M11 — devbox integration
 Specs: 15 (and the devbox rows in 01, 02, 03, 06, 09, 14). Starts when `devbox-core` 0.1.0 is on crates.io (devbox publishes it after its own M8); until then this milestone waits and M12 can go first.

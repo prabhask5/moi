@@ -48,7 +48,15 @@ fn version_has_build_info() {
     let v = String::from_utf8_lossy(&out.stdout);
     assert!(v.starts_with("moi "), "{v}");
     assert!(v.contains(env!("CARGO_PKG_VERSION")), "{v}");
-    assert!(v.contains('(') && v.contains(')'), "{v}");
+    // version (git sha, build date, target)
+    let inside = v.split('(').nth(1).and_then(|rest| rest.split(')').next()).unwrap_or_default();
+    let parts: Vec<&str> = inside.split(' ').collect();
+    assert_eq!(parts.len(), 3, "{v}");
+    assert!(
+        parts[1].len() == 10 && parts[1].as_bytes()[4] == b'-' && parts[1].as_bytes()[7] == b'-',
+        "build date: {v}"
+    );
+    assert!(parts[2].contains('-'), "target: {v}");
 }
 
 #[test]

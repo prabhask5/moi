@@ -15,6 +15,8 @@ use crate::error::Error;
 use crate::host::{self, Cmd, FileKind, Host};
 
 pub const UNIT_PATH: &str = "/etc/systemd/system/moi.service";
+/// Where the .deb and .rpm packages put the unit (disabled until `moi init`).
+pub const PACKAGED_UNIT: &str = "/usr/lib/systemd/system/moi.service";
 const BINARIES: [&str; 2] = ["/usr/bin/moi", "/usr/local/bin/moi"];
 /// Names that mean a directory holds replaceable bulk data.
 const FUNGIBLE: [&str; 9] =
@@ -357,8 +359,11 @@ pub fn binary(host: &dyn Host) -> Result<&'static str, Error> {
 /// Write the unit and start the service.
 pub fn install_service(host: &dyn Host) -> Result<String, Error> {
     let binary = binary(host)?;
-    host.write(Path::new(UNIT_PATH), unit_text(binary).as_bytes(), 0o644)
-        .map_err(|e| Error::host(format!("cannot write {UNIT_PATH}"), e))?;
+    // a package brought the unit with it: it is the package's file, only switched on here
+    if !(host.exists(Path::new(PACKAGED_UNIT)) && binary == "/usr/bin/moi") {
+        host.write(Path::new(UNIT_PATH), unit_text(binary).as_bytes(), 0o644)
+            .map_err(|e| Error::host(format!("cannot write {UNIT_PATH}"), e))?;
+    }
     systemctl(host, &["daemon-reload"])?;
     systemctl(host, &["enable", "--now", "moi.service"])?;
     Ok(binary.to_string())
@@ -424,6 +429,10 @@ pub fn uninstall(host: &dyn Host, config: Option<&crate::config::Config>) -> Vec
             done.push(format!("stopped and removed {UNIT_PATH}"));
         }
         let _ = host.run(&Cmd::new("systemctl").args(["daemon-reload"]));
+    } else if host.exists(Path::new(PACKAGED_UNIT)) {
+        // the unit is the package's: switched off, removed with the package
+        let _ = host.run(&Cmd::new("systemctl").args(["disable", "--now", "moi.service"]));
+        done.push(format!("stopped and disabled moi.service ({PACKAGED_UNIT} belongs to the package: remove that with your package manager)"));
     }
     let mut owners: BTreeSet<u32> = BTreeSet::from([0]);
     for copy in config.map(|c| c.context.copies.clone()).unwrap_or_default() {
