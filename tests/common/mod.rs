@@ -21,6 +21,11 @@ pub fn scratch(name: &str) -> PathBuf {
     dir
 }
 
+/// Where [`scratch`] put the directory of this name (without touching it).
+pub fn scratch_path(name: &str) -> PathBuf {
+    Path::new(env!("CARGO_TARGET_TMPDIR")).join(name)
+}
+
 /// The `minimal` fixture host, read-only.
 pub fn minimal() -> FixtureHost {
     FixtureHost::open(&fixture_dir("minimal")).unwrap()

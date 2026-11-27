@@ -22,7 +22,7 @@ use std::time::{Duration, SystemTime};
 
 pub use fixture::{FixtureHost, HttpHandler};
 pub use real::RealHost;
-pub use time::{format_rfc3339, parse_rfc3339, unix_seconds};
+pub use time::{civil_from_days, days_from_civil, format_rfc3339, parse_rfc3339, unix_seconds};
 
 /// What a path is (after or without following symlinks, see [`Host::metadata`] / [`Host::symlink_metadata`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -160,6 +160,12 @@ pub trait Conn: io::Read + io::Write + Send + fmt::Debug {
     }
 }
 
+/// A listening unix socket (the daemon's `/run/moi.sock`).
+pub trait Listener: Send + fmt::Debug {
+    /// Wait for the next connection.
+    fn accept(&self) -> io::Result<Box<dyn Conn>>;
+}
+
 /// The operating system as moi sees it.
 pub trait Host: fmt::Debug + Send + Sync {
     fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
@@ -219,6 +225,14 @@ pub trait Host: fmt::Debug + Send + Sync {
 
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
+
+    /// Listen on a unix stream socket at `path` with these permission bits, replacing a socket file a
+    /// previous run left there.
+    fn listen_unix(&self, path: &Path, mode: u32) -> io::Result<Box<dyn Listener>>;
+
+    /// Tell the service manager something (`READY=1`, `WATCHDOG=1`, `STATUS=…`: sd_notify). Returns
+    /// `false` when nobody is listening (not started by systemd).
+    fn notify(&self, state: &str) -> io::Result<bool>;
 
     /// Usage of the filesystem `path` is on (`statvfs`). May block on a hung mount: callers that probe
     /// removable or network storage run it with a timeout.

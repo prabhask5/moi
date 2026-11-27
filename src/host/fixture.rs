@@ -65,6 +65,8 @@ struct State {
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
     chmodded: BTreeSet<PathBuf>,
+    /// What was sent to the service manager (`READY=1`, …).
+    notified: Vec<String>,
     /// How many random bytes were handed out (the fixture's "randomness" is a fixed sequence).
     random_counter: u64,
 }
@@ -160,6 +162,7 @@ impl FixtureHost {
                 journal: Vec::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
+                notified: Vec::new(),
                 random_counter: 0,
             }),
             http: Mutex::new(None),
@@ -304,6 +307,11 @@ impl FixtureHost {
     pub fn advance(&self, by: Duration) {
         let mut state = self.state();
         state.now += by;
+    }
+
+    /// Everything sent to the service manager so far.
+    pub fn notifications(&self) -> Vec<String> {
+        self.state().notified.clone()
     }
 
     /// Journal entries sent so far, each a list of fields.
@@ -606,11 +614,39 @@ impl Host for FixtureHost {
     }
 
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
+        if path != Path::new(crate::docker::DEFAULT_SOCKET) {
+            // a socket something listens on in the overlay (the daemon under test)
+            let resolved = self.resolve(path, true)?;
+            return match resolved.layer {
+                Some(0) if self.overlay.is_some() => {
+                    Ok(Box::new(std::os::unix::net::UnixStream::connect(resolved.real)?))
+                }
+                _ => Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display()))),
+            };
+        }
         let dirs = self.fixture_dirs("docker");
-        if dirs.is_empty() || path != Path::new(crate::docker::DEFAULT_SOCKET) {
+        if dirs.is_empty() {
             return Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display())));
         }
         Ok(Box::new(FakeConn::new(dirs, Arc::clone(&self.docker))))
+    }
+
+    fn listen_unix(&self, path: &Path, mode: u32) -> io::Result<Box<dyn super::Listener>> {
+        // a real socket, in the overlay
+        if let Some(parent) = path.parent() {
+            self.create_dir_all(parent, 0o755)?;
+        }
+        super::real::bind_unix(&self.writable(path)?, mode)
+    }
+
+    fn notify(&self, state: &str) -> io::Result<bool> {
+        let mut inner = self.state();
+        // as under systemd: only a service started with a notify socket is listened to
+        if !inner.env.contains_key("NOTIFY_SOCKET") {
+            return Ok(false);
+        }
+        inner.notified.push(state.to_string());
+        Ok(true)
     }
 
     fn statvfs(&self, path: &Path) -> io::Result<FsUsage> {

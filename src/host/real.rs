@@ -183,6 +183,39 @@ impl Host for RealHost {
         Ok(Box::new(UnixStream::connect(path)?))
     }
 
+    fn listen_unix(&self, path: &Path, mode: u32) -> io::Result<Box<dyn super::Listener>> {
+        if !self.is_system() {
+            return Err(self.refuse(&format!("listen on {}", path.display())));
+        }
+        bind_unix(path, mode)
+    }
+
+    fn notify(&self, state: &str) -> io::Result<bool> {
+        let Some(target) = std::env::var_os("NOTIFY_SOCKET").filter(|t| !t.is_empty()) else { return Ok(false) };
+        if !self.is_system() {
+            return Err(self.refuse("notify the service manager"));
+        }
+        let socket = std::os::unix::net::UnixDatagram::unbound()?;
+        let name = target.to_string_lossy();
+        match name.strip_prefix('@') {
+            // an abstract socket (no file): Linux only
+            Some(_abstract_name) => {
+                #[cfg(target_os = "linux")]
+                {
+                    use std::os::linux::net::SocketAddrExt;
+                    let address = std::os::unix::net::SocketAddr::from_abstract_name(_abstract_name.as_bytes())?;
+                    socket.send_to_addr(state.as_bytes(), &address)?;
+                }
+                #[cfg(not(target_os = "linux"))]
+                return Err(io::Error::new(io::ErrorKind::Unsupported, "abstract notify sockets exist on Linux only"));
+            }
+            None => {
+                socket.send_to(state.as_bytes(), Path::new(&target))?;
+            }
+        }
+        Ok(true)
+    }
+
     fn statvfs(&self, path: &Path) -> io::Result<FsUsage> {
         let stat = rustix::fs::statvfs(self.real(path, true)?)?;
         Ok(FsUsage {
@@ -261,6 +294,30 @@ impl Host for RealHost {
         let socket = std::os::unix::net::UnixDatagram::unbound()?;
         socket.send_to(&crate::log::encode_journal(fields), JOURNAL_SOCKET)?;
         Ok(())
+    }
+}
+
+/// Bind a unix stream socket, replacing a stale socket file.
+pub(crate) fn bind_unix(real: &Path, mode: u32) -> io::Result<Box<dyn super::Listener>> {
+    match fs::symlink_metadata(real) {
+        Ok(existing) if std::os::unix::fs::FileTypeExt::is_socket(&existing.file_type()) => fs::remove_file(real)?,
+        Ok(_) => {
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                format!("{} exists and is not a socket", real.display()),
+            ));
+        }
+        Err(_) => {}
+    }
+    let listener = std::os::unix::net::UnixListener::bind(real)?;
+    fs::set_permissions(real, std::os::unix::fs::PermissionsExt::from_mode(mode))?;
+    Ok(Box::new(listener))
+}
+
+impl super::Listener for std::os::unix::net::UnixListener {
+    fn accept(&self) -> io::Result<Box<dyn Conn>> {
+        let (stream, _) = std::os::unix::net::UnixListener::accept(self)?;
+        Ok(Box::new(stream))
     }
 }
 
