@@ -33,6 +33,7 @@ pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
             ))
         }
         Work::Boot => boot(core),
+        Work::Verify => verify(core),
         Work::Firewall => firewall(core, &core.config.firewall.chains).map(|message| ("ok".to_string(), message)),
         Work::Heal(rule, why) => {
             let healer = crate::heal::Healer {
@@ -326,4 +327,35 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
     let said: Vec<String> = done.into_iter().chain(problems.iter().cloned()).collect();
     let message = if said.is_empty() { "nothing to do".to_string() } else { said.join("; ") };
     Ok((if problems.is_empty() { "ok" } else { "failed" }.to_string(), message))
+}
+
+/// The verification after a boot: the checklist, to the journal, the login message and the monitor.
+fn verify(core: &Arc<Core>) -> Result<(String, String), Error> {
+    use crate::restore::verify;
+    let host = &core.host;
+    let db = core.state.open_db(host.as_ref())?;
+    let items = verify::verify(host, &core.config, &core.state, &db)?;
+    let failed: Vec<&verify::Item> = items.iter().filter(|i| !i.ok).collect();
+    let log = Logger::new(Arc::clone(host), "moi").with_masker(core.masker.clone());
+    for item in &failed {
+        log.warn(&format!("verify: ✗ {} → {}", item.what, item.hint), &[("job", "verify")]);
+    }
+    let summary = if failed.is_empty() {
+        format!("verify OK: all {} checks passed after boot", items.len())
+    } else {
+        format!("verify FAILED: {} of {} checks, first: {}", failed.len(), items.len(), failed[0].what)
+    };
+    log.info(&summary, &[("job", "verify")]);
+    // whoever logs in next sees how the last boot went
+    let motd = format!("moi: {summary}\n{}", failed.iter().map(|i| format!("  ✗ {}\n", i.what)).collect::<String>());
+    if host.create_dir_all(std::path::Path::new("/run/motd.d"), 0o755).is_ok() {
+        let _ = host.write(std::path::Path::new("/run/motd.d/50-moi"), core.masker.mask(&motd).as_bytes(), 0o644);
+    }
+    let message: String = summary.chars().take(180).collect();
+    let _ =
+        monitors::push(host, &core.config, &db, "boot:verify", if failed.is_empty() { "up" } else { "down" }, &message);
+    // this boot has been judged: from now on snapshots say again what is expected
+    verify::verified(&db);
+    verify::refresh(host.as_ref(), &core.state, &db);
+    Ok((if failed.is_empty() { "ok" } else { "failed" }.to_string(), summary))
 }

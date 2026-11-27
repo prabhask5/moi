@@ -17,7 +17,7 @@ paths:
   /var/lib/docker/volumes/dokploy-docker-config/_data       14 B       1 files  volume dokploy-docker-config of service dokploy
   /var/lib/docker/volumes/shortless-redis-m3n4-data/_data      18 B       1 files  volume shortless-redis-m3n4-data of service shortless-redis-m3n4
   /var/lib/docker/volumes/stellar-data/_data                13 B       1 files  volume stellar-data of service stellar-planner-x7k2
-  /var/lib/moi                                            363 KB     423 files  moi's state
+  /var/lib/moi                                            365 KB     424 files  moi's state
 not on this machine (skipped):
   /etc/iptables
   /mnt/storage/database/storage

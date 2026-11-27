@@ -123,6 +123,7 @@ fn checks_run_at_start_and_then_on_their_interval_without_drift() {
             ("daily".to_string(), at("2026-11-27T10:00:00Z")),
             ("backup".to_string(), at("2026-11-27T08:30:00Z")),
             ("boot".to_string(), start),
+            ("verify".to_string(), start + 240),
         ],
         "checks are due at once; the daily job at 05:00 local time; this is the first start since the machine booted"
     );
@@ -147,7 +148,8 @@ fn checks_run_at_start_and_then_on_their_interval_without_drift() {
     // nothing is due until five minutes have passed
     assert_eq!(daemon.tick().unwrap(), []);
     s.fixture.advance(Duration::from_secs(299));
-    assert_eq!(daemon.tick().unwrap(), []);
+    // (four minutes after this boot its verification ran; no check did)
+    assert_eq!(names(&daemon.tick().unwrap()), ["verify"]);
     s.fixture.advance(Duration::from_secs(1));
     assert_eq!(daemon.tick().unwrap().len(), 3);
     // a run that starts late does not push the schedule back: still on the five-minute grid
@@ -166,6 +168,10 @@ fn checks_run_at_start_and_then_on_their_interval_without_drift() {
 #[test]
 fn every_scheduled_check_is_pushed_once_and_a_manual_check_changes_nothing() {
     let s = server("daemon-push");
+    // not the first start since boot: no boot tasks and no post-boot verification (which pushes too)
+    s.daemon();
+    s.db().conn().execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('daemon.boot_id', '3f2c1a9e-7b4d-4c1e-9a55-0d6f2b8e4c11')", []).unwrap();
+    s.db().conn().execute("DELETE FROM settings WHERE key = 'verify.pending_boot'", []).unwrap();
     let pushes = s.kuma();
     let mut daemon = s.daemon();
     s.bind("check:resources", "FAKEresourcesTok01");
@@ -317,7 +323,7 @@ fn status_says_what_ran_and_what_comes_next() {
     let status = daemon.status();
     assert_eq!(
         (status["running"].as_bool(), status["started"].as_str(), status["jobs"].as_array().unwrap().len()),
-        (Some(true), Some(START), 10)
+        (Some(true), Some(START), 11)
     );
     assert_eq!(
         status["jobs"][0],
@@ -360,7 +366,7 @@ fn moi_status_asks_the_running_daemon_and_says_when_there_is_none() {
     assert_eq!(status["jobs"][0]["last"]["message"], "OK: RAM 38%, swap 2%, CPU 48C");
     let told = s.fixture.notifications();
     assert_eq!(told[0], "READY=1");
-    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=10 jobs, "), "{told:?}");
+    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=11 jobs, "), "{told:?}");
     assert!(
         !told.iter().any(|t| t.contains("heal:")),
         "jobs that wait to be asked for are not announced as next: {told:?}"
@@ -708,7 +714,8 @@ fn a_changed_configuration_is_taken_at_once_and_a_broken_one_is_not() {
             "heal:traefik-homelab",
             "heal:traefik-config-guard",
             "firewall",
-            "boot"
+            "boot",
+            "verify",
         ]
     );
     // checks that stay keep their rhythm and their last result; the new one starts now
@@ -718,14 +725,17 @@ fn a_changed_configuration_is_taken_at_once_and_a_broken_one_is_not() {
     // a configuration that does not load is refused, loudly, and the daemon goes on as it was
     s.host.write(Path::new("/etc/moi/moi.toml"), b"[checks.resources\ninterval = 5", 0o644).unwrap();
     daemon.file_changed(Path::new("/etc/moi/moi.toml"));
-    assert_eq!(daemon.jobs().len(), 10);
+    assert_eq!(daemon.jobs().len(), 11);
     let logged: Vec<String> = s.fixture.journal_entries().iter().map(|e| e[0].1.clone()).collect();
     assert!(logged.iter().any(|m| m == "configuration reloaded"), "{logged:?}");
     assert!(logged.iter().any(|m| m.starts_with("configuration not reloaded, keeping the one in use: ")), "{logged:?}");
     s.fixture.advance(Duration::from_secs(200));
     s.fixture.add_command("/usr/local/bin/check-certs", 0, "all fine\n");
     // (the changed configuration is itself a change to the server: a snapshot follows)
-    assert_eq!(names(&daemon.tick().unwrap()), ["check:resources", "check:services", "check:certs", "snapshot"]);
+    assert_eq!(
+        names(&daemon.tick().unwrap()),
+        ["check:resources", "check:services", "check:certs", "snapshot", "verify"]
+    );
 }
 
 #[test]

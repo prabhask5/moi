@@ -192,7 +192,7 @@ fn init_writes_a_configuration_takes_a_snapshot_and_starts_the_service() {
     let loaded = config::load(s.host.as_ref(), &Paths::new("/etc/moi/moi.toml".into(), None)).unwrap();
     let daemon = cestmoi::daemon::Daemon::new(s.host.clone(), loaded).unwrap();
     let jobs: Vec<&str> = daemon.jobs().iter().map(|j| j.name.as_str()).collect();
-    assert_eq!(jobs, ["check:resources", "check:storage", "check:services", "daily", "snapshot", "boot"]);
+    assert_eq!(jobs, ["check:resources", "check:storage", "check:services", "daily", "snapshot", "boot", "verify"]);
 }
 
 #[test]
