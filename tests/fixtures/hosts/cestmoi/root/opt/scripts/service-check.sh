@@ -12,8 +12,8 @@
 #   - VPN stack (Gluetun + the apps sharing its network)
 #   - Traefik losing the "homelab" network after a Dokploy update
 
-KUMA_PUSH="http://uptime.home/api/push/FAKE_TOKEN"
-SONARR_KEY="FAKE_API_KEY"; RADARR_KEY="FAKE_API_KEY"; PROWLARR_KEY="FAKE_API_KEY"
+KUMA_PUSH="http://uptime.home/api/push/FAKEservicesTok002"
+SONARR_KEY="FAKEsonarrapikey0000000000000000"; RADARR_KEY="FAKEradarrapikey0000000000000000"; PROWLARR_KEY="FAKEprowlarrapikey00000000000000"
 IGNORE=""   # container names allowed to be stopped, space-separated
 
 # HTTP checks, reached over the "homelab" Docker network.

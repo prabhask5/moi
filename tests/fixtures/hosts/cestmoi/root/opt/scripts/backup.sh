@@ -10,7 +10,7 @@ DEST=/mnt/storage/backups
 CONFIG_DIRS=(/opt/services /opt/yams /opt/scripts)
 KEEP_DAYS=7
 MAX_TOTAL_GB=20    # if all backups together exceed this, the run counts as failed (Kuma alerts)
-KUMA_PUSH_URL="http://uptime.home/api/push/FAKE_TOKEN?status=up&msg=OK&ping=="   # optional: Uptime Kuma push URL, pinged only if everything succeeded
+KUMA_PUSH_URL="http://uptime.home/api/push/FAKEbackupTok00004?status=up&msg=OK&ping=="   # optional: Uptime Kuma push URL, pinged only if everything succeeded
 
 STAMP=$(date +%F_%H%M)
 OUT="$DEST/$STAMP"

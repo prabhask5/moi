@@ -13,10 +13,13 @@
 
 mod collect;
 mod cron;
+mod docker;
 mod etc;
 mod files;
 mod firewall;
+mod incus;
 mod meta;
+mod monitoring;
 mod network;
 mod packages;
 mod scripts;
@@ -96,7 +99,10 @@ pub fn collectors() -> Vec<Arc<dyn Collector>> {
         Arc::new(firewall::Firewall),
         Arc::new(systemd::Systemd),
         Arc::new(cron::Cron),
+        Arc::new(docker::Docker),
         Arc::new(scripts::Scripts),
+        Arc::new(incus::Incus),
+        Arc::new(monitoring::Monitoring),
     ]
 }
 
@@ -115,33 +121,67 @@ pub fn run_with(
     options: &Options,
 ) -> Result<Report, Error> {
     state.ensure(host.as_ref())?;
-    let cx =
-        Arc::new(Ctx { host: Arc::clone(host), config: Arc::clone(config), docker: Docker::new(Arc::clone(host)) });
-
-    // ---- collect, concurrently
-    let (tx, rx) = mpsc::channel();
-    for (index, collector) in collectors.iter().enumerate() {
-        let (thread_tx, cx, collector) = (tx.clone(), Arc::clone(&cx), Arc::clone(collector));
-        let spawned = thread::Builder::new().name(format!("moi-{}", collector.name())).spawn(move || {
-            let started = Instant::now();
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| collector.collect(&cx)))
-                .unwrap_or_else(|_| Err("collector panicked".to_string()));
-            // The receiver is gone if this collector outlived its deadline; nothing to do then.
-            let _ = thread_tx.send((index, result, started.elapsed()));
-        });
-        if let Err(e) = spawned {
-            let _ = tx.send((index, Err(format!("could not start: {e}")), Duration::ZERO));
-        }
-    }
-    drop(tx);
-    let deadline = Instant::now() + options.timeout;
+    // ---- collect: one round concurrently, then the collectors that need what the first round captured
     let mut results: Vec<Option<(Result<Output, String>, Duration)>> = (0..collectors.len()).map(|_| None).collect();
-    while results.iter().any(Option::is_none) {
-        match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-            Ok((index, result, took)) => results[index] = Some((result, took)),
-            // Deadline passed (or every thread is gone). A collector still running is abandoned: it only
-            // reads, and whatever it sends later is dropped.
-            Err(_) => break,
+    let mut cx = Ctx {
+        host: Arc::clone(host),
+        config: Arc::clone(config),
+        docker: Docker::new(Arc::clone(host)),
+        captured: Vec::new(),
+        generated: BTreeMap::new(),
+        failed: Vec::new(),
+    };
+    for second_round in [false, true] {
+        if second_round {
+            for (collector, result) in collectors.iter().zip(&results) {
+                match result {
+                    Some((Ok(output), _)) => {
+                        cx.captured.extend(output.files.iter().cloned());
+                        cx.generated.extend(output.stable.iter().cloned());
+                    }
+                    _ if !collector.after_capture() => cx.failed.push(collector.name().to_string()),
+                    _ => {}
+                }
+            }
+            cx.captured.sort();
+            cx.captured.dedup();
+        }
+        let round = Arc::new(Ctx {
+            host: Arc::clone(&cx.host),
+            config: Arc::clone(&cx.config),
+            docker: cx.docker.clone(),
+            captured: cx.captured.clone(),
+            generated: cx.generated.clone(),
+            failed: cx.failed.clone(),
+        });
+        let (tx, rx) = mpsc::channel();
+        let mut pending = 0;
+        for (index, collector) in collectors.iter().enumerate().filter(|(_, c)| c.after_capture() == second_round) {
+            pending += 1;
+            let (thread_tx, round, collector) = (tx.clone(), Arc::clone(&round), Arc::clone(collector));
+            let spawned = thread::Builder::new().name(format!("moi-{}", collector.name())).spawn(move || {
+                let started = Instant::now();
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| collector.collect(&round)))
+                    .unwrap_or_else(|_| Err("collector panicked".to_string()));
+                // The receiver is gone if this collector outlived its deadline; nothing to do then.
+                let _ = thread_tx.send((index, result, started.elapsed()));
+            });
+            if let Err(e) = spawned {
+                let _ = tx.send((index, Err(format!("could not start: {e}")), Duration::ZERO));
+            }
+        }
+        drop(tx);
+        let deadline = Instant::now() + options.timeout;
+        while pending > 0 {
+            match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+                Ok((index, result, took)) => {
+                    results[index] = Some((result, took));
+                    pending -= 1;
+                }
+                // Deadline passed (or every thread is gone). A collector still running is abandoned: it
+                // only reads, and whatever it sends later is dropped.
+                Err(_) => break,
+            }
         }
     }
 

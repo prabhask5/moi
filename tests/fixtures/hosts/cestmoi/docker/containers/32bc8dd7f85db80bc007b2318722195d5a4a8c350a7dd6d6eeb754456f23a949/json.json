@@ -1,0 +1,107 @@
+{
+ "Id": "32bc8dd7f85db80bc007b2318722195d5a4a8c350a7dd6d6eeb754456f23a949",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1029
+ },
+ "Image": "sha256:0b45f061d7f4f9911d6c007c20110c5797024fe19194eb84ea31f09661916241",
+ "Name": "/bookorbit",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/mnt/storage/media/books",
+   "Destination": "/books",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "32bc8dd7f85d",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "DATABASE_URL=postgres://bookorbit:FAKEbookorbitdbpass@bookorbit-db/bookorbit"
+  ],
+  "Cmd": null,
+  "Image": "ghcr.io/bookorbit/bookorbit:0.9.2",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "bookorbit",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "bookorbit",
+     "bookorbit",
+     "32bc8dd7f85d"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "c11b95244932ccfff5ca9e00b8b96c77c2256a737420c744f1b80e647914f7d8",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.40",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:28"
+   },
+   "yams_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "bookorbit",
+     "bookorbit",
+     "32bc8dd7f85d"
+    ],
+    "NetworkID": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
+    "EndpointID": "164a826f8e92c310a74cbad6b2624f3bc27604df63c563adada93f14ea366bbf",
+    "Gateway": "172.22.0.1",
+    "IPAddress": "172.22.0.41",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:29"
+   }
+  },
+  "Ports": {}
+ }
+}

@@ -1,0 +1,19 @@
+[
+ {
+  "ID": "n0decestmoi",
+  "Description": {
+   "Hostname": "cestmoi"
+  },
+  "Spec": {
+   "Role": "manager",
+   "Availability": "active"
+  },
+  "Status": {
+   "State": "ready"
+  },
+  "ManagerStatus": {
+   "Leader": true,
+   "Reachability": "reachable"
+  }
+ }
+]

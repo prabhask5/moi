@@ -1,0 +1,82 @@
+{
+ "Id": "3e9fe7d0a21b820080170e397600cccc40d0ff3a6cb54cbcdbb316b70d0d7cd9",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1040
+ },
+ "Image": "sha256:0ce7e1d1362ed7945e9075535d8dcc7d8380963b26f3c8e4a7cf4d04daade8f4",
+ "Name": "/dokploy-bridge-c7d8.1.02f066bdfb2ff8281061b1bdb",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [],
+ "Config": {
+  "Hostname": "3e9fe7d0a21b",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "BRIDGE_TOKEN=FAKEbridgetoken000000"
+  ],
+  "Cmd": null,
+  "Image": "dokploy-bridge-c7d8:latest",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy-bridge-c7d8",
+   "com.docker.swarm.task.id": "c27bdd3bd467fd02cb47a96f7",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "dokploy-bridge-c7d8.1.02f066bdfb2ff8281061b1bdb",
+     "dokploy-bridge-c7d8.1.02f066bdfb2ff8281061b1bdb",
+     "3e9fe7d0a21b"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "08f2fe065aeb34317c1ce1f9847af8ed2adfec32f17a0115eb81eda9c37b5c02",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.53",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:35"
+   }
+  },
+  "Ports": {}
+ }
+}

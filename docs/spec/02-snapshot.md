@@ -84,6 +84,16 @@ One collector per area, run concurrently, each with its own timeout (default 60 
 - Data roots with `capture.data_roots = "auto"`: every mounted data filesystem that is not `/`, `/boot*`, `/var`, `/var/log`, `/tmp`, `/usr*`, `/run*`, `/snap*` or under `/var/lib/docker`, plus `/srv`, `/opt`, `/data`, `/home`, `/mnt`, `/media` when they exist.
 - Volatile additions: `loadavg`; `uptime` and `free` are the raw `/proc` values.
 
+**Docker, Incus, monitoring**
+- A host without a Docker socket simply has no `docker/` state (compose files found on disk are still listed and captured). A socket whose engine does not answer is a *failed collector*: the previous Docker state is kept and reported stale, never replaced by "no containers". The same rule applies to an installed `incus` whose daemon does not answer.
+- `docker/compose-version` is the highest `com.docker.compose.version` label among the containers (no compose CLI is run). `docker/stacks.txt` lists stack namespaces from service labels with their service count. `volatile/docker-ps.tsv` is `name, state, started-at, image`; `docker-images.tsv` is `tags, id, size`; `service-ls.tsv` is `name, replicas, image, ports`.
+- Volume sizes are not measured during a snapshot (that is `du`-like work); the audit (04) measures what it needs.
+- Compose projects: container labels cover what `docker compose ls -a` would add (stopped containers carry the same labels). `compose-projects.json` entries have `project, workdir, config_files, env_files, services, defined_services, containers, source` (`containers` or `found on disk (no containers)`). Each project's working directory is captured four levels deep without `capture.prune_dirs` and data files (`*.db`, `*.sqlite`, `*.log`, media, …).
+- `docker/standalone/<name>.sh` is generated for every container without a compose project label (swarm tasks excluded). It is never executed by moi.
+- The monitoring collector runs in a second round, after the others, because it scans the files they captured and the container list. If the Docker collector failed in this run it fails too (previous output kept).
+- `monitoring/kuma-monitors.json` is `{ "db": path, "monitors": [...] }` with the columns of Kuma's `monitor` table that describe a monitor, plus `notifications` (names only — never their configuration), `tags` and `group`. The last heartbeat of each monitor changes every minute, so it lives in `volatile/kuma-last.json` (`name → {status, msg, time}`), not in the stable file.
+- `monitoring/integrations.json` entries are `{file, kind, base, token, called_by[]}` (+ `"stale_copy": true` for `*.bak`, `*.old`, `*.orig`, `*~`) or `{container, env, kind, base, token}`; `kind` is `uptime-kuma-push` or `healthchecks`. Only files up to 512 KB are scanned.
+
 **`moi snapshot`** prints `snapshot saved to <state>: N files, M files changed` (or `no configuration changes`), warns per failed collector, and with `--json` prints `{ "ok": true, "state": "…", "snapshot": { "collectors": [{name, error, duration_ms}], "changed": […], "stable_files": N, "files_read": N } }`.
 
 ### Docker client

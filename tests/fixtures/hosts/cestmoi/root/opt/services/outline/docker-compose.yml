@@ -1,0 +1,17 @@
+services:
+  outline:
+    image: outlinewiki/outline:1.1.0
+    container_name: outline
+    restart: unless-stopped
+    env_file: .env
+  postgres:
+    image: postgres:18
+    container_name: outline-postgres
+    restart: unless-stopped
+  redis:
+    image: redis:8-alpine
+    container_name: outline-redis
+    restart: unless-stopped
+networks:
+  homelab:
+    external: true

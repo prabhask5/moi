@@ -1,0 +1,103 @@
+{
+ "Id": "10bfa6ea0ec120ca6e6987c2f44d365b777d7bfa1b66217a2288d825e79a40fd",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1025
+ },
+ "Image": "sha256:c27f1245f24770b50489272cb9807bfd01036a8592fd30d413d8ab0e1c6f4d9e",
+ "Name": "/sonarr",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/yams/config/sonarr",
+   "Destination": "/config",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/mnt/storage/media",
+   "Destination": "/data",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "10bfa6ea0ec1",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "PUID=1000",
+   "PGID=1000",
+   "TZ=America/New_York"
+  ],
+  "Cmd": null,
+  "Image": "lscr.io/linuxserver/sonarr:4.0.16",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "sonarr",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "sonarr",
+     "sonarr",
+     "10bfa6ea0ec1"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "78c89e830a47ff59f7252eeb4a567ee5f25bf54be43aae532afedf933fc73f96",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.36",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:24"
+   }
+  },
+  "Ports": {}
+ }
+}

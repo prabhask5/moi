@@ -1,0 +1,91 @@
+{
+ "Id": "6e3d1756671027b9eef3fef8a4ccd978a9b19cba196356d0235334a2e7a7d82e",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1038
+ },
+ "Image": "sha256:b784fd1c855fddbd4de5d20c5b70159bb2afa33512b77963c48b22890a96c954",
+ "Name": "/shortless-redis-m3n4.1.3bf0aa452f21e8fd95da19cb1",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "volume",
+   "Name": "shortless-redis-m3n4-data",
+   "Source": "/var/lib/docker/volumes/shortless-redis-m3n4-data/_data",
+   "Destination": "/data",
+   "Driver": "local",
+   "Mode": "z",
+   "RW": true
+  }
+ ],
+ "Config": {
+  "Hostname": "6e3d17566710",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "redis:8",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "shortless-redis-m3n4",
+   "com.docker.swarm.task.id": "06884b9c35d209d7e1e99f928",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "shortless-redis-m3n4.1.3bf0aa452f21e8fd95da19cb1",
+     "shortless-redis-m3n4.1.3bf0aa452f21e8fd95da19cb1",
+     "6e3d17566710"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "92efd9c2b25fe1beeffccba95a3e4eded71c64db5822a840c02a338fc1fba330",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.51",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:33"
+   }
+  },
+  "Ports": {}
+ }
+}

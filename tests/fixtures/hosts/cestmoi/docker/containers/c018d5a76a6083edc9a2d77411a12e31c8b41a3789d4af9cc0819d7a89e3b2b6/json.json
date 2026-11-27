@@ -1,0 +1,101 @@
+{
+ "Id": "c018d5a76a6083edc9a2d77411a12e31c8b41a3789d4af9cc0819d7a89e3b2b6",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1004
+ },
+ "Image": "sha256:7840d6fd080c4aca120cb58cf675a6f0e4cee3bf79cee9cf3d4a6890449c16a1",
+ "Name": "/homepage",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/homepage/config",
+   "Destination": "/app/config",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "c018d5a76a60",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "HOMEPAGE_ALLOWED_HOSTS=home"
+  ],
+  "Cmd": null,
+  "Image": "ghcr.io/gethomepage/homepage:v1.5.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "homepage",
+   "com.docker.compose.service": "homepage",
+   "com.docker.compose.project.working_dir": "/opt/services/homepage",
+   "com.docker.compose.project.config_files": "/opt/services/homepage/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "homepage",
+     "homepage",
+     "c018d5a76a60"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "ea2f7137cb9bac80e6565c59519f95fc84c8dd155f6acfbe7974158aad191142",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.14",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:0e"
+   }
+  },
+  "Ports": {}
+ }
+}

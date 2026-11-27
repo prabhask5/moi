@@ -1,0 +1,121 @@
+{
+ "Id": "b3415b84a566491e5e6ca705d80c0d5da100cf0e0b3d4fd9358c633e53350953",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1006
+ },
+ "Image": "sha256:19f2a49eb782b5ae3138ff2092e8c70975c7d9eeb2d3aefa68f03cd18cb31391",
+ "Name": "/outline",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/mnt/storage/outline/data",
+   "Destination": "/var/lib/outline/data",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "b3415b84a566",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "URL=https://notes.example.com",
+   "SECRET_KEY=FAKEoutlinesecretkey00000000000000",
+   "UTILS_SECRET=FAKEoutlineutils0000000000000000",
+   "DATABASE_URL=postgres://outline:FAKEoutlinedbpass@outline-postgres:5432/outline",
+   "REDIS_URL=redis://outline-redis:6379"
+  ],
+  "Cmd": null,
+  "Image": "outlinewiki/outline:1.1.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "outline",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/outline/.env"
+  },
+  "ExposedPorts": {},
+  "Healthcheck": {
+   "Test": [
+    "CMD-SHELL",
+    "wget -qO- http://localhost:3000/_health"
+   ],
+   "Interval": 30000000000,
+   "Timeout": 5000000000,
+   "Retries": 3
+  }
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "outline",
+     "outline",
+     "b3415b84a566"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "6c0a641d7952911aa3d64b88fac56824c0a353d10cfef9e42144c388a821321d",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.16",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:10"
+   },
+   "outline_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "outline",
+     "outline",
+     "b3415b84a566"
+    ],
+    "NetworkID": "1e292113672ede096d4c39a30fd72eae884af69ae02877d01f16ef71848a2d01",
+    "EndpointID": "4249eef52e42b78f9c4716e246c6e3af7fefc38d9a80d00f6090f9ec724b1c94",
+    "Gateway": "172.20.0.1",
+    "IPAddress": "172.20.0.17",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:11"
+   }
+  },
+  "Ports": {}
+ }
+}

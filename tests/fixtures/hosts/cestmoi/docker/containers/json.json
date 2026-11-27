@@ -1,0 +1,686 @@
+[
+ {
+  "Id": "f33e4c144d0a4e6383241ef9451bf15a3dfee9200502a40d95fb1704c2869f18",
+  "Names": [
+   "/adguard"
+  ],
+  "Image": "adguard/adguardhome:v0.107.71",
+  "ImageID": "sha256:8844a9fda782267a3f967c83524e52bb896cb0f990357b8c2a188ff7ebad992b",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "adguard",
+   "com.docker.compose.service": "adguard",
+   "com.docker.compose.project.working_dir": "/opt/services/adguard",
+   "com.docker.compose.project.config_files": "/opt/services/adguard/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "54aff3c942f75987e7342d00d19fb4b4cf7af729799af8751599b3304cfc2ec5",
+  "Names": [
+   "/cloudflared"
+  ],
+  "Image": "cloudflare/cloudflared:2026.10.0",
+  "ImageID": "sha256:4ea457beabf938f91aefff2acaa7f70c29d6bd0ef502f5697c68302c023c4c67",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "cloudflared",
+   "com.docker.compose.service": "cloudflared",
+   "com.docker.compose.project.working_dir": "/opt/services/cloudflared",
+   "com.docker.compose.project.config_files": "/opt/services/cloudflared/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/cloudflared/.env"
+  }
+ },
+ {
+  "Id": "72c43ee868e6593fb9c57324625facde31860f9f28bc447901239f0c78601137",
+  "Names": [
+   "/ddns"
+  ],
+  "Image": "favonia/cloudflare-ddns:1.15.1",
+  "ImageID": "sha256:3c5f28f96f3a3e603180bf8ea7a3e3e401a636f834ebc8fc3dda45ec2759fa95",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "ddns",
+   "com.docker.compose.service": "ddns",
+   "com.docker.compose.project.working_dir": "/opt/services/ddns",
+   "com.docker.compose.project.config_files": "/opt/services/ddns/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/ddns/.env"
+  }
+ },
+ {
+  "Id": "f6733a147f63e2bc1ee401d88b5366c9d1015de476a7c8e36c1c6959cec7a7e6",
+  "Names": [
+   "/dozzle"
+  ],
+  "Image": "amir20/dozzle:v8.13.0",
+  "ImageID": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "dozzle",
+   "com.docker.compose.service": "dozzle",
+   "com.docker.compose.project.working_dir": "/opt/services/dozzle",
+   "com.docker.compose.project.config_files": "/opt/services/dozzle/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "c018d5a76a6083edc9a2d77411a12e31c8b41a3789d4af9cc0819d7a89e3b2b6",
+  "Names": [
+   "/homepage"
+  ],
+  "Image": "ghcr.io/gethomepage/homepage:v1.5.0",
+  "ImageID": "sha256:7840d6fd080c4aca120cb58cf675a6f0e4cee3bf79cee9cf3d4a6890449c16a1",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "homepage",
+   "com.docker.compose.service": "homepage",
+   "com.docker.compose.project.working_dir": "/opt/services/homepage",
+   "com.docker.compose.project.config_files": "/opt/services/homepage/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "21fb299c8fdeac6da2269afc4f3e53c5cfeeb5bb26bff6ee4988d884e66542de",
+  "Names": [
+   "/host-logs"
+  ],
+  "Image": "amir20/dozzle:v8.13.0",
+  "ImageID": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "host-logs",
+   "com.docker.compose.service": "host-logs",
+   "com.docker.compose.project.working_dir": "/opt/services/host-logs",
+   "com.docker.compose.project.config_files": "/opt/services/host-logs/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "b3415b84a566491e5e6ca705d80c0d5da100cf0e0b3d4fd9358c633e53350953",
+  "Names": [
+   "/outline"
+  ],
+  "Image": "outlinewiki/outline:1.1.0",
+  "ImageID": "sha256:19f2a49eb782b5ae3138ff2092e8c70975c7d9eeb2d3aefa68f03cd18cb31391",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "outline",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/outline/.env"
+  }
+ },
+ {
+  "Id": "ceb712381397a40d6186d73bce75829998dbdf60290127c97390a9d4931156ce",
+  "Names": [
+   "/outline-postgres"
+  ],
+  "Image": "postgres:18",
+  "ImageID": "sha256:ca106b21aca5236e874960c47af9b6cfcb981962aeb379542cdf2cd17825467c",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "postgres",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "f7ae0dadf5f8df68a321ccd77b77a5a3660d3c348abd06d243c57ccc6534fef5",
+  "Names": [
+   "/outline-redis"
+  ],
+  "Image": "redis:8-alpine",
+  "ImageID": "sha256:e0c42b7387b52519fee99b365e6202acc2a109d1e054b4d664b9e9471611ca05",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "redis",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "a91f0e72a26ff0d3fd7ad2a321a7e4fe93c80e0d852acf6a16bc304963267e6f",
+  "Names": [
+   "/seerr"
+  ],
+  "Image": "ghcr.io/seerr-team/seerr:v3.0.1",
+  "ImageID": "sha256:89ed3e5226c9f64f7d8fa787cda1fb03151074efe77d1bd1fad1dd8a770ef136",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "seerr",
+   "com.docker.compose.service": "seerr",
+   "com.docker.compose.project.working_dir": "/opt/services/seerr",
+   "com.docker.compose.project.config_files": "/opt/services/seerr/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "097667611e6e0c52a4981aae04b5fb05a8ee22e6243c74f65ea73b27da6ad51c",
+  "Names": [
+   "/supabase-db"
+  ],
+  "Image": "supabase/postgres:17.6.1.054",
+  "ImageID": "sha256:96e5d97de01bc17ea2584791ef46e42630ff53865681cf98aaa83273ecd33aac",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "db",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/database/.env"
+  }
+ },
+ {
+  "Id": "2abce365a11e89d12af0d68537f5516bfc87cd72ace95ded3a64853aaffce06b",
+  "Names": [
+   "/supabase-envoy"
+  ],
+  "Image": "envoyproxy/envoy:v1.36.2",
+  "ImageID": "sha256:d8a7fe5352718948fab5995efc66cc82ecea0eef090ed746b0536c5fa42a26de",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "envoy",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "277cb6c4b68b0a842bcf7ee7e79cedf55349a2f5b8f705c527600011aa8672cf",
+  "Names": [
+   "/supabase-auth"
+  ],
+  "Image": "supabase/gotrue:v2.182.1",
+  "ImageID": "sha256:723e8d4c193a6e305e901ca00ab4e8eb899b6c69c5037c7608c3639831e4194b",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "auth",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "43332e408dad0a20b2812f6b41f6767189d39af41bf46d6f0378046236b4a860",
+  "Names": [
+   "/supabase-rest"
+  ],
+  "Image": "postgrest/postgrest:v14.1",
+  "ImageID": "sha256:7367bd88f5b8e77ac61f989988f86a7e1f7f33a1b68759e16f02bc1a38c7b83a",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "rest",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "43cba199609d4905adf296552441c7bbfa8df33822a82217fcfd424013eeda15",
+  "Names": [
+   "/supabase-realtime"
+  ],
+  "Image": "supabase/realtime:v2.63.0",
+  "ImageID": "sha256:b298a81b41f711820057078091e9a7d3c37f8835c0695b8098d8f2b5ce97a580",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "realtime",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "d89db91c1c4e6223532ae3f98466be1538fafe0d7dae02577b4b88f51c610474",
+  "Names": [
+   "/supabase-storage"
+  ],
+  "Image": "supabase/storage-api:v1.32.0",
+  "ImageID": "sha256:0570ab0aa170779cb1d441ae86c91832f830ca48de8602f02a7dd8909b2a802d",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "storage",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "3cd2b8a9f92a6898cb2d431de867fb9b1b71bfa889d4d2a901b2b36070613b30",
+  "Names": [
+   "/supabase-meta"
+  ],
+  "Image": "supabase/postgres-meta:v0.93.1",
+  "ImageID": "sha256:698468c65dd00cdd81fec5d2ef57c459b09b4e8c7dc091cf37d500a01999f44c",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "meta",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "bf0b0d066e80201d74b08d2c75792250c34941e63adabb5aa14ef6d6c7ef36e3",
+  "Names": [
+   "/supabase-studio"
+  ],
+  "Image": "supabase/studio:2026.11.03",
+  "ImageID": "sha256:6eddafde90dfd1ba32f3b139b9e2dd2ce258add2c56dbaad365af0df86f4261e",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "studio",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "050ec439adbb202f23776f55497225eaa63877d16b8a5afd646217eac87b4d97",
+  "Names": [
+   "/glances"
+  ],
+  "Image": "nicolargo/glances:4.4.1",
+  "ImageID": "sha256:71a80bff819ab2ab50cd564204d415a8424386865cf0a266ffa765bb9f00abfd",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "glances",
+   "com.docker.compose.service": "glances",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/glances",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/glances/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "ec27c89ecfec3f5fd330894740d35e8a5fa8b1fcb432020d18ef051fc31025a9",
+  "Names": [
+   "/scrutiny"
+  ],
+  "Image": "ghcr.io/analogj/scrutiny:v0.8.1-omnibus",
+  "ImageID": "sha256:ac98300bf5c38d6bcf293aab05e07087003b664f35ef37acde8bbb6221ba9ebc",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "scrutiny",
+   "com.docker.compose.service": "scrutiny",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/scrutiny",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/scrutiny/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "637ed89cb667242bdfeb1cbf647ec453eead371812d527695591d87cadb49fa8",
+  "Names": [
+   "/uptime-kuma"
+  ],
+  "Image": "louislam/uptime-kuma:1.23.17",
+  "ImageID": "sha256:fcb89daf7bd03ff707c40403b1ab7ea8546195b9a74c0ba68814aea6d108a77a",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "uptime-kuma",
+   "com.docker.compose.service": "uptime-kuma",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/uptime-kuma",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/uptime-kuma/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "d12c9f99a419328f8ede43ee28eb12ab43872b327adc3fb434e2ad577fc39472",
+  "Names": [
+   "/gluetun"
+  ],
+  "Image": "qmcgaw/gluetun:v3.40.3",
+  "ImageID": "sha256:9ba87916e5d731108d99ec4b7b660d190f0df1745ba3a566f357261cf347aad6",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "gluetun",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/yams/.env"
+  }
+ },
+ {
+  "Id": "931a0c58211ad0dbacdf272b2d1708e4a391684039c53cb3188300f9f69f8ae8",
+  "Names": [
+   "/qbittorrent"
+  ],
+  "Image": "lscr.io/linuxserver/qbittorrent:5.1.4",
+  "ImageID": "sha256:54cbeb5dcb699c8f587bdc2d0f50a6229de8ff4eb46f906b95502d04944d7014",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "qbittorrent",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "679a83f205885bf0334043f696f1c10bf9c7efa35dd9ffcde01e031b8ba377f7",
+  "Names": [
+   "/sabnzbd"
+  ],
+  "Image": "lscr.io/linuxserver/sabnzbd:4.5.5",
+  "ImageID": "sha256:85dcbb8f7375cc3602a44ae9a98445e265497303aa7402686e1d7cea2b998c14",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "sabnzbd",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "46b2f89fbc0ab83c3690333c0ae9ff696fb81f4b59ad2a5092ec2132a187a068",
+  "Names": [
+   "/jellyfin"
+  ],
+  "Image": "lscr.io/linuxserver/jellyfin:10.11.3",
+  "ImageID": "sha256:9437a571336af9b5b3e391ee5465847913844eefcdb152330910270ec4b5444d",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "jellyfin",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "10bfa6ea0ec120ca6e6987c2f44d365b777d7bfa1b66217a2288d825e79a40fd",
+  "Names": [
+   "/sonarr"
+  ],
+  "Image": "lscr.io/linuxserver/sonarr:4.0.16",
+  "ImageID": "sha256:c27f1245f24770b50489272cb9807bfd01036a8592fd30d413d8ab0e1c6f4d9e",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "sonarr",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "0796a400a882dd8308c612f3ece3f0b6f4a482317ca964590df6c94dad3c0931",
+  "Names": [
+   "/radarr"
+  ],
+  "Image": "lscr.io/linuxserver/radarr:6.0.4",
+  "ImageID": "sha256:59af99cdecf8c87ce44e6e585a167967cb2735eaa19563305b2753ed854247a4",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "radarr",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "742bf0bf71371b3101d1b544ed465812d80e3bae7b19767874c586102eb78815",
+  "Names": [
+   "/prowlarr"
+  ],
+  "Image": "lscr.io/linuxserver/prowlarr:2.3.0",
+  "ImageID": "sha256:69f316460879c57151c3623c143cd4867ceda66b43233b9e64c2807fd5353782",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "prowlarr",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "48b0da98bab296a88444789f354d4d543ff604278783048ae1a512e5e0771d33",
+  "Names": [
+   "/bazarr"
+  ],
+  "Image": "lscr.io/linuxserver/bazarr:1.5.3",
+  "ImageID": "sha256:48aab4399ee4b4b72be41e3c033fba52711e7d1cf1ac1beac1ab8f6d9af4512e",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "bazarr",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "32bc8dd7f85db80bc007b2318722195d5a4a8c350a7dd6d6eeb754456f23a949",
+  "Names": [
+   "/bookorbit"
+  ],
+  "Image": "ghcr.io/bookorbit/bookorbit:0.9.2",
+  "ImageID": "sha256:0b45f061d7f4f9911d6c007c20110c5797024fe19194eb84ea31f09661916241",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "bookorbit",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "c31bc69db553e93d83d85bfe9286d926c5cf00a6961c5657db2d97576a9e11dd",
+  "Names": [
+   "/bookorbit-db"
+  ],
+  "Image": "pgvector/pgvector:pg18",
+  "ImageID": "sha256:ae7e9011a87f1cd0de8a9dceacb2d92d2d171a19afa5a989f6e92f6dd0d98bc7",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "bookorbit-db",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "6a1d8fc776da7013ac1063d6e241e4a20ed5646ac4ba65e536624875c2d3061f",
+  "Names": [
+   "/portainer"
+  ],
+  "Image": "portainer/portainer-ce:2.33.4",
+  "ImageID": "sha256:ff2134dda14979366fa44ba2a58e93920208c14f6cb6f8dc94e071d7a17f6ba0",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "portainer",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "9b98f9495261845bf8f216f570ec9247289bccf9607a471c2dc66f1f3dfb77f3",
+  "Names": [
+   "/watchtower"
+  ],
+  "Image": "containrrr/watchtower:1.7.1",
+  "ImageID": "sha256:8c1db9fedd90a8ab92e9a33287369995a3843e68ef04bb430991c36089adc978",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "watchtower",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  }
+ },
+ {
+  "Id": "62dab2e5188e20148616fbae683846a3b04d52959315514b7060407804914320",
+  "Names": [
+   "/dokploy-traefik"
+  ],
+  "Image": "traefik:v3.6.1",
+  "ImageID": "sha256:76d08e84df7f0b5a7c6051c8cebe4ee29aa2c7e4409db487a86a87fd7cf8a44e",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "org.opencontainers.image.title": "Traefik"
+  }
+ },
+ {
+  "Id": "406a1a0cea7c92aa5455711b6dec91bfb29f1ee6262470c521d1e2a21d167ccb",
+  "Names": [
+   "/dokploy.1.95aca2b6ec54770bef3e7fc04"
+  ],
+  "Image": "dokploy/dokploy:v0.31.0",
+  "ImageID": "sha256:2af5a4f9977f067fdb9bccea89509249da5e2b4c91b5f9722b5c5ce415d9ac7a",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy",
+   "com.docker.swarm.task.id": "056d0f4775fe5f5d58718386c",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "c69a4015e4a0ba0efb530141108689ebff03897e70b0209245fb8a3c7748cd79",
+  "Names": [
+   "/dokploy-postgres.1.70129bcd5327002b39f022e98"
+  ],
+  "Image": "postgres:16",
+  "ImageID": "sha256:a35647c49bc8fa45d98b5bb5c151fafdd70f5f734f86ff01930daae179534745",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy-postgres",
+   "com.docker.swarm.task.id": "647c72d4b8ebb04afab5c62cb",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "0e22903c65beb8c4667a0b7e236805cff1cd2a1d6b1d4bfdb460e673e8b33276",
+  "Names": [
+   "/stellar-planner-x7k2.1.fa4b3671df183a27496e06d22"
+  ],
+  "Image": "stellar-planner-x7k2:latest",
+  "ImageID": "sha256:f2ffef2586ea08a36cafaa440885e3694da4032e2f3b71d747260f45d3560a83",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "stellar-planner-x7k2",
+   "com.docker.swarm.task.id": "c23b11f930225640de8314db1",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "622e096c08b638625915364453acf20c10f42d5dc69776846e5b02aa09804ee3",
+  "Names": [
+   "/shortless-app-p9q1.1.e8331589c27aaeb94b5b55795"
+  ],
+  "Image": "shortless-app-p9q1:latest",
+  "ImageID": "sha256:39ac74ac2b19c783af34f1bafab68527b5aaefd45e97d8eaa927cdd8ab7e2f8a",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "shortless-app-p9q1",
+   "com.docker.swarm.task.id": "764a0483e33d3605bf7d77676",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "6e3d1756671027b9eef3fef8a4ccd978a9b19cba196356d0235334a2e7a7d82e",
+  "Names": [
+   "/shortless-redis-m3n4.1.3bf0aa452f21e8fd95da19cb1"
+  ],
+  "Image": "redis:8",
+  "ImageID": "sha256:b784fd1c855fddbd4de5d20c5b70159bb2afa33512b77963c48b22890a96c954",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "shortless-redis-m3n4",
+   "com.docker.swarm.task.id": "06884b9c35d209d7e1e99f928",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "151fc6c925db1322c61875e4fc447affaa467a703073844cefdbf0e17f6b4df1",
+  "Names": [
+   "/compiler-ui-a5b6.1.92a3925352edf88002c619712"
+  ],
+  "Image": "compiler-ui-a5b6:latest",
+  "ImageID": "sha256:fc51d830e8cc81cfc06d3767aca2635b488fabc22344ac566856fd1ba4fb6d14",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "compiler-ui-a5b6",
+   "com.docker.swarm.task.id": "0789f4bf6a64772ae08786a68",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ },
+ {
+  "Id": "3e9fe7d0a21b820080170e397600cccc40d0ff3a6cb54cbcdbb316b70d0d7cd9",
+  "Names": [
+   "/dokploy-bridge-c7d8.1.02f066bdfb2ff8281061b1bdb"
+  ],
+  "Image": "dokploy-bridge-c7d8:latest",
+  "ImageID": "sha256:0ce7e1d1362ed7945e9075535d8dcc7d8380963b26f3c8e4a7cf4d04daade8f4",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy-bridge-c7d8",
+   "com.docker.swarm.task.id": "c27bdd3bd467fd02cb47a96f7",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  }
+ }
+]

@@ -1,0 +1,37 @@
+services:
+  db:
+    image: supabase/postgres:17.6.1.054
+    container_name: supabase-db
+    restart: unless-stopped
+    env_file: .env
+  envoy:
+    image: envoyproxy/envoy:v1.36.2
+    container_name: supabase-envoy
+    restart: unless-stopped
+  auth:
+    image: supabase/gotrue:v2.182.1
+    container_name: supabase-auth
+    restart: unless-stopped
+  rest:
+    image: postgrest/postgrest:v14.1
+    container_name: supabase-rest
+    restart: unless-stopped
+  realtime:
+    image: supabase/realtime:v2.63.0
+    container_name: supabase-realtime
+    restart: unless-stopped
+  storage:
+    image: supabase/storage-api:v1.32.0
+    container_name: supabase-storage
+    restart: unless-stopped
+  meta:
+    image: supabase/postgres-meta:v0.93.1
+    container_name: supabase-meta
+    restart: unless-stopped
+  studio:
+    image: supabase/studio:2026.11.03
+    container_name: supabase-studio
+    restart: unless-stopped
+networks:
+  homelab:
+    external: true

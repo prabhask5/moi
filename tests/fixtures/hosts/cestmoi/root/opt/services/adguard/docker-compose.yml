@@ -1,0 +1,8 @@
+services:
+  adguard:
+    image: adguard/adguardhome:v0.107.71
+    container_name: adguard
+    restart: unless-stopped
+networks:
+  homelab:
+    external: true

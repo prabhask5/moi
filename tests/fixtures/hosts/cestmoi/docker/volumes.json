@@ -1,0 +1,45 @@
+{
+ "Volumes": [
+  {
+   "Name": "57e568c64d0a511197b7bcd1776b4138d70321e3563eae2204fc11bd80254f98",
+   "Driver": "local",
+   "Mountpoint": "/var/lib/docker/volumes/57e568c64d0a511197b7bcd1776b4138d70321e3563eae2204fc11bd80254f98/_data",
+   "Scope": "local",
+   "Labels": null,
+   "Options": null
+  },
+  {
+   "Name": "dokploy-docker-config",
+   "Driver": "local",
+   "Mountpoint": "/var/lib/docker/volumes/dokploy-docker-config/_data",
+   "Scope": "local",
+   "Labels": null,
+   "Options": null
+  },
+  {
+   "Name": "dokploy-postgres-database",
+   "Driver": "local",
+   "Mountpoint": "/var/lib/docker/volumes/dokploy-postgres-database/_data",
+   "Scope": "local",
+   "Labels": null,
+   "Options": null
+  },
+  {
+   "Name": "shortless-redis-m3n4-data",
+   "Driver": "local",
+   "Mountpoint": "/var/lib/docker/volumes/shortless-redis-m3n4-data/_data",
+   "Scope": "local",
+   "Labels": null,
+   "Options": null
+  },
+  {
+   "Name": "stellar-data",
+   "Driver": "local",
+   "Mountpoint": "/var/lib/docker/volumes/stellar-data/_data",
+   "Scope": "local",
+   "Labels": null,
+   "Options": null
+  }
+ ],
+ "Warnings": null
+}

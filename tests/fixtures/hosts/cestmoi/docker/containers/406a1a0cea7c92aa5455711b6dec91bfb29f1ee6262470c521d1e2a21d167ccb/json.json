@@ -1,0 +1,108 @@
+{
+ "Id": "406a1a0cea7c92aa5455711b6dec91bfb29f1ee6262470c521d1e2a21d167ccb",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1034
+ },
+ "Image": "sha256:2af5a4f9977f067fdb9bccea89509249da5e2b4c91b5f9722b5c5ce415d9ac7a",
+ "Name": "/dokploy.1.95aca2b6ec54770bef3e7fc04",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/etc/dokploy",
+   "Destination": "/etc/dokploy",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "volume",
+   "Name": "dokploy-docker-config",
+   "Source": "/var/lib/docker/volumes/dokploy-docker-config/_data",
+   "Destination": "/root/.docker",
+   "Driver": "local",
+   "Mode": "z",
+   "RW": true
+  }
+ ],
+ "Config": {
+  "Hostname": "406a1a0cea7c",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "DATABASE_URL=postgres://dokploy:FAKEdokploydbpass@dokploy-postgres:5432/dokploy"
+  ],
+  "Cmd": null,
+  "Image": "dokploy/dokploy:v0.31.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy",
+   "com.docker.swarm.task.id": "056d0f4775fe5f5d58718386c",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "dokploy.1.95aca2b6ec54770bef3e7fc04",
+     "dokploy.1.95aca2b6ec54770bef3e7fc04",
+     "406a1a0cea7c"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "561c3ba7f8a4515404275487b4f53cd9a191d8e628bae8fb7ed498a15505cade",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.47",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:2f"
+   }
+  },
+  "Ports": {}
+ }
+}

@@ -1,0 +1,6 @@
+# stopped and removed long ago; the file stayed
+services:
+  wiki:
+    image: requarks/wiki:2
+  wiki-db:
+    image: postgres:15

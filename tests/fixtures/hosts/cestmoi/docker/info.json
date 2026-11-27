@@ -1,0 +1,13 @@
+{
+ "ID": "engcestmoi",
+ "Containers": 41,
+ "ServerVersion": "29.1.3",
+ "DockerRootDir": "/var/lib/docker",
+ "Driver": "overlayfs",
+ "Name": "cestmoi",
+ "Swarm": {
+  "LocalNodeState": "active",
+  "NodeID": "n0decestmoi",
+  "ControlAvailable": true
+ }
+}

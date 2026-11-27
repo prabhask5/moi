@@ -1,0 +1,114 @@
+{
+ "Id": "ec27c89ecfec3f5fd330894740d35e8a5fa8b1fcb432020d18ef051fc31025a9",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1019
+ },
+ "Image": "sha256:ac98300bf5c38d6bcf293aab05e07087003b664f35ef37acde8bbb6221ba9ebc",
+ "Name": "/scrutiny",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": [
+   "SYS_RAWIO",
+   "SYS_ADMIN"
+  ],
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": [
+   {
+    "PathOnHost": "/dev/sda",
+    "PathInContainer": "/dev/sda",
+    "CgroupPermissions": "rwm"
+   },
+   {
+    "PathOnHost": "/dev/nvme0",
+    "PathInContainer": "/dev/nvme0",
+    "CgroupPermissions": "rwm"
+   }
+  ]
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/monitoring/scrutiny/config",
+   "Destination": "/opt/scrutiny/config",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/run/udev",
+   "Destination": "/run/udev",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "ec27c89ecfec",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "ghcr.io/analogj/scrutiny:v0.8.1-omnibus",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "scrutiny",
+   "com.docker.compose.service": "scrutiny",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/scrutiny",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/scrutiny/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "scrutiny",
+     "scrutiny",
+     "ec27c89ecfec"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "b629b334507a4b2857d14f28600e6137be65e20665a18e789639a317fd84f516",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.31",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:1f"
+   }
+  },
+  "Ports": {}
+ }
+}

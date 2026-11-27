@@ -11,7 +11,7 @@
 #   - Containers that crashed and were auto-restarted since the last run
 # Disk space, SMART and disk temperatures live in storage-check.sh.
 
-KUMA_PUSH="http://uptime.home/api/push/FAKE_TOKEN"
+KUMA_PUSH="http://uptime.home/api/push/FAKEresourcesTok01"
 CPU_LIMIT=90      # % average over 5 min
 MEM_LIMIT=90      # % of RAM in use (excluding reclaimable cache)
 SWAP_LIMIT=80     # % of swap in use

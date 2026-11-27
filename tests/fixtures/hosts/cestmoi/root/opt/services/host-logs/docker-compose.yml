@@ -1,0 +1,8 @@
+services:
+  host-logs:
+    image: amir20/dozzle:v8.13.0
+    container_name: host-logs
+    restart: unless-stopped
+networks:
+  homelab:
+    external: true

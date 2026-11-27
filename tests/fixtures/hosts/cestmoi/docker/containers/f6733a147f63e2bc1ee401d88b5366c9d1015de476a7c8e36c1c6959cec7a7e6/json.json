@@ -1,0 +1,92 @@
+{
+ "Id": "f6733a147f63e2bc1ee401d88b5366c9d1015de476a7c8e36c1c6959cec7a7e6",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1003
+ },
+ "Image": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+ "Name": "/dozzle",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "f6733a147f63",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "amir20/dozzle:v8.13.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "dozzle",
+   "com.docker.compose.service": "dozzle",
+   "com.docker.compose.project.working_dir": "/opt/services/dozzle",
+   "com.docker.compose.project.config_files": "/opt/services/dozzle/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "dozzle",
+     "dozzle",
+     "f6733a147f63"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "bfdf2d080d31bb0b9efa1d627d89dd7b3b64a572d694beb65a6d28740a432636",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.13",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:0d"
+   }
+  },
+  "Ports": {}
+ }
+}
