@@ -83,6 +83,7 @@ Rules:
 | `/etc/moi/secrets.toml` | secrets (0600, root) |
 | `/var/lib/moi/state/` | git repo: `snapshot/` (stable), `NOTES.md`; `volatile/`, `CONTEXT.md`, `audit.md` are git-ignored |
 | `/var/lib/moi/moi.db` | SQLite: check state, sustained counters, monitor bindings (check → Kuma id + push token), heal cooldowns, schedule last-runs |
+| `/var/lib/moi/expect.json` | what should be running: what the last snapshot saw, frozen from a boot until that boot is verified |
 | `/var/lib/moi/archive/` | everything moi replaced or removed (legacy scripts, cron files, units) for rollback |
 | `/run/moi.sock` | daemon IPC |
 | `/run/moi-backup.lock` | held while a backup runs |

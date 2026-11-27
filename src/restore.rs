@@ -1,3 +1,6 @@
-//! Phased restore on new hardware, interactive storage mapping, DB-first import, verify and guided reboot.
+//! Rebuilding a server on new hardware, and proving afterwards — and after every boot — that
+//! everything that should run does.
 //!
-//! Spec: docs/spec/09-restore-verify.md. Status: stub — implemented in milestone M8 (docs/milestones.md).
+//! Spec: docs/spec/09-restore-verify.md.
+
+pub mod verify;

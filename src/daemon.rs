@@ -68,6 +68,8 @@ pub enum Work {
     Heal(Box<HealRule>, String),
     /// Once after the machine started: firewall, mounts, compose stacks.
     Boot,
+    /// The check after a boot that everything that ran before it runs again.
+    Verify,
     /// Put the managed chains back (Docker restarted and may have rebuilt its own).
     Firewall,
 }
@@ -82,6 +84,7 @@ impl std::fmt::Debug for Work {
             Work::Snapshot => f.write_str("Snapshot"),
             Work::Heal(rule, _) => write!(f, "Heal({})", rule.name),
             Work::Boot => f.write_str("Boot"),
+            Work::Verify => f.write_str("Verify"),
             Work::Firewall => f.write_str("Firewall"),
         }
     }
@@ -249,10 +252,21 @@ impl Daemon {
         let mut boot = on_demand("boot".to_string(), Work::Boot);
         let booted: Option<String> =
             db.conn().query_row("SELECT value FROM settings WHERE key = 'daemon.boot_id'", [], |r| r.get(0)).ok();
-        if jobs::boot_id(core.host.as_ref()).is_some_and(|id| Some(id) != booted) {
+        let this_boot = jobs::boot_id(core.host.as_ref());
+        if this_boot.as_ref().is_some_and(|id| Some(id) != booted.as_ref()) {
             boot.next = self.started;
+            // from here until it has been verified, this boot is held to what ran before it
+            if let Some(id) = &this_boot {
+                crate::restore::verify::expect_verification(&db, id);
+            }
         }
         self.jobs.push(boot);
+        // the verification a boot is owed: some minutes after it, so that everything had time to start
+        let mut verify = on_demand("verify".to_string(), Work::Verify);
+        if crate::restore::verify::pending(&db).is_some() {
+            verify.next = self.started + i64::try_from(core.config.boot.verify_after.as_secs()).unwrap_or(240);
+        }
+        self.jobs.push(verify);
         Ok(())
     }
 

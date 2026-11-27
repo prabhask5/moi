@@ -352,7 +352,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             }
             return Ok(());
         }
-        Command::Restore(_) | Command::Verify => ("restore & verify", "M8"),
+        Command::Verify => return verify(cli, host, out),
+        Command::Restore(_) => ("restore", "M8"),
         Command::Migrate(_) => ("migration", "M9"),
     };
     Err(Error::NotImplemented { what, milestone })
@@ -1488,4 +1489,25 @@ fn pull_with(
         let _ = writeln!(out, "next: moi restore --bundle {} --dry-run", pulled.dir);
     }
     Ok(())
+}
+
+fn verify(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::restore::verify;
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let config = Arc::new(loaded.config);
+    // with nothing recorded yet there is nothing to hold the machine to
+    if !host.exists(&state.snapshot()) {
+        crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
+    }
+    let items = verify::verify(&host, &config, &state, &db)?;
+    let failed = items.iter().filter(|i| !i.ok).count();
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "failed": failed, "checks": items }));
+    } else {
+        let _ = write!(out, "{}", loaded.masker.mask(&verify::render(&items)));
+    }
+    if failed == 0 { Ok(()) } else { Err(Error::ProblemsFound) }
 }

@@ -1,0 +1,1 @@
+restic cat config

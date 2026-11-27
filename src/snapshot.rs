@@ -124,6 +124,8 @@ pub fn capture(
     crate::state::notes::update(host.as_ref(), state)?;
     let commit = crate::state::history::record(host.as_ref(), state)?;
     crate::context::write(host.as_ref(), config, state, masker)?;
+    // what this snapshot saw is what the next boot is held to
+    crate::restore::verify::refresh(host.as_ref(), state, db);
     Ok((report, commit))
 }
 
