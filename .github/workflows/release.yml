@@ -1,0 +1,89 @@
+name: Release
+
+# Tag vX.Y.Z on main -> static binaries, .deb/.rpm, checksums, attestations, GitHub Release,
+# crates.io (package `cestmoi`), Homebrew tap. Spec: docs/spec/12-distribution.md (milestone M10
+# finishes the packaging steps marked TODO).
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: mlugg/setup-zig@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild,cargo-deb,cargo-generate-rpm
+      - name: Build
+        env:
+          MOI_GIT_SHA: ${{ github.sha }}
+        run: cargo zigbuild --release --target ${{ matrix.target }}
+      - name: Package tarball
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          d=moi-$v-${{ matrix.target }}
+          mkdir -p dist/$d
+          cp target/${{ matrix.target }}/release/moi README.md LICENSE dist/$d/
+          tar -C dist -czf dist/$d.tar.gz $d
+          rm -rf dist/$d
+      # TODO(M10): cargo deb / cargo generate-rpm with the unit file, completions and man page
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS
+      - name: Release notes from CHANGELOG
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+
+  crates-io:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish (skipped until the CARGO_REGISTRY_TOKEN secret exists)
+        if: env.CARGO_REGISTRY_TOKEN != ''
+        run: cargo publish --locked
+
+  # TODO(M10): homebrew tap update (prabhask5/homebrew-tap) using HOMEBREW_TAP_TOKEN

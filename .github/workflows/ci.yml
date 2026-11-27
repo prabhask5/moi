@@ -1,0 +1,137 @@
+name: CI
+
+# Every job here must pass before a pull request can merge. Branch protection requires only the
+# `required` job at the bottom, which fails unless all the others succeeded, so jobs can be added
+# or removed without changing repository settings (same pattern as prabhask5/stellar).
+#
+# Integration tests that need real services (Uptime Kuma, Postgres, restic) run in the `integration`
+# job with service containers; they are #[ignore] locally unless MOI_IT=1.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  static:
+    name: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Tests live in tests/
+        run: scripts/check-tests-location.sh
+      - name: No secrets committed
+        run: scripts/check-secrets.sh
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Links in the docs
+        run: python3 scripts/check-links.py
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-features
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      kuma:
+        image: louislam/uptime-kuma:1.23.17
+        ports: ["3001:3001"]
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: fake-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install restic
+        run: sudo apt-get update -q && sudo apt-get install -y -q restic
+      - name: Integration tests (ignored tests, real services)
+        env:
+          MOI_IT: "1"
+          MOI_IT_KUMA_URL: http://localhost:3001
+          MOI_IT_PG_URL: postgres://postgres:fake-password@localhost:5432/postgres
+        run: cargo test --all-features -- --ignored
+
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - uses: mlugg/setup-zig@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+      - run: cargo zigbuild --release --target ${{ matrix.target }}
+      - name: Static binary check
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          file target/${{ matrix.target }}/release/moi
+          target/${{ matrix.target }}/release/moi --version
+
+  budgets:
+    name: budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: scripts/budgets.sh
+
+  required:
+    name: required
+    if: always()
+    needs: [static, unit, integration, build, budgets]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null

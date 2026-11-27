@@ -1,0 +1,13 @@
+# Performance budgets (docs/spec/13-performance.md). Checked by scripts/budgets.sh in CI.
+# Metrics without a measurement yet are skipped and listed as "pending" in the job summary.
+[budgets]
+version_ms = 10
+binary_mb = 15
+check_resources_storage_ms = 50
+check_services_ms = 200
+snapshot_cold_ms = 2000
+snapshot_warm_ms = 500
+context_ms = 200
+audit_ms = 10000
+daemon_rss_mb = 30
+daemon_cpu_percent = 0.5

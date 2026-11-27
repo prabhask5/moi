@@ -1,0 +1,41 @@
+# /etc/serverstate.conf — settings for serverstate (bash syntax, sourced)
+
+# Where state + history live (git repo, root-only). Add this path to your data backup too.
+STATE_DIR=/var/lib/serverstate
+
+# --- R2 upload of the encrypted state bundle (rclone remote:bucket/path) ---------------------
+# Use a dedicated prefix per server. The remote must already work for root: `sudo rclone lsd r2:`
+RCLONE_REMOTE=""                    # e.g. "r2:my-backups/server-state/myserver"
+RCLONE_FLAGS=""                     # e.g. "--s3-no-check-bucket"
+PASSPHRASE_FILE=/root/.serverstate-passphrase   # bundle encryption key — KEEP A COPY IN YOUR PASSWORD MANAGER
+KEEP_REMOTE_DAYS=60                 # dated bundles older than this are deleted from R2 (latest is kept)
+AUTO_PUSH=yes                       # timer/watcher also upload when something changed
+AUTO_PUSH_MIN_INTERVAL=3600         # …but at most once per this many seconds
+
+# --- Your existing data backup ----------------------------------------------------------------
+# Paths your backup job uploads. Only used to warn about data that is NOT backed up.
+BACKUP_PATHS=""                     # e.g. "/srv /mnt/ssd/appdata /var/lib/docker/volumes /var/lib/serverstate /home"
+# Paths you deliberately do NOT back up (e.g. re-downloadable media); shown as "intentional", not as gaps
+NOT_BACKED_UP_OK=""                 # e.g. "/mnt/storage/media /var/lib/incus/disks"
+# Command that runs your backup (used by `serverstate final-backup` during a hardware move)
+BACKUP_CMD=""                       # e.g. "/usr/local/bin/backup-to-r2.sh"
+# Command that restores ALL data onto a new machine (used by `serverstate restore`, phase "data")
+BACKUP_RESTORE_CMD=""               # e.g. "restic -r s3:https://<acct>.r2.cloudflarestorage.com/bucket restore latest --target /"
+
+# --- What to capture --------------------------------------------------------------------------
+# Roots whose DIRECTORY structure (not file contents) is recorded, e.g. your SSD + HDD mounts.
+# "auto" = every real mounted filesystem except / /boot /var + /srv /opt /data /home /mnt /media
+DATA_ROOTS=auto                     # e.g. "/mnt/ssd /mnt/hdd /srv"
+TREE_DEPTH=4                        # how deep to record directory trees
+TREE_SIZES=no                       # yes = also record du sizes (slow on big HDDs)
+COMPOSE_SEARCH_PATHS="/opt /srv /home /root /docker /data /mnt"   # where to look for compose files
+SCRIPT_DIRS="/usr/local/bin /usr/local/sbin /root/bin /root/scripts /home/*/bin /home/*/scripts /opt/scripts"
+EXTRA_CAPTURE=""                    # any other files/dirs to capture, e.g. "/srv/configs /opt/myapp/config"
+MAX_FILE_KB=1024                    # files bigger than this are not copied into the state
+# directory names skipped inside compose stack dirs (data, not config)
+PRUNE_DIRS=".git node_modules __pycache__ .cache cache logs log tmp temp data db database postgres postgresql pgdata mysql mariadb redis media library transcodes thumbnails thumbs backups backup downloads"
+
+# --- CONTEXT.md for Claude --------------------------------------------------------------------
+# Readable copies of CONTEXT.md (owner set from the target dir). Point Claude Code / uploads here.
+CONTEXT_COPIES=""                   # e.g. "/home/me/SERVER_CONTEXT.md"
+WATCH_DEBOUNCE=120                  # watcher waits this many quiet seconds before snapshotting

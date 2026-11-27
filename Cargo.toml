@@ -1,0 +1,54 @@
+[package]
+name = "cestmoi"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "moi — one binary that runs a Linux server: state capture, AI context, health checks, Uptime Kuma sync, backups and one-command rebuilds"
+license = "MIT"
+repository = "https://github.com/prabhask5/moi"
+homepage = "https://github.com/prabhask5/moi"
+readme = "README.md"
+keywords = ["server", "backup", "monitoring", "homelab", "uptime-kuma"]
+categories = ["command-line-utilities"]
+exclude = ["reference/", "tests/fixtures/", ".github/"]
+default-run = "moi"
+
+[[bin]]
+name = "moi"
+path = "src/main.rs"
+
+[lib]
+name = "cestmoi"
+path = "src/lib.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env", "wrap_help"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+toml = "0.9"
+
+[dev-dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+print_stderr = "allow"
+large_enum_variant = "allow"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+debug = 1

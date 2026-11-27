@@ -1,0 +1,30 @@
+# 14 — Security
+
+moi runs as root and holds the keys to the server's backups and monitoring. Rules:
+
+- **Secrets** only in `/etc/moi/secrets.toml` (0600 root, refused if more permissive) or `MOI_SECRET_*` env. Never in `moi.toml`, logs, journal, CONTEXT.md, `--json` output, panic messages or commit messages. `redact` is applied to every string that leaves the process except pushes to their own endpoint.
+- **State dir** `/var/lib/moi` is 0700 root: it contains copies of `/etc/shadow`, `.env` files, SSH keys. Off-site it is protected by restic's encryption.
+- **Network egress** only to configured endpoints: Kuma URL, restic repository, Cloudflare GraphQL (guard), public URLs under `checks.edge`, HTTP checks. No telemetry, no update checks.
+- **Destructive operations** need explicit confirmation and keep a backup: disk format (typed `FORMAT /dev/x`), firewall apply over SSH (auto-rollback), file overwrite during restore (`*.pre-moi`), migration switch (archive + rollback), monitor deletion (only moi-owned, only with `--prune`).
+- **Kuma credentials**: used only for `monitors sync`; the daemon logs in only when creating container monitors (`containers = true`). Prefer a dedicated Kuma user if Kuma supports it.
+- **Supply chain**: `cargo deny` (advisories, licenses: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/MPL-2.0 only, bans, sources: crates.io only), `Cargo.lock` committed, GitHub Actions pinned by SHA, release artifacts with checksums and build attestations.
+- **Reporting vulnerabilities**: see `SECURITY.md`.
+
+## Dependencies
+
+Each dependency and why (keep this list current when adding one):
+
+| Crate | Why |
+|---|---|
+| clap | CLI parsing, completions |
+| serde, toml, serde_json | config, state files, Docker/Kuma payloads |
+| thiserror | library errors |
+| tokio | daemon runtime, async I/O |
+| (planned) hyper / hyper-util / hyperlocal or bollard | Docker Engine API over the unix socket |
+| (planned) rustls, tokio-rustls, webpki-roots or rustls-native-certs | staged HTTPS probes, Kuma, R2 guard |
+| (planned) rusqlite (bundled) | `moi.db`, read-only `kuma.db`, SQLite online backups |
+| (planned) gix | state history without a git binary |
+| (planned) zbus | systemd over D-Bus |
+| (planned) notify | inotify watcher |
+| (planned) rust_socketio or a minimal socket.io v4 client | Uptime Kuma API |
+| (planned) flate2 / zstd, tar | dumps and local archives |
