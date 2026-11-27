@@ -53,10 +53,10 @@ Specs: 05
 ## M5 — Uptime Kuma
 Specs: 06
 - [x] Read-only kuma.db inventory; push client (one status/msg)
-- [ ] socket.io client: login, monitor list, add/edit/pause/tag, docker hosts (1.23 + 2.x)
-- [ ] Adoption planner + `moi monitors sync [--dry-run] [--update] [--prune]`
-- [ ] CI integration job with `louislam/uptime-kuma:1.23.17`
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] socket.io client: login, monitor list, add/edit/pause/tag, docker hosts (1.23 + 2.x)
+- [x] Adoption planner + `moi monitors sync [--dry-run] [--update] [--prune]`
+- [x] CI integration job with `louislam/uptime-kuma:1.23.17`
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M6 — Daemon
 Specs: 10

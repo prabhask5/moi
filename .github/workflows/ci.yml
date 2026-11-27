@@ -67,6 +67,12 @@ jobs:
       kuma:
         image: louislam/uptime-kuma:1.23.17
         ports: ["3001:3001"]
+      # the 2.x line: other columns, other required fields (SQLite chosen up front, so no setup page for it)
+      kuma2:
+        image: louislam/uptime-kuma:2
+        env:
+          UPTIME_KUMA_DB_TYPE: sqlite
+        ports: ["3002:3001"]
       postgres:
         image: postgres:16
         env:
@@ -94,6 +100,7 @@ jobs:
         env:
           MOI_IT: "1"
           MOI_IT_KUMA_URL: http://localhost:3001
+          MOI_IT_KUMA2_URL: http://localhost:3002
           MOI_IT_PG_URL: postgres://postgres:fake-password@localhost:5432/postgres
           MOI_IT_S3_ENDPOINT: http://localhost:8000
           MOI_IT_S3_ACCESS_KEY: fakeaccesskey

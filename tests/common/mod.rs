@@ -1,6 +1,8 @@
 //! Shared helpers for integration tests. Everything runs against fixture hosts, never the real system.
 #![allow(dead_code, clippy::unwrap_used, clippy::expect_used)]
 
+pub mod fake_kuma;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
