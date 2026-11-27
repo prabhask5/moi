@@ -1,0 +1,4 @@
+/usr/local/bin/ctop	ELF executable
+/usr/local/bin/serverstate	script (/usr/bin/env bash)
+/usr/local/bin/yt-dlp	script (/root/.local/share/pipx/venvs/yt-dlp/bin/python)
+/usr/local/sbin/host-firewall	script (/bin/bash)

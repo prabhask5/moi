@@ -1,0 +1,3 @@
+/dev/sda1: LABEL="storage" UUID="aaaaaaaa-0000-4000-8000-000000000001" TYPE="ext4"
+/dev/nvme0n1p1: UUID="1111-2222" TYPE="vfat"
+/dev/mapper/ubuntu--vg-ubuntu--lv: UUID="aaaaaaaa-0000-4000-8000-000000000003" TYPE="ext4"

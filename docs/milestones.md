@@ -17,7 +17,7 @@ The repo must be publishable after any milestone; M12 makes it public-ready for 
 - [x] rustfmt, clippy lint set, cargo-deny, tests/ layout, CI with `required` gate, release workflow skeleton, installer skeleton
 - [x] Spec, CLAUDE.md, reference material (prototype + redacted legacy scripts)
 
-## M1 — Foundations: host, config, state, CLI plumbing
+## M1 — Foundations: host, config, state, CLI plumbing ✅
 Specs: 01, CLAUDE.md §3 (host), 14
 - [x] `host::Host` trait with `RealHost` and `FixtureHost` (root prefix, canned command outputs, fake clock)
 - [x] Config schema with defaults, `secret:` resolution, all-errors validation with locations; `moi config check`
@@ -26,13 +26,13 @@ Specs: 01, CLAUDE.md §3 (host), 14
 - [x] `examples/moi.toml` golden test against defaults
 - [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
-## M2 — Snapshot & history
+## M2 — Snapshot & history ✅
 Specs: 02
 - [x] Docker Engine API client over the unix socket (containers, networks, volumes, services, events, exec, logs) with fixture-replay tests
 - [x] All collectors, parallel, with timeouts; stable/volatile split; incremental capture cache
 - [x] Git history via gix, commit summaries incl. docker/swarm diffs; `moi log`, `moi diff`
-- [ ] Fixture host `cestmoi` built from the prototype's real output (redacted); golden snapshot test
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Fixture host `cestmoi` built from the prototype's real output (redacted); golden snapshot test
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M3 — Context, notes, audit
 Specs: 03, 04

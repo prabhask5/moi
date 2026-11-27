@@ -1,0 +1,4 @@
+model: Intel(R) Core(TM) i5-9500T CPU @ 2.20GHz
+sockets: 1
+cores per socket: 6
+threads: 6

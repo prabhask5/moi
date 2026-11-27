@@ -1,0 +1,15 @@
+/home/prabhas/bin/weekly-note.sh
+/opt/scripts/backup.sh
+/opt/scripts/backup.sh.bak
+/opt/scripts/disk-audit.sh
+/opt/scripts/homelab-up.sh
+/opt/scripts/lib/common.sh
+/opt/scripts/lib/notify.sh
+/opt/scripts/offsite-backup.sh
+/opt/scripts/resource-check.sh
+/opt/scripts/service-check.sh
+/opt/scripts/storage-check.sh
+/opt/scripts/traefik-config-guard.py
+/opt/scripts/traefik-homelab.sh
+/usr/local/bin/serverstate
+/usr/local/sbin/host-firewall

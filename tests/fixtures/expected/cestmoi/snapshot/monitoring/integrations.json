@@ -1,0 +1,61 @@
+[
+  {
+    "base": "http://uptime.home",
+    "called_by": [
+      "/etc/systemd/system/server-backup.service: ExecStart=/opt/scripts/backup.sh"
+    ],
+    "file": "/opt/scripts/backup.sh",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEbackupTok00004"
+  },
+  {
+    "base": "http://uptime.home",
+    "called_by": [],
+    "file": "/opt/scripts/backup.sh.bak",
+    "kind": "uptime-kuma-push",
+    "stale_copy": true,
+    "token": "FAKEoldBackupTok"
+  },
+  {
+    "base": "http://uptime.home",
+    "called_by": [
+      "/etc/cron.d/resource-check: */5 * * * * root flock -n /run/resource-check.lock /opt/scripts/resource-check.sh 2>&1 | systemd-cat -t resource-check"
+    ],
+    "file": "/opt/scripts/resource-check.sh",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEresourcesTok01"
+  },
+  {
+    "base": "http://uptime.home",
+    "called_by": [
+      "/etc/cron.d/service-check: */5 * * * * root flock -n /run/service-check.lock /opt/scripts/service-check.sh 2>&1 | systemd-cat -t service-check",
+      "/etc/systemd/system/homelab-selfcheck.service: ExecStart=/opt/scripts/service-check.sh"
+    ],
+    "file": "/opt/scripts/service-check.sh",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEservicesTok002"
+  },
+  {
+    "base": "http://uptime.home",
+    "called_by": [
+      "/etc/cron.d/storage-check: */5 * * * * root flock -n /run/storage-check.lock /opt/scripts/storage-check.sh 2>&1 | systemd-cat -t storage-check"
+    ],
+    "file": "/opt/scripts/storage-check.sh",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEstorageTok0003"
+  },
+  {
+    "base": "http://uptime-kuma:3001",
+    "called_by": [],
+    "file": "/opt/services/ddns/.env",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEddnsPush01"
+  },
+  {
+    "base": "http://uptime-kuma:3001",
+    "container": "ddns",
+    "env": "UPTIMEKUMA",
+    "kind": "uptime-kuma-push",
+    "token": "FAKEddnsPush01"
+  }
+]

@@ -1,0 +1,3 @@
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+enp1s0           UP             aa:bb:cc:dd:ee:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+incusbr0         UP             00:16:3e:00:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>

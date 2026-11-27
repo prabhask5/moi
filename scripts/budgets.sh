@@ -20,7 +20,19 @@ for _ in range(5):
 print(min(runs) // 1000000)' "$bin")
   ok=$(awk -v m="$best" -v b="$(val version_ms)" 'BEGIN{print (m <= b*1.1) ? "ok" : "OVER"}'); [[ $ok == ok ]] || fail=1
   report version_ms "$(val version_ms)" "$best" "$ok"
-  for k in check_resources_storage_ms check_services_ms snapshot_cold_ms snapshot_warm_ms context_ms audit_ms daemon_rss_mb daemon_cpu_percent; do
+  # snapshot of the cestmoi fixture into a throwaway overlay: first run cold, then the best of 3 warm runs
+  overlay=$(mktemp -d)
+  read -r cold warm < <(MOI_ROOT=tests/fixtures/hosts/cestmoi MOI_ROOT_OVERLAY="$overlay" python3 -c 'import subprocess, sys, time
+def run():
+    t = time.perf_counter_ns(); subprocess.run([sys.argv[1], "snapshot", "--quiet"], stdout=subprocess.DEVNULL, check=True); return (time.perf_counter_ns() - t) // 1000000
+cold = run(); print(cold, min(run() for _ in range(3)))' "$bin")
+  rm -rf "$overlay"
+  for pair in "snapshot_cold_ms:$cold" "snapshot_warm_ms:$warm"; do
+    k=${pair%%:*}; m=${pair##*:}
+    ok=$(awk -v m="$m" -v b="$(val "$k")" 'BEGIN{print (m <= b*1.1) ? "ok" : "OVER"}'); [[ $ok == ok ]] || fail=1
+    report "$k" "$(val "$k")" "$m" "$ok"
+  done
+  for k in check_resources_storage_ms check_services_ms context_ms audit_ms daemon_rss_mb daemon_cpu_percent; do
     report "$k" "$(val "$k")" "—" "pending"
   done
 } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"

@@ -1,0 +1,5 @@
+/ /dev/mapper/ubuntu--vg-ubuntu--lv ext4 rw,relatime
+/boot /dev/nvme0n1p2 ext4 rw,relatime
+/boot/efi /dev/nvme0n1p1 vfat rw,relatime
+/mnt/storage /dev/sda1 ext4 rw,relatime
+/var/lib/incus/storage-pools/default /dev/loop0 btrfs rw,relatime

@@ -1,0 +1,8 @@
+bash
+chrony
+docker-compose-v2
+docker.io
+incus
+linux-image-generic
+restic
+smartmontools

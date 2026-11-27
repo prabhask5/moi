@@ -1,0 +1,127 @@
+[
+  {
+    "driver": "bridge",
+    "id": "181bd4f14485bdc90d1741e7172e5845e7ca8e9320bb9def589f85dc2d0bc40a",
+    "name": "bridge",
+    "options": {
+      "com.docker.network.bridge.name": "docker0"
+    },
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.17.0.1",
+        "subnet": "172.17.0.0/16"
+      }
+    ]
+  },
+  {
+    "driver": "bridge",
+    "id": "0df5c6b9e1d294ae96fc93aff276922b13798fe59083a05d9afead223628b872",
+    "labels": {
+      "com.docker.compose.network": "default",
+      "com.docker.compose.project": "database"
+    },
+    "name": "database_default",
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.21.0.1",
+        "subnet": "172.21.0.0/16"
+      }
+    ]
+  },
+  {
+    "driver": "bridge",
+    "id": "f2dd0a24e1047495915a16667efb66080451fb0c4ad63a2a447233802a262738",
+    "name": "docker_gwbridge",
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.18.0.1",
+        "subnet": "172.18.0.0/16"
+      }
+    ]
+  },
+  {
+    "attachable": true,
+    "driver": "overlay",
+    "id": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "name": "dokploy-network",
+    "scope": "swarm",
+    "subnets": [
+      {
+        "gateway": "10.0.0.1",
+        "subnet": "10.0.1.0/24"
+      }
+    ]
+  },
+  {
+    "attachable": true,
+    "driver": "bridge",
+    "id": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "name": "homelab",
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.19.0.1",
+        "subnet": "172.19.0.0/16"
+      }
+    ]
+  },
+  {
+    "driver": "host",
+    "id": "213cc7d76d0e85b51ec951b1447ace8cfd904c60c764708caa6b885ba961feb5",
+    "name": "host",
+    "scope": "local"
+  },
+  {
+    "driver": "overlay",
+    "id": "d595ae317e754060dee3db45b82d3e18038a4ebf89c7350283ba0c4c802e90e7",
+    "name": "ingress",
+    "scope": "swarm",
+    "subnets": [
+      {
+        "gateway": "10.0.0.1",
+        "subnet": "10.0.0.0/24"
+      }
+    ]
+  },
+  {
+    "driver": "null",
+    "id": "8e9345a310b240518d990ccad6705032eb3ebcb1954a46acf7b5498a3165bb86",
+    "name": "none",
+    "scope": "local"
+  },
+  {
+    "driver": "bridge",
+    "id": "1e292113672ede096d4c39a30fd72eae884af69ae02877d01f16ef71848a2d01",
+    "labels": {
+      "com.docker.compose.network": "default",
+      "com.docker.compose.project": "outline"
+    },
+    "name": "outline_default",
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.20.0.1",
+        "subnet": "172.20.0.0/16"
+      }
+    ]
+  },
+  {
+    "driver": "bridge",
+    "id": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
+    "labels": {
+      "com.docker.compose.network": "default",
+      "com.docker.compose.project": "yams"
+    },
+    "name": "yams_default",
+    "scope": "local",
+    "subnets": [
+      {
+        "gateway": "172.22.0.1",
+        "subnet": "172.22.0.0/16"
+      }
+    ]
+  }
+]

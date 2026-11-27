@@ -1,0 +1,8 @@
+PV             VG        Fmt  Attr PSize    PFree
+/dev/nvme0n1p3 ubuntu-vg lvm2 a--  <235.43g    0 
+
+VG        #PV #LV #SN Attr   VSize    VFree
+ubuntu-vg   1   1   0 wz--n- <235.43g    0 
+
+LV        VG        Attr       LSize
+ubuntu-lv ubuntu-vg -wi-ao---- <235.43g

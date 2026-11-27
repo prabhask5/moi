@@ -1,0 +1,321 @@
+[
+  {
+    "config_files": [
+      "/opt/services/adguard/docker-compose.yml"
+    ],
+    "containers": [
+      "adguard"
+    ],
+    "defined_services": [
+      "adguard"
+    ],
+    "env_files": [],
+    "project": "adguard",
+    "services": [
+      "adguard"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/adguard"
+  },
+  {
+    "config_files": [
+      "/opt/services/cloudflared/docker-compose.yml"
+    ],
+    "containers": [
+      "cloudflared"
+    ],
+    "defined_services": [
+      "cloudflared"
+    ],
+    "env_files": [
+      "/opt/services/cloudflared/.env"
+    ],
+    "project": "cloudflared",
+    "services": [
+      "cloudflared"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/cloudflared"
+  },
+  {
+    "config_files": [
+      "/opt/services/database/docker-compose.yml"
+    ],
+    "containers": [
+      "supabase-auth",
+      "supabase-db",
+      "supabase-envoy",
+      "supabase-meta",
+      "supabase-realtime",
+      "supabase-rest",
+      "supabase-storage",
+      "supabase-studio"
+    ],
+    "defined_services": [
+      "db",
+      "envoy",
+      "auth",
+      "rest",
+      "realtime",
+      "storage",
+      "meta",
+      "studio"
+    ],
+    "env_files": [
+      "/opt/services/database/.env"
+    ],
+    "project": "database",
+    "services": [
+      "auth",
+      "db",
+      "envoy",
+      "meta",
+      "realtime",
+      "rest",
+      "storage",
+      "studio"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/database"
+  },
+  {
+    "config_files": [
+      "/opt/services/ddns/docker-compose.yml"
+    ],
+    "containers": [
+      "ddns"
+    ],
+    "defined_services": [
+      "ddns"
+    ],
+    "env_files": [
+      "/opt/services/ddns/.env"
+    ],
+    "project": "ddns",
+    "services": [
+      "ddns"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/ddns"
+  },
+  {
+    "config_files": [
+      "/opt/services/dozzle/docker-compose.yml"
+    ],
+    "containers": [
+      "dozzle"
+    ],
+    "defined_services": [
+      "dozzle"
+    ],
+    "env_files": [],
+    "project": "dozzle",
+    "services": [
+      "dozzle"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/dozzle"
+  },
+  {
+    "config_files": [
+      "/opt/services/monitoring/glances/docker-compose.yml"
+    ],
+    "containers": [
+      "glances"
+    ],
+    "defined_services": [
+      "glances"
+    ],
+    "env_files": [],
+    "project": "glances",
+    "services": [
+      "glances"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/monitoring/glances"
+  },
+  {
+    "config_files": [
+      "/opt/services/homepage/docker-compose.yml"
+    ],
+    "containers": [
+      "homepage"
+    ],
+    "defined_services": [
+      "homepage"
+    ],
+    "env_files": [],
+    "project": "homepage",
+    "services": [
+      "homepage"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/homepage"
+  },
+  {
+    "config_files": [
+      "/opt/services/host-logs/docker-compose.yml"
+    ],
+    "containers": [
+      "host-logs"
+    ],
+    "defined_services": [
+      "host-logs"
+    ],
+    "env_files": [],
+    "project": "host-logs",
+    "services": [
+      "host-logs"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/host-logs"
+  },
+  {
+    "config_files": [
+      "/opt/services/old-wiki/docker-compose.yml"
+    ],
+    "containers": [],
+    "defined_services": [
+      "wiki",
+      "wiki-db"
+    ],
+    "env_files": [],
+    "project": "old-wiki",
+    "services": [],
+    "source": "found on disk (no containers)",
+    "workdir": "/opt/services/old-wiki"
+  },
+  {
+    "config_files": [
+      "/opt/services/outline/docker-compose.yml"
+    ],
+    "containers": [
+      "outline",
+      "outline-postgres",
+      "outline-redis"
+    ],
+    "defined_services": [
+      "outline",
+      "postgres",
+      "redis"
+    ],
+    "env_files": [
+      "/opt/services/outline/.env"
+    ],
+    "project": "outline",
+    "services": [
+      "outline",
+      "postgres",
+      "redis"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/outline"
+  },
+  {
+    "config_files": [
+      "/opt/services/monitoring/scrutiny/docker-compose.yml"
+    ],
+    "containers": [
+      "scrutiny"
+    ],
+    "defined_services": [
+      "scrutiny"
+    ],
+    "env_files": [],
+    "project": "scrutiny",
+    "services": [
+      "scrutiny"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/monitoring/scrutiny"
+  },
+  {
+    "config_files": [
+      "/opt/services/seerr/docker-compose.yml"
+    ],
+    "containers": [
+      "seerr"
+    ],
+    "defined_services": [
+      "seerr"
+    ],
+    "env_files": [],
+    "project": "seerr",
+    "services": [
+      "seerr"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/seerr"
+  },
+  {
+    "config_files": [
+      "/opt/services/monitoring/uptime-kuma/docker-compose.yml"
+    ],
+    "containers": [
+      "uptime-kuma"
+    ],
+    "defined_services": [
+      "uptime-kuma"
+    ],
+    "env_files": [],
+    "project": "uptime-kuma",
+    "services": [
+      "uptime-kuma"
+    ],
+    "source": "containers",
+    "workdir": "/opt/services/monitoring/uptime-kuma"
+  },
+  {
+    "config_files": [
+      "/opt/yams/docker-compose.yml"
+    ],
+    "containers": [
+      "bazarr",
+      "bookorbit",
+      "bookorbit-db",
+      "gluetun",
+      "jellyfin",
+      "portainer",
+      "prowlarr",
+      "qbittorrent",
+      "radarr",
+      "sabnzbd",
+      "sonarr",
+      "watchtower"
+    ],
+    "defined_services": [
+      "gluetun",
+      "qbittorrent",
+      "sabnzbd",
+      "jellyfin",
+      "sonarr",
+      "radarr",
+      "prowlarr",
+      "bazarr",
+      "bookorbit",
+      "bookorbit-db",
+      "portainer",
+      "watchtower"
+    ],
+    "env_files": [
+      "/opt/yams/.env"
+    ],
+    "project": "yams",
+    "services": [
+      "bazarr",
+      "bookorbit",
+      "bookorbit-db",
+      "gluetun",
+      "jellyfin",
+      "portainer",
+      "prowlarr",
+      "qbittorrent",
+      "radarr",
+      "sabnzbd",
+      "sonarr",
+      "watchtower"
+    ],
+    "source": "containers",
+    "workdir": "/opt/yams"
+  }
+]

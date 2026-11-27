@@ -1,0 +1,15 @@
+*filter
+:INPUT DROP
+:FORWARD DROP
+:OUTPUT ACCEPT
+:DOCKER-USER -
+:f2b-sshd -
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m multiport --dports 22 -j f2b-sshd
+-A FORWARD -j DOCKER-USER
+-A DOCKER-USER -m comment --comment "Intra-network container traffic" -j RETURN
+-A DOCKER-USER -m comment --comment "Swarm outbound Internet" -j RETURN
+-A DOCKER-USER -j DROP
+-A f2b-sshd -j RETURN
+COMMIT
