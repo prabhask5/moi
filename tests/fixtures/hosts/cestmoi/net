@@ -1,0 +1,51 @@
+# The network as moi sees it from cestmoi: what names resolve to, how addresses answer, what URLs return.
+# Format: tests/fixtures/README.md § net.
+
+# apps, reached on the homelab Docker network
+http 172.19.0.36:8096/health 200 Healthy
+http 172.19.0.20:5055/api/v1/status 200 {"version":"2.7.3"}
+http 172.19.0.37:8989/api/v3/health 200 []
+http 172.19.0.38:7878/api/v3/health 200 []
+http 172.19.0.39:9696/api/v1/health 200 []
+http 172.19.0.40:6767/ 200
+http 172.19.0.34:8081/ 200
+http 172.19.0.34:8080/ 200
+http 172.19.0.34:8000/v1/portforward 200 {"port":51413}
+http 172.19.0.16:3000/_health 200 OK
+http 172.19.0.41:3000/api/v1/health 200 {"status":"ok"}
+http 172.19.0.22:8000/auth/v1/health 200 {"name":"GoTrue"}
+http 172.19.0.32:8080/api/health 200 {"success":true}
+http 172.19.0.44:9000/ 200
+http 172.19.0.14:3000/ 200
+http 172.19.0.31:61208/ 200
+# AdGuard runs on the host network
+http 127.0.0.1:8085/ 200
+
+# the reverse proxy on :80, asked for its LAN sites
+tcp 127.0.0.1:80 ok
+http home/ 200
+http dokploy.home/ 200
+http jellyfin.home/ 302
+
+# public sites, each a full round trip through Cloudflare
+dns notes.example.com 203.0.113.11 took=0.004
+tcp 203.0.113.11:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http notes.example.com/ 200
+dns books.example.com 203.0.113.12 took=0.004
+tcp 203.0.113.12:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http books.example.com/ 200
+dns media.example.com 203.0.113.13 took=0.004
+tcp 203.0.113.13:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http media.example.com/ 302
+dns status.example.com 203.0.113.14 took=0.004
+tcp 203.0.113.14:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http status.example.com/ 200
+dns database.example.com 203.0.113.15 took=0.004
+tcp 203.0.113.15:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http database.example.com/auth/v1/health 401
+dns shortless.example.com 203.0.113.16 took=0.004
+tcp 203.0.113.16:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http shortless.example.com/api/health 200
+dns compiler.example.com 203.0.113.17 took=0.004
+tcp 203.0.113.17:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
+http compiler.example.com/healthz 200

@@ -208,6 +208,38 @@ impl Host for RealHost {
         Err(last)
     }
 
+    fn resolve(&self, name: &str, timeout: Duration) -> io::Result<Vec<std::net::IpAddr>> {
+        if let Ok(ip) = name.parse() {
+            return Ok(vec![ip]);
+        }
+        if !self.is_system() {
+            return Err(self.refuse(&format!("resolve {name}")));
+        }
+        // the system resolver has no timeout of its own: ask on a thread and stop waiting
+        let (tx, rx) = std::sync::mpsc::channel();
+        let query = name.to_string();
+        std::thread::Builder::new().name("moi-resolve".into()).spawn(move || {
+            let _ =
+                tx.send((query.as_str(), 0).to_socket_addrs().map(|found| found.map(|a| a.ip()).collect::<Vec<_>>()));
+        })?;
+        match rx.recv_timeout(timeout) {
+            Ok(Ok(found)) if found.is_empty() => {
+                Err(io::Error::new(io::ErrorKind::NotFound, format!("{name} does not resolve")))
+            }
+            Ok(found) => found,
+            Err(_) => Err(io::Error::new(io::ErrorKind::TimedOut, format!("resolving {name} timed out"))),
+        }
+    }
+
+    fn sleep(&self, duration: Duration) {
+        std::thread::sleep(duration);
+    }
+
+    fn monotonic(&self) -> Duration {
+        static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+        START.get_or_init(std::time::Instant::now).elapsed()
+    }
+
     fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>> {
         let mut buf = vec![0u8; count];
         fs::File::open("/dev/urandom")?.read_exact(&mut buf)?;

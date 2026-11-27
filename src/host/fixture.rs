@@ -19,6 +19,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::fake_docker::{DockerState, FakeConn};
+use super::fake_net::{self, Net};
 use super::rooted::{self, Resolved};
 use super::{Cmd, CmdOutput, Conn, FsUsage, Host, Metadata};
 
@@ -49,6 +50,8 @@ pub struct FixtureHost {
     state: Mutex<State>,
     docker: Arc<Mutex<DockerState>>,
     http: Mutex<Option<HttpHandler>>,
+    /// The fake network described by `net` files.
+    net: Arc<Net>,
 }
 
 #[derive(Debug)]
@@ -108,6 +111,10 @@ impl Conn for HandlerConn {
     fn set_timeout(&mut self, _timeout: Option<Duration>) -> io::Result<()> {
         Ok(())
     }
+
+    fn fake_tls(&mut self) -> Option<io::Result<()>> {
+        Some(Ok(()))
+    }
 }
 
 /// The fixed "now" of a fixture or case directory, if it has a `clock` file.
@@ -156,6 +163,7 @@ impl FixtureHost {
                 random_counter: 0,
             }),
             http: Mutex::new(None),
+            net: Arc::default(),
             docker: Arc::default(),
         };
         host.read_manifests(dir)?;
@@ -247,6 +255,9 @@ impl FixtureHost {
                 }
                 _ => return Err(bad("statvfs", n, "`/mount blocks free available inodes inodes-free`")),
             }
+        }
+        for (n, line) in lines("net")? {
+            Arc::make_mut(&mut self.net).add_line(&line).map_err(|expected| bad("net", n, expected))?;
         }
         self.absent.extend(lines("absent")?.into_iter().map(|(_, l)| PathBuf::from(l)));
         self.unwritable.extend(lines("unwritable")?.into_iter().map(|(_, l)| PathBuf::from(l)));
@@ -621,7 +632,7 @@ impl Host for FixtureHost {
             })
     }
 
-    fn connect_tcp(&self, host: &str, port: u16, _timeout: Duration) -> io::Result<Box<dyn Conn>> {
+    fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>> {
         match self.http.lock().unwrap_or_else(PoisonError::into_inner).clone() {
             Some(handler) => Ok(Box::new(HandlerConn {
                 authority: format!("{host}:{port}"),
@@ -629,11 +640,20 @@ impl Host for FixtureHost {
                 request: Vec::new(),
                 response: None,
             })),
-            None => Err(io::Error::new(
-                io::ErrorKind::ConnectionRefused,
-                format!("fixture host has no network: cannot connect to {host}:{port}"),
-            )),
+            None => self.net.connect(host, port, timeout),
         }
+    }
+
+    fn resolve(&self, name: &str, timeout: Duration) -> io::Result<Vec<std::net::IpAddr>> {
+        self.net.resolve(name, timeout)
+    }
+
+    fn sleep(&self, duration: Duration) {
+        fake_net::spend(duration);
+    }
+
+    fn monotonic(&self) -> Duration {
+        self.now().duration_since(UNIX_EPOCH).unwrap_or_default()
     }
 
     fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>> {
@@ -649,7 +669,8 @@ impl Host for FixtureHost {
     }
 
     fn now(&self) -> SystemTime {
-        self.state().now
+        // the fixed clock plus what this thread has "waited" (sleeps, fake network latency)
+        self.state().now + fake_net::spent()
     }
 
     fn env(&self, name: &str) -> Option<String> {

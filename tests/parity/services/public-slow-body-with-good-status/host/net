@@ -1,0 +1,1 @@
+tcp 203.0.113.13:443 slow connect=0.012 tls=0.050 first=0.300 rest=0.046

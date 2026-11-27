@@ -1,0 +1,1 @@
+http 172.19.0.38:7878/api/v3/health 200 [{"source":"IndexerStatusCheck","type":"error","message":"All indexers are unavailable"}]

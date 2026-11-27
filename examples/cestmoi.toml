@@ -50,6 +50,7 @@ disks = [
 [checks.services]
 monitor = "Server Internal Services"
 journal_tag = "service-check"
+timeout = "4m"          # the VPN heal waits up to 2 minutes for Gluetun
 network = "homelab"
 ignore = []
 http = [
@@ -107,6 +108,7 @@ when = { docker_event = { container = "dokploy-traefik", action = "start" } }
 check = { container_on_network = { container = "dokploy-traefik", network = "homelab" } }
 action = { network_connect = { container = "dokploy-traefik", network = "homelab" } }
 report = "[traefik had lost the homelab network: reconnected; next check confirms the fix]"
+report_failed = "traefik (not on homelab network, reconnect failed)"
 
 [[heal]]
 name = "traefik-config-guard"
@@ -116,7 +118,7 @@ report_stdout = true
 
 [[heal]]
 name = "vpn-stack"
-when = { failing = ["gluetun", "qbittorrent", "sabnzbd"] }
+when = { failing = ["gluetun", "gluetun-portforward", "qbittorrent", "sabnzbd"] }
 action = { restart = ["gluetun"], wait_healthy = { container = "gluetun", timeout = "2m" }, then_restart = ["qbittorrent", "sabnzbd"] }
 cooldown = "30m"
 report = "[auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix]"

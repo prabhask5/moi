@@ -240,7 +240,7 @@ fn a_custom_check_is_up_on_exit_0_and_its_first_line_is_the_message() {
     });
     let (config, db) = (s.config(), s.db());
     let names: Vec<String> = checks::enabled(&config).iter().map(|c| c.name()).collect();
-    assert_eq!(names, ["resources", "storage", "certs", "quiet", "gone"]);
+    assert_eq!(names, ["resources", "storage", "services", "certs", "quiet", "gone"]);
 
     s.fixture.add_command(
         "/usr/local/bin/check-certs --days 14",
@@ -279,13 +279,16 @@ fn bind(db: &Db, check: &str, monitor: &str, token: &str) {
         .unwrap();
 }
 
-/// A fake Kuma that records every request line and answers 200.
+/// A fake Kuma that records every request line it gets and answers 200 (as does everything else on this
+/// network: the apps the services check asks are all fine).
 fn kuma(s: &Server) -> Arc<Mutex<Vec<String>>> {
     let seen: Arc<Mutex<Vec<String>>> = Arc::default();
     let log = seen.clone();
     s.fixture.set_http(Arc::new(move |authority, raw| {
         let line = String::from_utf8_lossy(raw).lines().next().unwrap_or_default().to_string();
-        log.lock().unwrap().push(format!("{authority} {line}"));
+        if authority == "uptime.home:80" {
+            log.lock().unwrap().push(format!("{authority} {line}"));
+        }
         b"HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}".to_vec()
     }));
     seen
@@ -300,7 +303,7 @@ fn moi_check_without_push_never_contacts_kuma() {
     assert_eq!(code, 0, "{out}");
     assert_eq!(
         out,
-        "[resources] up: OK: RAM 38%, swap 2%, CPU 48C\n[storage] up: OK: nvme0n1 3% worn, nvme0n1 34C, sda 31C, / 31% used, /mnt/storage 19% used\n"
+        "[resources] up: OK: RAM 38%, swap 2%, CPU 48C\n[storage] up: OK: nvme0n1 3% worn, nvme0n1 34C, sda 31C, / 31% used, /mnt/storage 19% used\n[services] up: All 35 containers + 7 swarm services running, 17 app, 4 database, 10 edge checks OK\n"
     );
     assert_eq!(*requests.lock().unwrap(), Vec::<String>::new());
     assert_eq!(s.fixture.journal_entries().len(), 0);
@@ -403,7 +406,7 @@ fn moi_check_exits_1_when_something_is_down_and_prints_json_on_request() {
     assert_eq!(v["checks"][1]["status"], "up");
 
     let (code, out) = s.moi(&["check", "nope"]);
-    assert_eq!((code, out.as_str()), (2, "no such check: nope (enabled: resources, storage)"));
+    assert_eq!((code, out.as_str()), (2, "no such check: nope (enabled: resources, storage, services)"));
 }
 
 #[test]
@@ -415,6 +418,194 @@ fn a_server_without_checks_says_how_to_add_one() {
     cli::execute(&cli::parse(&["check"]).unwrap(), host, &mut out).unwrap();
     assert_eq!(
         String::from_utf8(out).unwrap(),
-        "no checks are enabled: add [checks.resources], [checks.storage] or [[checks.custom]] to moi.toml\n"
+        "no checks are enabled: add [checks.resources], [checks.storage], [checks.services] or [[checks.custom]] to moi.toml\n"
     );
+}
+
+// ------------------------------------------------------------------ services: healing, the probe log, the edge on its own
+
+fn heal_requests(s: &Server) -> Vec<String> {
+    s.fixture.docker_requests().into_iter().filter(|r| r.starts_with("POST") && !r.contains("/exec")).collect()
+}
+
+/// The cestmoi fixture with Gluetun exited (and therefore without an address).
+fn gluetun_down(s: &Server) {
+    let list: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(common::fixture_dir("cestmoi").join("docker/containers/json.json")).unwrap(),
+    )
+    .unwrap();
+    let id = list.as_array().unwrap().iter().find(|c| c["Names"][0] == "/gluetun").unwrap()["Id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let file = common::fixture_dir("cestmoi").join(format!("docker/containers/{id}/json.json"));
+    let mut gluetun: serde_json::Value = serde_json::from_slice(&std::fs::read(file).unwrap()).unwrap();
+    gluetun["State"]["Status"] = "exited".into();
+    gluetun["State"]["Running"] = false.into();
+    for (_, network) in gluetun["NetworkSettings"]["Networks"].as_object_mut().unwrap() {
+        network["IPAddress"] = "".into();
+    }
+    s.fixture.set_docker(&format!("/containers/{id}/json"), &gluetun.to_string());
+    s.fixture.set_docker("/containers/gluetun/json", &gluetun.to_string());
+}
+
+const VPN_DOWN: &str = "Failing: gluetun (exited) qbittorrent (no IP) sabnzbd (no IP) gluetun-portforward (no IP) ";
+
+#[test]
+fn a_manual_check_reports_what_is_failing_and_heals_nothing() {
+    let s = server("checks-services-dry");
+    gluetun_down(&s);
+    let result = checks::run(&s.host, &s.config(), &s.db(), &s.check("services"), Mode::Dry).unwrap();
+    assert_eq!(result.message, format!("{VPN_DOWN}[vpn-stack: not healed by a manual check] "));
+    assert_eq!(heal_requests(&s), Vec::<String>::new(), "nothing was restarted");
+    assert_eq!(s.db().conn().query_row("SELECT count(*) FROM heal_cooldowns", [], |r| r.get::<_, i64>(0)).unwrap(), 0);
+}
+
+#[test]
+fn a_recorded_check_restarts_the_vpn_stack_in_order_and_then_waits_out_the_cooldown() {
+    let s = server("checks-services-heal");
+    gluetun_down(&s);
+    s.fixture.set_env("JOURNAL_STREAM", "8:1");
+    let (config, db, services) = (s.config(), s.db(), s.check("services"));
+    let first = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert_eq!(
+        first.message,
+        format!("{VPN_DOWN}[auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix] ")
+    );
+    assert_eq!(
+        heal_requests(&s),
+        [
+            "POST /containers/gluetun/restart",
+            "POST /containers/qbittorrent/restart",
+            "POST /containers/sabnzbd/restart"
+        ]
+    );
+    // what triggered it is in the journal
+    let entry =
+        s.fixture.journal_entries().into_iter().find(|e| e[0].1.starts_with("heal vpn-stack")).expect("heal is logged");
+    assert_eq!(entry[0].1, "heal vpn-stack: gluetun is failing");
+    assert!(entry.contains(&("MOI_RULE".to_string(), "vpn-stack".to_string())), "{entry:?}");
+
+    // five minutes later it is still down: no second restart
+    s.fixture.advance(Duration::from_secs(300));
+    let second = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert_eq!(second.message, format!("{VPN_DOWN}[auto-restart already tried in the last 30 min, needs a look] "));
+    assert_eq!(heal_requests(&s).len(), 3);
+    // after the cooldown it is tried again
+    s.fixture.advance(Duration::from_secs(1500));
+    let third = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert!(
+        third.message.ends_with("[auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix] "),
+        "{}",
+        third.message
+    );
+    assert_eq!(heal_requests(&s).len(), 6);
+}
+
+#[test]
+fn a_rule_without_reports_gets_plain_ones_and_a_failed_action_says_why() {
+    let s = server("checks-services-heal-defaults");
+    gluetun_down(&s);
+    s.edit_config(|t| {
+        let start = t.find("[[heal]]\nname = \"vpn-stack\"").unwrap();
+        let end = t[start..].find("\n\n").unwrap() + start;
+        format!("{}[[heal]]\nname = \"vpn\"\nwhen = {{ failing = [\"gluetun\"] }}\naction = {{ run = \"/usr/local/bin/fix-vpn --now\" }}\ncooldown = \"10m\"{}", &t[..start], &t[end..])
+    });
+    let (config, db, services) = (s.config(), s.db(), s.check("services"));
+    // the script is not there
+    let failed = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert!(
+        failed.message.starts_with(&format!("{VPN_DOWN}[vpn: heal failed: cannot run /usr/local/bin/fix-vpn: ")),
+        "{}",
+        failed.message
+    );
+    // a failed attempt counts for the cooldown too
+    let cooling = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert_eq!(cooling.message, format!("{VPN_DOWN}[vpn: already tried in the last 10m, needs a look] "));
+    s.fixture.advance(Duration::from_secs(600));
+    s.fixture.add_command("/usr/local/bin/fix-vpn --now", 0, "restarted\n");
+    let healed = checks::run(&s.host, &config, &db, &services, Mode::Record).unwrap();
+    assert_eq!(healed.message, format!("{VPN_DOWN}[vpn: healed; next check confirms] "));
+}
+
+#[test]
+fn failed_public_probes_are_logged_even_when_the_retry_works() {
+    let s = server("checks-services-probe-log");
+    let case = common::scratch("checks-services-probe-log-case");
+    std::fs::write(case.join("net"), "http notes.example.com/ 502,200\nhttp books.example.com/ 503\n").unwrap();
+    let overlay = common::scratch("checks-services-probe-log-overlay");
+    let host: Arc<dyn Host> = Arc::new(
+        FixtureHost::open(&common::fixture_dir("cestmoi"))
+            .unwrap()
+            .with_case(&case)
+            .unwrap()
+            .with_overlay(&overlay)
+            .unwrap(),
+    );
+    let result = checks::run(&host, &s.config(), &s.db(), &s.check("services"), Mode::Dry).unwrap();
+    assert_eq!(
+        result.message,
+        "Failing: public:books.example.com/ (HTTP 503 in 0.412000s; retry failed: HTTP 503 in 0.412000s; DNS now: 203.0.113.12) "
+    );
+    // appended to what the legacy script had logged
+    let log = host.read_to_string(Path::new("/var/log/service-check-public.log")).unwrap();
+    assert_eq!(
+        log,
+        "2026-11-26T16:55:00 notes.example.com 200\n\
+         2026-11-26T17:00:00Z public:notes.example.com/ (HTTP 502 in 0.412000s; retry OK in 0.412000s; DNS now: 203.0.113.11)\n\
+         2026-11-26T17:00:00Z public:books.example.com/ (HTTP 503 in 0.412000s; retry failed: HTTP 503 in 0.412000s; DNS now: 203.0.113.12)\n"
+    );
+    // the next run appends
+    checks::run(&host, &s.config(), &s.db(), &s.check("services"), Mode::Dry).unwrap();
+    assert_eq!(
+        host.read_to_string(Path::new("/var/log/service-check-public.log")).unwrap().lines().count(),
+        4,
+        "notes answers now"
+    );
+}
+
+#[test]
+fn the_edge_reports_on_its_own_when_it_has_its_own_monitor() {
+    let s = server("checks-edge-own");
+    s.edit_config(|t| t.replace("[checks.edge]\n", "[checks.edge]\nmonitor = \"Server Edge\"\n"));
+    s.fixture.add_command("iptables -S DOCKER-USER", 0, "-A DOCKER-USER -j DROP\n");
+    let (config, db) = (s.config(), s.db());
+    let names: Vec<String> = checks::enabled(&config).iter().map(|c| c.name()).collect();
+    assert_eq!(names, ["resources", "storage", "services", "edge"]);
+    let services = checks::run(&s.host, &config, &db, &s.check("services"), Mode::Dry).unwrap();
+    assert_eq!(services.message, "All 35 containers + 7 swarm services running, 17 app, 4 database checks OK");
+    let edge = checks::run(&s.host, &config, &db, &s.check("edge"), Mode::Dry).unwrap();
+    assert_eq!((edge.status, edge.monitor.as_deref()), (Status::Down, Some("Server Edge")));
+    assert_eq!(
+        edge.message,
+        "Failing: firewall (missing: Intra-network container traffic) firewall (missing: Swarm outbound Internet) firewall (missing: devbox: VM to Internet) "
+    );
+    s.fixture.add_command(
+        "iptables -S DOCKER-USER",
+        0,
+        "Intra-network container traffic\nSwarm outbound Internet\ndevbox: VM to Internet\n-A DOCKER-USER -j DROP\n",
+    );
+    assert_eq!(
+        checks::run(&s.host, &config, &db, &s.check("edge"), Mode::Dry).unwrap().message,
+        "All 10 edge checks OK"
+    );
+}
+
+#[test]
+fn services_works_without_docker_swarm_or_an_edge() {
+    let overlay = common::scratch("checks-services-plain");
+    let fixture = FixtureHost::open(&common::fixture_dir("minimal")).unwrap().with_overlay(&overlay).unwrap();
+    common::write_config(
+        &fixture,
+        "[checks.services]\nhttp = [{ name = \"web\", target = \"localhost\", path = \"8080/\" }]\n",
+        None,
+    );
+    let host: Arc<dyn Host> = Arc::new(fixture);
+    let config = Arc::new(config::load(host.as_ref(), &Paths::new("/etc/moi/moi.toml".into(), None)).unwrap().config);
+    let state = StateDir::new("/var/lib/moi");
+    state.ensure(host.as_ref()).unwrap();
+    let db = state.open_db(host.as_ref()).unwrap();
+    let services = checks::enabled(&config).into_iter().find(|c| c.name() == "services").unwrap();
+    let result = checks::run(&host, &config, &db, &services, Mode::Dry).unwrap();
+    assert_eq!(result.message, "Failing: web (no response) ");
 }

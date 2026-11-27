@@ -45,10 +45,10 @@ Specs: 03, 04
 ## M4 — Checks with exact legacy parity
 Specs: 05
 - [x] Check engine (intervals, timeouts, sustained state, deltas, history)
-- [ ] `resources`, `storage`, `services` + `edge` + staged probe, `custom`
-- [ ] Parity suites for every branch of resource/storage/service-check.sh
-- [ ] `moi check [name] [--push] [--json]`
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] `resources`, `storage`, `services` + `edge` + staged probe, `custom`
+- [x] Parity suites for every branch of resource/storage/service-check.sh
+- [x] `moi check [name] [--push] [--json]`
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M5 — Uptime Kuma
 Specs: 06

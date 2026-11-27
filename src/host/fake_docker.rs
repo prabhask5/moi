@@ -115,6 +115,18 @@ impl FakeConn {
             state.overrides.get(&path).cloned()
         };
         let segments: Vec<&str> = path.trim_matches('/').split('/').collect();
+        // `docker/fail`: requests this engine refuses, as `METHOD /path-prefix status message`
+        for line in fs::read_to_string(self.file("fail")).unwrap_or_default().lines() {
+            let mut words = line.splitn(4, ' ');
+            if let (Some(m), Some(prefix), Some(status), message) =
+                (words.next(), words.next(), words.next(), words.next())
+                && m == method
+                && path.starts_with(prefix)
+            {
+                let body = serde_json::json!({ "message": message.unwrap_or("refused by the fixture") }).to_string();
+                return respond(&format!("{status} Error"), "application/json", body.as_bytes());
+            }
+        }
 
         match (method, segments.as_slice()) {
             ("GET", ["_ping"]) => respond("200 OK", "text/plain", b"OK"),
@@ -140,6 +152,27 @@ impl FakeConn {
                     &fs::read(self.file(Path::new("containers").join(&dir).join("logs.err"))).unwrap_or_default(),
                 ));
                 respond("200 OK", "application/vnd.docker.multiplexed-stream", &out)
+            }
+            // `docker service ls` counts: `docker/service-status.json` maps a service to "running/wanted";
+            // a service not listed there runs every replica it wants
+            ("GET", ["services"]) if target.contains("status=true") => {
+                let read = |name: &str| {
+                    fs::read(self.file(name))
+                        .ok()
+                        .and_then(|raw| serde_json::from_slice::<serde_json::Value>(&raw).ok())
+                };
+                let mut services = read("services.json").unwrap_or_else(|| serde_json::json!([]));
+                let status = read("service-status.json").unwrap_or_default();
+                for service in services.as_array_mut().into_iter().flatten() {
+                    let wanted = service["Spec"]["Mode"]["Replicated"]["Replicas"].as_u64().unwrap_or(1);
+                    let counts = status[service["Spec"]["Name"].as_str().unwrap_or_default()].as_str().and_then(|s| {
+                        let (running, wanted) = s.split_once('/')?;
+                        Some((running.parse::<u64>().ok()?, wanted.parse::<u64>().ok()?))
+                    });
+                    let (running, wanted) = counts.unwrap_or((wanted, wanted));
+                    service["ServiceStatus"] = serde_json::json!({ "RunningTasks": running, "DesiredTasks": wanted });
+                }
+                json(services.to_string().as_bytes())
             }
             ("GET", _) => {
                 if let Some(body) = override_body {

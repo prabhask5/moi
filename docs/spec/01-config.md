@@ -172,6 +172,7 @@ when = { docker_event = { container = "dokploy-traefik", action = "start" } }   
 check = { container_on_network = { container = "dokploy-traefik", network = "homelab" } }
 action = { network_connect = { container = "dokploy-traefik", network = "homelab" } }
 report = "[traefik had lost the homelab network: reconnected; next check confirms the fix]"
+report_failed = "traefik (not on homelab network, reconnect failed)"            # appended when the action failed
 
 [[heal]]
 name = "traefik-config-guard"
@@ -181,7 +182,7 @@ report_stdout = true
 
 [[heal]]
 name = "vpn-stack"
-when = { failing = ["gluetun", "qbittorrent", "sabnzbd"] }    # names from services results
+when = { failing = ["gluetun", "gluetun-portforward", "qbittorrent", "sabnzbd"] }    # exact names of failing services entries (05)
 action = { restart = ["gluetun"], wait_healthy = { container = "gluetun", timeout = "2m" }, then_restart = ["qbittorrent", "sabnzbd"] }
 cooldown = "30m"
 report = "[auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix]"

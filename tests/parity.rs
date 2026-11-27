@@ -59,6 +59,11 @@ fn run_case(check: &str, case: &str) -> (String, String) {
         memory.sustained.insert(condition.clone(), u32::try_from(runs.as_u64().unwrap()).unwrap());
     }
     memory.save(&db, check, 0).unwrap();
+    // heal rules that ran lately: rule → seconds ago
+    for (rule, ago) in prev["heal"].as_object().into_iter().flatten() {
+        let at = cestmoi::host::unix_seconds(host.now()) - ago.as_i64().unwrap();
+        db.conn().execute("INSERT INTO heal_cooldowns (rule, last_run) VALUES (?1, ?2)", (rule, at)).unwrap();
+    }
 
     let the_check = checks::enabled(&config)
         .into_iter()
@@ -160,8 +165,60 @@ fn storage_reproduces_storage_check_sh() {
 }
 
 #[test]
+fn services_reproduces_service_check_sh() {
+    run_suite(
+        "services",
+        &[
+            "ok",
+            "container-exited",
+            "container-unhealthy",
+            "container-restarting",
+            "container-healthy",
+            "container-ignored",
+            "swarm-replicas",
+            "http-no-ip",
+            "http-refused",
+            "http-5xx",
+            "http-4xx-without-key",
+            "http-api-key",
+            "http-reports-problem",
+            "http-key-wins-over-trouble",
+            "exec-fails",
+            "exec-unexpected-output",
+            "proxy-lost-network",
+            "proxy-reconnect-failed",
+            "lan-bad-gateway",
+            "lan-401-is-ok",
+            "lan-proxy-down",
+            "public-retry-ok",
+            "public-http-error",
+            "public-cloudflare-origin",
+            "public-dns-failed",
+            "public-dns-timeout",
+            "public-refused",
+            "public-connect-timeout",
+            "public-tls-timeout",
+            "public-tls-error",
+            "public-no-response",
+            "public-too-slow",
+            "public-slow-body-with-good-status",
+            "public-dropped",
+            "proxy-errors",
+            "firewall-rule-missing",
+            "firewall-unreadable",
+            "vpn-restart",
+            "vpn-restart-cooldown",
+            "vpn-restart-after-cooldown",
+            "vpn-dependant-failing",
+            "vpn-gluetun-mentioned",
+            "everything",
+        ],
+    );
+}
+
+#[test]
 fn expected_files_are_never_empty_and_name_a_status() {
-    for check in ["resources", "storage"] {
+    for check in ["resources", "storage", "services"] {
         for case in cases(check) {
             let text = std::fs::read_to_string(parity_dir(check).join(&case).join("expected")).unwrap();
             let (status, message) =
@@ -306,6 +363,105 @@ fn the_legacy_resource_script_prints_what_the_expected_files_say() {
         failures.is_empty(),
         "the legacy script disagrees with {} expected file(s):\n{}",
         failures.len(),
+        failures.join("\n")
+    );
+}
+
+/// Runs `reference/cestmoi/scripts/service-check.sh` itself on every services case. `docker`, `curl`,
+/// `getent` and `iptables` are `tests/parity/legacy/stub.py`, which answers from the case's files the way
+/// FixtureHost does; `sleep`, `systemctl` and the Traefik config guard do nothing (section 4f of the script
+/// is the daemon's business in moi, see spec 05 § Deviations). The script's paths for its log and its
+/// heal stamp point into a sandbox and `IGNORE` is taken from the case's config; nothing else is changed.
+#[test]
+fn the_legacy_service_script_prints_what_the_expected_files_say() {
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/cestmoi/scripts/service-check.sh");
+    let Ok(source) = std::fs::read_to_string(&script) else {
+        eprintln!("reference/ is gone (after M12): the expected files stand on their own");
+        return;
+    };
+    let have = |tool: &str| std::process::Command::new(tool).arg("--version").output().is_ok();
+    if !have("bash") || !have("python3") {
+        eprintln!("bash or python3 is not installed: skipping");
+        return;
+    }
+    let base = common::fixture_dir("cestmoi");
+    let stub = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/parity/legacy/stub.py");
+    let names = cases("services");
+    // the interpreter itself, not a launcher in front of it: the script calls the stubs thousands of times
+    let python =
+        std::process::Command::new("python3").args(["-c", "import sys; print(sys.executable)"]).output().unwrap();
+    let python = String::from_utf8_lossy(&python.stdout).trim().to_string();
+    let run = |case: &String| -> Option<String> {
+        let case_dir = parity_dir("services").join(case);
+        let sandbox = common::scratch(&format!("legacy-services-{case}"));
+        let stubs = sandbox.join("bin");
+        std::fs::create_dir_all(&stubs).unwrap();
+        let tool = |name: &str, body: String| {
+            use std::os::unix::fs::PermissionsExt;
+            let path = stubs.join(name);
+            std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        };
+        for name in ["docker", "curl", "getent", "iptables"] {
+            tool(name, format!("exec '{python}' -S -E '{}' {name} \"$@\"", stub.display()));
+        }
+        for name in ["sleep", "systemctl"] {
+            tool(name, "exit 0".to_string());
+        }
+        // `timeout 15 docker exec …`: the stubbed command returns at once
+        tool("timeout", "shift\nexec \"$@\"".to_string());
+        // the case's config says which containers may be stopped
+        let mut fixture = FixtureHost::open(&base).unwrap();
+        if case_dir.join("host").is_dir() {
+            fixture = fixture.with_case(&case_dir.join("host")).unwrap();
+        }
+        let config = config::load(&fixture, &Paths::new("/etc/moi/moi.toml".into(), None)).unwrap().config;
+        // a restart tried N seconds ago
+        let prev: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(case_dir.join("prev.json")).unwrap()).unwrap();
+        if let Some(ago) = prev["heal"]["vpn-stack"].as_u64() {
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+            std::fs::write(sandbox.join("heal-stamp"), format!("{}\n", now - ago)).unwrap();
+        }
+        let root = sandbox.display().to_string();
+        let redirected = source
+            .replace("IGNORE=\"\"", &format!("IGNORE=\"{}\"", config.checks.services.ignore.join(" ")))
+            .replace("PROBE_LOG=/var/log/service-check-public.log", &format!("PROBE_LOG={root}/public.log"))
+            .replace("HEAL_STAMP=/var/tmp/service-check-heal", &format!("HEAL_STAMP={root}/heal-stamp"))
+            .replace("python3 /opt/scripts/traefik-config-guard.py", "true");
+        assert_eq!(redirected.matches(&root).count(), 2, "the script changed: review the redirections");
+        assert!(!redirected.contains("/opt/scripts/"), "the script changed: review the redirections");
+        std::fs::write(sandbox.join("service-check.sh"), redirected).unwrap();
+        let out = std::process::Command::new("bash")
+            .arg(sandbox.join("service-check.sh"))
+            .env_clear()
+            .env("PATH", format!("{}:/usr/bin:/bin", stubs.display()))
+            .env("LC_ALL", "C")
+            .env("MOI_BASE", &base)
+            .env("MOI_CASE", case_dir.join("host"))
+            .env("MOI_SANDBOX", &sandbox)
+            .output()
+            .unwrap();
+        let printed = String::from_utf8_lossy(&out.stdout);
+        let printed = printed.strip_suffix('\n').unwrap_or(&printed);
+        let expected = std::fs::read_to_string(case_dir.join("expected")).unwrap();
+        let expected = expected.strip_suffix('\n').unwrap_or(&expected).replacen('\n', ": ", 1);
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        let stub_trouble = stderr.lines().find(|l| l.contains("stub:") || l.contains("Traceback"));
+        (printed != expected || stub_trouble.is_some())
+            .then(|| format!("{case}\n  script:   {printed:?}\n  expected: {expected:?}\n  stderr: {}", stderr.trim()))
+    };
+    // each case is its own sandbox and its own bash: run them side by side
+    let failures: Vec<String> = std::thread::scope(|scope| {
+        let handles: Vec<_> =
+            names.chunks(3).map(|chunk| scope.spawn(|| chunk.iter().filter_map(&run).collect::<Vec<_>>())).collect();
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+    });
+    assert!(
+        failures.is_empty(),
+        "the legacy script disagrees with {} of {} expected files:\n{}",
+        failures.len(),
+        names.len(),
         failures.join("\n")
     );
 }
