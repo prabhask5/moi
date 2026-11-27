@@ -376,7 +376,7 @@ pub fn plan(host: &dyn Host, config: &Config, state: &StateDir) -> Plan {
     }
     for name in host.read_dir(Path::new("/etc/cron.d")).unwrap_or_default() {
         let path = format!("/etc/cron.d/{name}");
-        let runs_script = read(&path).split_whitespace().any(|word| in_script_dir(word));
+        let runs_script = read(&path).split_whitespace().any(&in_script_dir);
         if !claimed.contains(&path) && runs_script {
             untouched.push((path, "a cron job moi has no replacement for".to_string()));
         }
