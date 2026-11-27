@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot`, `moi log`, `moi diff`, `moi notes`, `moi audit`, `moi context`, `moi context share` `moi check` (resources, storage, services with edge probes, custom checks), `moi monitors list`, `moi monitors sync`, `moi daemon` (checks on their intervals, snapshots when something changes, heal rules, boot tasks), `moi status`, `moi firewall apply|diff|status`, `moi init`, `moi uninstall` `moi backup` (database dumps, the local archive, the off-site copy with restic), `moi push`, `moi pull`, `moi recovery-card` `moi verify` (also run by the daemon after every boot) `moi restore` (phase by phase, with a full `--dry-run`) and `moi migrate plan|shadow|compare`; every other command still exits with "not implemented yet".
+> **Status: pre-alpha, under active development.** Every command is implemented and tested against fixture servers, real service containers and (for backup → restore → reboot → verify) real virtual machines in CI; packaging, performance budgets for the daemon and the first real migration are still ahead ([docs/milestones.md](docs/milestones.md)). The spec is in [docs/spec](docs/spec/README.md).
 
 ## What it does
 
@@ -41,7 +41,7 @@ Also planned: `.deb`/`.rpm` packages, `cargo install cestmoi`, Homebrew (`brew i
 
 Global flags: `--config` (`MOI_CONFIG`), `--secrets` (`MOI_SECRETS`, default `secrets.toml` next to the config), `--json`, `--quiet`.
 
-Exit codes: `0` ok · `1` problems found · `2` error · `3` not implemented yet.
+Exit codes: `0` ok · `1` problems found · `2` error.
 
 ## Configuration
 

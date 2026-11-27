@@ -52,14 +52,6 @@ fn version_has_build_info() {
 }
 
 #[test]
-fn unimplemented_commands_exit_3_and_name_the_milestone() {
-    let out = moi(&["migrate", "finish"]);
-    assert_eq!(out.status.code(), Some(3));
-    let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("milestone M9"), "{err}");
-}
-
-#[test]
 fn bad_usage_exits_2() {
     let out = moi(&["no-such-command"]);
     assert_eq!(out.status.code(), Some(2));
@@ -194,14 +186,14 @@ fn config_path_prints_both_files() {
 }
 
 #[test]
-fn json_errors_cover_unimplemented_commands_too() {
+fn json_errors_cover_usage_errors_too() {
     let out = moi_on_fixture(&["migrate", "finish", "--json"], &[]);
-    assert_eq!(out.status.code(), Some(3));
+    assert_eq!(out.status.code(), Some(2));
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(v["ok"], false);
-    assert_eq!(v["error"]["kind"], "not_implemented");
-    assert_eq!(v["error"]["exit_code"], 3);
-    assert!(text(&out.stderr).contains("milestone M9"));
+    assert_eq!(v["error"]["kind"], "usage");
+    assert_eq!(v["error"]["exit_code"], 2);
+    assert!(text(&out.stderr).contains("run `moi snapshot` first"));
 }
 
 #[test]

@@ -1,7 +1,6 @@
 //! Command-line interface: argument definitions and dispatch.
 //!
-//! `src/main.rs` only calls [`run`]. Every command exists from day one; unimplemented ones
-//! return [`Error::NotImplemented`] (exit code 3) and name the milestone that delivers them.
+//! `src/main.rs` only calls [`run`].
 //!
 //! Output contract: results on stdout (human text, or one JSON document with `--json` that always has
 //! an `ok` field), diagnostics and log lines on stderr, exit codes as in `error`.
@@ -319,30 +318,30 @@ pub fn execute(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<()
 }
 
 fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
-    let (what, milestone) = match &cli.command {
-        Command::Config(cmd) => return config(cli, cmd, host, out),
-        Command::Snapshot(args) => return snapshot(cli, args, host, out),
-        Command::Log { count } => return log(cli, *count, host, out),
-        Command::Diff { rev, show_secrets } => return diff(cli, rev, *show_secrets, host, out),
-        Command::Notes => return notes(cli, host, out),
-        Command::Audit => return audit(cli, host, out),
-        Command::Context { action: None } => return context(cli, host, out),
+    match &cli.command {
+        Command::Config(cmd) => config(cli, cmd, host, out),
+        Command::Snapshot(args) => snapshot(cli, args, host, out),
+        Command::Log { count } => log(cli, *count, host, out),
+        Command::Diff { rev, show_secrets } => diff(cli, rev, *show_secrets, host, out),
+        Command::Notes => notes(cli, host, out),
+        Command::Audit => audit(cli, host, out),
+        Command::Context { action: None } => context(cli, host, out),
         Command::Context { action: Some(ContextCommand::Share { ttl, revoke, list }) } => {
-            return context_share(cli, *ttl, *revoke, *list, host, out);
+            context_share(cli, *ttl, *revoke, *list, host, out)
         }
-        Command::Check(args) => return check(cli, args, host, out),
-        Command::Monitors(command) => return monitors(cli, command, host, out),
+        Command::Check(args) => check(cli, args, host, out),
+        Command::Monitors(command) => monitors(cli, command, host, out),
         Command::Daemon => {
             let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
-            return crate::daemon::Daemon::new(host, loaded)?.run();
+            crate::daemon::Daemon::new(host, loaded)?.run()
         }
-        Command::Status => return status(cli, host, out),
-        Command::Firewall(command) => return firewall(cli, command, host, out),
-        Command::Init(args) => return init(cli, args, host, out),
-        Command::Uninstall { purge } => return uninstall(cli, *purge, host, out),
-        Command::Backup(args) => return backup(cli, args, host, out),
-        Command::Push { force } => return push(cli, *force, host, out),
-        Command::Pull { repository } => return pull(cli, repository.as_deref(), host, out),
+        Command::Status => status(cli, host, out),
+        Command::Firewall(command) => firewall(cli, command, host, out),
+        Command::Init(args) => init(cli, args, host, out),
+        Command::Uninstall { purge } => uninstall(cli, *purge, host, out),
+        Command::Backup(args) => backup(cli, args, host, out),
+        Command::Push { force } => push(cli, *force, host, out),
+        Command::Pull { repository } => pull(cli, repository.as_deref(), host, out),
         Command::RecoveryCard => {
             let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
             let card = crate::bundle::recovery_card(host.as_ref(), &loaded.config, &cli.paths().config);
@@ -353,16 +352,17 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             } else {
                 let _ = write!(out, "{card}");
             }
-            return Ok(());
+            Ok(())
         }
-        Command::Verify => return verify(cli, host, out),
-        Command::Restore(args) => return restore(cli, args, host, out),
-        Command::Migrate(MigrateCommand::Plan) => return migrate_plan(cli, host, out),
-        Command::Migrate(MigrateCommand::Shadow) => return migrate_shadow(cli, host, out),
-        Command::Migrate(MigrateCommand::Compare) => return migrate_compare(cli, host, out),
-        Command::Migrate(_) => ("migration", "M9"),
-    };
-    Err(Error::NotImplemented { what, milestone })
+        Command::Verify => verify(cli, host, out),
+        Command::Restore(args) => restore(cli, args, host, out),
+        Command::Migrate(MigrateCommand::Plan) => migrate_plan(cli, host, out),
+        Command::Migrate(MigrateCommand::Shadow) => migrate_shadow(cli, host, out),
+        Command::Migrate(MigrateCommand::Compare) => migrate_compare(cli, host, out),
+        Command::Migrate(MigrateCommand::Switch { only, force }) => migrate_switch(cli, only, *force, host, out),
+        Command::Migrate(MigrateCommand::Rollback { only }) => migrate_rollback(cli, only, host, out),
+        Command::Migrate(MigrateCommand::Finish { now }) => migrate_finish(cli, *now, host, out),
+    }
 }
 
 impl Cli {
@@ -1547,6 +1547,116 @@ fn migrate_compare(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Resul
         let _ = write!(out, "{}", loaded.masker.mask(&compare::render(&all)));
     }
     if all.iter().any(|c| c.count(compare::Verdict::Different) > 0) { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+/// What the three commands that change the legacy setup need: configuration, state, database, plan.
+fn migration(
+    cli: &Cli,
+    host: &Arc<dyn Host>,
+) -> Result<(crate::config::Loaded, StateDir, crate::state::db::Db, crate::migrate::Plan), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    if !host.exists(&state.snapshot()) {
+        return Err(Error::Usage(
+            "no snapshot yet: run `moi snapshot` first — the plan is made from what it records".to_string(),
+        ));
+    }
+    let db = state.open_db(host.as_ref())?;
+    let plan = crate::migrate::plan(host.as_ref(), &loaded.config, &state);
+    Ok((loaded, state, db, plan))
+}
+
+fn migrate_switch(
+    cli: &Cli,
+    only: &[String],
+    force: bool,
+    host: Arc<dyn Host>,
+    out: &mut dyn Write,
+) -> Result<(), Error> {
+    use crate::migrate::switch;
+    let (loaded, state, db, plan) = migration(cli, &host)?;
+    let cx = switch::Cx { host: &host, config: &loaded.config, state: &state, db: &db };
+    let (lines, refused) = switch::switch(&cx, &plan, only, force)?;
+    let held: Vec<String> =
+        plan.items.iter().map(|i| i.name.clone()).filter(|n| crate::migrate::shadow::held(&db, n)).collect();
+    if cli.json {
+        print_json(out, &json!({ "ok": !refused, "items": lines, "held": held }));
+    } else {
+        for line in &lines {
+            let _ = writeln!(out, "{}", loaded.masker.mask(line));
+        }
+        if held.is_empty() {
+            let _ = writeln!(
+                out,
+                "everything is moi's now. `moi migrate rollback` takes it back; `moi migrate finish` removes the legacy files after a week"
+            );
+        } else {
+            let _ = writeln!(out, "still with the legacy setup: {}", held.join(", "));
+        }
+    }
+    if refused { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+fn migrate_rollback(cli: &Cli, only: &[String], host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::migrate::switch;
+    let (loaded, state, db, plan) = migration(cli, &host)?;
+    let cx = switch::Cx { host: &host, config: &loaded.config, state: &state, db: &db };
+    let lines = switch::rollback(&cx, &plan, only)?;
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "items": lines }));
+    } else {
+        for line in &lines {
+            let _ = writeln!(out, "{line}");
+        }
+    }
+    Ok(())
+}
+
+fn migrate_finish(cli: &Cli, now: bool, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::migrate::switch;
+    let (loaded, state, db, plan) = migration(cli, &host)?;
+    let cx = switch::Cx { host: &host, config: &loaded.config, state: &state, db: &db };
+    let mut lines = switch::finish(&cx, &plan, now)?;
+    // the record of the server follows what was just removed
+    let config = Arc::new(loaded.config.clone());
+    match crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker) {
+        Ok(_) => lines.push("snapshot taken: the legacy setup is out of the server's description".to_string()),
+        Err(e) => lines.push(format!("the snapshot afterwards failed ({e}): run `moi snapshot`")),
+    }
+    // and nothing must be missing in Kuma because of it
+    if loaded.config.monitors.kuma.enabled {
+        let docker = crate::docker::Docker::new(Arc::clone(&host));
+        let plan = crate::monitors::local_inventory(host.as_ref(), &loaded.config, &docker).and_then(|inventory| {
+            crate::monitors::plan_for(
+                host.as_ref(),
+                &loaded.config,
+                &docker,
+                &state,
+                &db,
+                &inventory,
+                crate::monitors::Options::default(),
+            )
+        });
+        match plan {
+            Ok(plan) => {
+                let create = plan.steps.iter().filter(|s| s.action == crate::monitors::Action::Create).count();
+                lines.push(if create == 0 {
+                    "monitors: every check reports to the monitor it had".to_string()
+                } else {
+                    format!("monitors: {create} would be created — look at `moi monitors sync --dry-run`")
+                });
+            }
+            Err(e) => lines.push(format!("monitors could not be looked at ({e})")),
+        }
+    }
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "done": lines }));
+    } else {
+        for line in &lines {
+            let _ = writeln!(out, "{line}");
+        }
+    }
+    Ok(())
 }
 
 fn verify(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {

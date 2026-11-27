@@ -65,6 +65,8 @@ struct State {
     commands: BTreeMap<String, CmdOutput>,
     ran: Vec<String>,
     journal: Vec<Vec<(String, String)>>,
+    /// Paths a test removed from the overlay that the fixture below still has: gone until written again.
+    removed: BTreeSet<PathBuf>,
     /// Owners given to overlay files with `set_owner` (the test process cannot really chown).
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
@@ -197,6 +199,7 @@ impl FixtureHost {
                 commands: BTreeMap::new(),
                 ran: Vec::new(),
                 journal: Vec::new(),
+                removed: BTreeSet::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
                 locks: Vec::new(),
@@ -473,11 +476,26 @@ impl FixtureHost {
         rooted::resolve(&layers, path, follow_last)
     }
 
+    /// Absent in this case, or removed by the test.
+    fn gone(&self, logical: &Path) -> bool {
+        self.absent.iter().any(|gone| logical.starts_with(gone))
+            || self.state().removed.iter().any(|gone| logical.starts_with(gone))
+    }
+
+    /// After removing something from the overlay: if the fixture has it too, it stays gone.
+    fn note_removed(&self, path: &Path) {
+        if let Ok(below) = self.locate(path, false)
+            && below.layer.is_some()
+        {
+            self.state().removed.insert(below.logical);
+        }
+    }
+
     fn resolve(&self, path: &Path, follow_last: bool) -> io::Result<Resolved> {
         let resolved = self.locate(path, follow_last)?;
         // a path the case declares absent is gone unless the test created it again in the overlay
         let in_overlay = self.overlay.is_some() && resolved.layer == Some(0);
-        if !in_overlay && self.absent.iter().any(|gone| resolved.logical.starts_with(gone)) {
+        if !in_overlay && self.gone(&resolved.logical) {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
                 format!("no such file or directory: {}", path.display()),
@@ -629,13 +647,17 @@ impl Host for FixtureHost {
         let mut names = BTreeSet::new();
         let mut found = false;
         // what the case declares absent is only there as far as the overlay has it again
-        let gone = self.absent.iter().any(|gone| logical.starts_with(gone));
+        let gone = self.gone(&logical);
+        let removed: Vec<PathBuf> = self.state().removed.iter().cloned().collect();
         for layer in self.layers() {
             let real = layer.join(relative);
             if real.is_dir() && (!gone || Some(&layer) == self.overlay.as_ref()) {
                 found = true;
                 // `.gitkeep` only exists so git stores an otherwise empty fixture directory
-                let placeholder = |name: &String| Some(&layer) != self.overlay.as_ref() && name == ".gitkeep";
+                let placeholder = |name: &String| {
+                    Some(&layer) != self.overlay.as_ref()
+                        && (name == ".gitkeep" || removed.contains(&logical.join(name)))
+                };
                 names.extend(rooted::dir_names(&real)?.into_iter().filter(|n| !placeholder(n)));
             }
         }
@@ -666,11 +688,15 @@ impl Host for FixtureHost {
     }
 
     fn remove_file(&self, path: &Path) -> io::Result<()> {
-        fs::remove_file(self.overlay_only(path)?)
+        fs::remove_file(self.overlay_only(path)?)?;
+        self.note_removed(path);
+        Ok(())
     }
 
     fn remove_dir(&self, path: &Path) -> io::Result<()> {
-        fs::remove_dir(self.overlay_only(path)?)
+        fs::remove_dir(self.overlay_only(path)?)?;
+        self.note_removed(path);
+        Ok(())
     }
 
     fn symlink(&self, target: &Path, path: &Path) -> io::Result<()> {

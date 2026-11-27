@@ -85,10 +85,10 @@ Specs: 09
 
 ## M9 — Migration & cleanup (cestmoi)
 Specs: 11
-- [ ] Import serverstate history/notes/secrets/legacy state
-- [ ] shadow / compare / switch / rollback / finish
-- [ ] `plan` golden test on the cestmoi fixture; switch+rollback byte-identity test
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Import serverstate history/notes/secrets/legacy state
+- [x] shadow / compare / switch / rollback / finish
+- [x] `plan` golden test on the cestmoi fixture; switch+rollback byte-identity test
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M10 — Distribution
 Specs: 12
