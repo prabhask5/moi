@@ -70,8 +70,8 @@ Specs: 10
 Specs: 07, 08
 - [x] DB dump discovery + streaming dumps (incl. swarm tasks), SQLite online backup, Redis BGSAVE
 - [x] Identity set computation, `--dry-run` report, local archive + retention + size guard
-- [ ] restic driver, rate limit, R2 free-tier guard (GraphQL), retention/prune/check, repo size guard
-- [ ] State bundle (`moi-bundle` tag), `moi push`/`pull`, `moi recovery-card`
+- [x] restic driver, rate limit, R2 free-tier guard (GraphQL), retention/prune/check, repo size guard
+- [x] State bundle (`moi-bundle` tag), `moi push`/`pull`, `moi recovery-card`
 - [ ] Legacy log format to `backup.log_file`; backup monitor push; drill (optional)
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 

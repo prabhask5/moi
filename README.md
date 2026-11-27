@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot`, `moi log`, `moi diff`, `moi notes`, `moi audit`, `moi context`, `moi context share` `moi check` (resources, storage, services with edge probes, custom checks), `moi monitors list`, `moi monitors sync`, `moi daemon` (checks on their intervals, snapshots when something changes, heal rules, boot tasks), `moi status`, `moi firewall apply|diff|status`, `moi init`, `moi uninstall` and `moi backup` (database dumps and the local archive; off-site upload is next); every other command still exits with "not implemented yet".
+> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot`, `moi log`, `moi diff`, `moi notes`, `moi audit`, `moi context`, `moi context share` `moi check` (resources, storage, services with edge probes, custom checks), `moi monitors list`, `moi monitors sync`, `moi daemon` (checks on their intervals, snapshots when something changes, heal rules, boot tasks), `moi status`, `moi firewall apply|diff|status`, `moi init`, `moi uninstall` `moi backup` (database dumps, the local archive, the off-site copy with restic), `moi push`, `moi pull` and `moi recovery-card`; every other command still exits with "not implemented yet".
 
 ## What it does
 

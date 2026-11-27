@@ -26,6 +26,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - Firewall: `moi firewall apply|diff|status` replaces exactly the managed chains in one transaction, saves the previous rule set, and over SSH rolls back unless confirmed. Boot tasks: firewall, waiting for mounts and Docker, starting compose stacks that are not up.
 - `moi init` writes a first configuration from what it finds (disks, mounts, containers, Uptime Kuma; backups as a commented proposal), takes the first snapshot and installs `moi.service`; it never overwrites a configuration. `moi uninstall [--purge]` removes what moi installed.
 - `moi backup [--dry-run]`: dumps every Postgres and MySQL/MariaDB database (swarm services included), archives the identity set with consistent copies of live SQLite databases, applies retention and the size limit, logs in the legacy format and reports to the backup monitor. The daemon runs it at `backup.schedule`.
+- Off-site backup with restic behind the legacy guards (one upload per interval, the R2 account's real usage checked first, repository size ceiling), weekly prune and integrity check; the state bundle with `moi push` / `moi pull`; `moi recovery-card`.
 
 ### Changed
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

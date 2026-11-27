@@ -1,0 +1,4 @@
+# Persistence
+loading:0
+rdb_bgsave_in_progress:0
+rdb_last_bgsave_status:ok

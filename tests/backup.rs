@@ -48,13 +48,16 @@ impl Server {
     fn kuma(&self) -> Arc<Mutex<Vec<String>>> {
         let seen: Arc<Mutex<Vec<String>>> = Arc::default();
         let log = seen.clone();
-        self.fixture.set_http(Arc::new(move |_, raw| {
-            let line = String::from_utf8_lossy(raw).lines().next().unwrap_or_default().to_string();
-            if let Some(rest) = line.strip_prefix("GET /api/push/") {
-                log.lock().unwrap().push(rest.trim_end_matches(" HTTP/1.1").to_string());
-            }
-            b"HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}".to_vec()
-        }));
+        self.fixture.set_http_at(
+            "uptime.home:80",
+            Arc::new(move |_, raw| {
+                let line = String::from_utf8_lossy(raw).lines().next().unwrap_or_default().to_string();
+                if let Some(rest) = line.strip_prefix("GET /api/push/") {
+                    log.lock().unwrap().push(rest.trim_end_matches(" HTTP/1.1").to_string());
+                }
+                b"HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}".to_vec()
+            }),
+        );
         StateDir::new("/var/lib/moi").ensure(self.host.as_ref()).unwrap();
         let db = StateDir::new("/var/lib/moi").open_db(self.host.as_ref()).unwrap();
         db.conn().execute("INSERT INTO monitor_bindings (owner, monitor_name, push_token, updated_at) VALUES ('check:backup', 'Server Backup', 'FAKEbackupTok00004', 0)", []).unwrap();
@@ -167,7 +170,7 @@ fn a_run_dumps_every_database_archives_the_set_and_reports_ok() {
         "{out}"
     );
     assert!(lines.iter().any(|l| l.starts_with("Backup size: ") && l.ends_with(&format!("\t{RUN}"))), "{out}");
-    assert_eq!(lines[lines.len() - 2], "[2026-11-26 12:00:00] All backups: 0 GB (limit 20 GB)");
+    assert!(lines.contains(&"[2026-11-26 12:00:00] All backups: 0 GB (limit 20 GB)"));
     assert_eq!(*lines.last().unwrap(), format!("[2026-11-26 12:00:00] Backup OK: {RUN}"));
     assert!(!out.contains("ERROR") && !out.contains("warning"), "{out}");
     // appended to the log file the host-logs container reads, after what the legacy script wrote

@@ -29,6 +29,9 @@ const DEFAULT_CLOCK: u64 = 1_767_225_600;
 /// The fixture's whole network: gets `(host:port, raw HTTP request)` and returns the raw response.
 pub type HttpHandler = Arc<dyn Fn(&str, &[u8]) -> Vec<u8> + Send + Sync>;
 
+/// Something a test wants done when a command runs.
+pub type CommandHook = Arc<dyn Fn() + Send + Sync>;
+
 pub struct FixtureHost {
     dir: PathBuf,
     /// A case directory layered over `dir` (a parity case): same layout, every part optional.
@@ -50,11 +53,12 @@ pub struct FixtureHost {
     state: Mutex<State>,
     docker: Arc<Mutex<DockerState>>,
     http: Mutex<Option<HttpHandler>>,
+    /// Handlers for single `host:port`s; everything else stays with `http` or the `net` file.
+    http_at: Mutex<BTreeMap<String, HttpHandler>>,
     /// The fake network described by `net` files.
     net: Arc<Net>,
 }
 
-#[derive(Debug)]
 struct State {
     now: SystemTime,
     env: BTreeMap<String, String>,
@@ -70,6 +74,12 @@ struct State {
     /// What whoever is "at the terminal" will type, in order, and what they were asked.
     answers: Vec<String>,
     asked: Vec<String>,
+    /// Called when a matching command runs.
+    hooks: Vec<(String, CommandHook)>,
+    /// Answers queued per command line (or `prefix...`), given out in order.
+    sequences: BTreeMap<String, Vec<CmdOutput>>,
+    /// Environment of commands that were given one: (command line, variables).
+    environments: Vec<(String, Vec<(String, String)>)>,
     /// Standard input of commands that were given one: (command line, input).
     inputs: Vec<(String, String)>,
     /// Watches handed out: the directories each covers, and where its events go.
@@ -192,12 +202,16 @@ impl FixtureHost {
                 locks: Vec::new(),
                 answers: Vec::new(),
                 asked: Vec::new(),
+                hooks: Vec::new(),
+                sequences: BTreeMap::new(),
+                environments: Vec::new(),
                 inputs: Vec::new(),
                 watchers: Vec::new(),
                 notified: Vec::new(),
                 random_counter: 0,
             }),
             http: Mutex::new(None),
+            http_at: Mutex::new(BTreeMap::new()),
             net: Arc::default(),
             docker: Arc::default(),
         };
@@ -322,6 +336,18 @@ impl FixtureHost {
         self.state().commands.insert(line.to_string(), out);
     }
 
+    /// Call `hook` whenever a command matching `line` (exact, or `prefix...`) runs, before it is answered.
+    pub fn on_command(&self, line: &str, hook: CommandHook) {
+        self.state().hooks.push((line.to_string(), hook));
+    }
+
+    /// Queue an answer for a command: the first run gets the first one queued, and so on; the last
+    /// one stays. A line ending in `...` answers every command that starts like it.
+    pub fn add_command_then(&self, line: &str, status: i32, stdout: &str) {
+        let out = CmdOutput { status, stdout: stdout.as_bytes().to_vec(), ..CmdOutput::default() };
+        self.state().sequences.entry(line.to_string()).or_default().push(out);
+    }
+
     /// Every command line that was run, in order.
     pub fn commands_run(&self) -> Vec<String> {
         self.state().ran.clone()
@@ -350,6 +376,16 @@ impl FixtureHost {
     /// Every question asked at the terminal so far.
     pub fn asked(&self) -> Vec<String> {
         self.state().asked.clone()
+    }
+
+    /// The environment the first command starting with `prefix` was given.
+    pub fn environment_of(&self, prefix: &str) -> Vec<(String, String)> {
+        self.state()
+            .environments
+            .iter()
+            .find(|(line, _)| line.starts_with(prefix))
+            .map(|(_, env)| env.clone())
+            .unwrap_or_default()
     }
 
     /// What commands were given on standard input: (command line, input).
@@ -392,6 +428,11 @@ impl FixtureHost {
     /// `host:port` connected to and the raw HTTP request. Without one, connecting is refused.
     pub fn set_http(&self, handler: HttpHandler) {
         *self.http.lock().unwrap_or_else(PoisonError::into_inner) = Some(handler);
+    }
+
+    /// Answer connections to one `host:port` with `handler`; the rest of the network stays as it is.
+    pub fn set_http_at(&self, authority: &str, handler: HttpHandler) {
+        self.http_at.lock().unwrap_or_else(PoisonError::into_inner).insert(authority.to_string(), handler);
     }
 
     /// Every request the fake Docker engine received, as `METHOD /path?query`.
@@ -680,15 +721,56 @@ impl Host for FixtureHost {
         let line = cmd.line();
         let mut state = self.state();
         state.ran.push(line.clone());
+        if !cmd.env.is_empty() {
+            state.environments.push((line.clone(), cmd.env.clone()));
+        }
         if let Some(input) = &cmd.stdin {
             state.inputs.push((line.clone(), String::from_utf8_lossy(input).into_owned()));
         }
-        if let Some(out) = state.commands.get(&line) {
-            return Ok(out.clone());
+        // a test may want to look at the machine at the moment a command runs
+        let hook = state
+            .hooks
+            .iter()
+            .find(|(pattern, _)| {
+                *pattern == line || pattern.strip_suffix("...").is_some_and(|prefix| line.starts_with(prefix))
+            })
+            .map(|(_, hook)| Arc::clone(hook));
+        if let Some(hook) = hook {
+            drop(state);
+            hook();
+            state = self.state();
+        }
+        // answers a test queued, in order (the last one stays)
+        let matches = |pattern: &String| {
+            *pattern == line || pattern.strip_suffix("...").is_some_and(|prefix| line.starts_with(prefix))
+        };
+        if let Some(pattern) = state.sequences.keys().find(|k| matches(k)).cloned()
+            && let Some(queue) = state.sequences.get_mut(&pattern)
+        {
+            let out = if queue.len() > 1 { queue.remove(0) } else { queue[0].clone() };
+            return Ok(out);
+        }
+        if let Some(out) = state.commands.iter().find(|(pattern, _)| matches(pattern)).map(|(_, out)| out.clone()) {
+            return Ok(out);
         }
         drop(state);
-        let key = Self::command_key(&line);
         let dirs = self.fixture_dirs("commands");
+        // a `.cmd` file ending in `...` answers every command line that starts like it
+        let exact = Self::command_key(&line);
+        let by_prefix = || {
+            dirs.iter().flat_map(|d| fs::read_dir(d).into_iter().flatten().flatten()).find_map(|entry| {
+                let path = entry.path();
+                let pattern = (path.extension()? == "cmd").then(|| fs::read_to_string(&path).ok()).flatten()?;
+                let prefix = pattern.trim().strip_suffix("...")?;
+                line.starts_with(prefix)
+                    .then(|| path.file_stem().map(|stem| stem.to_string_lossy().into_owned()))
+                    .flatten()
+            })
+        };
+        let known_exactly = dirs
+            .iter()
+            .any(|d| ["out", "missing", "timeout"].iter().any(|ext| d.join(format!("{exact}.{ext}")).exists()));
+        let key = if known_exactly { exact } else { by_prefix().unwrap_or(exact) };
         let missing = || {
             let add = self.dir.join("commands").join(format!("{key}.out"));
             io::Error::new(
@@ -799,7 +881,8 @@ impl Host for FixtureHost {
     }
 
     fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>> {
-        match self.http.lock().unwrap_or_else(PoisonError::into_inner).clone() {
+        let one = self.http_at.lock().unwrap_or_else(PoisonError::into_inner).get(&format!("{host}:{port}")).cloned();
+        match one.or_else(|| self.http.lock().unwrap_or_else(PoisonError::into_inner).clone()) {
             Some(handler) => Ok(Box::new(HandlerConn {
                 authority: format!("{host}:{port}"),
                 handler,

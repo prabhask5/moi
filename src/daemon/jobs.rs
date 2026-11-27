@@ -164,6 +164,12 @@ fn snapshot(core: &Arc<Core>) -> Result<String, Error> {
         Ok(None) => {}
         Err(e) => message.push_str(&format!("; monitors not synced: {e}")),
     }
+    // what changed is off-site within the hour (the nightly backup pushes it in any case)
+    if commit.is_some()
+        && crate::bundle::push_if_due(host, &core.config, &core.state, &db) == Some(crate::bundle::Pushed::Saved)
+    {
+        message.push_str("; state bundle pushed");
+    }
     Ok(message)
 }
 

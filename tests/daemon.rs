@@ -457,7 +457,7 @@ fn the_daemon_snapshots_once_after_a_burst_and_keeps_up_with_continuous_change()
     let snapshot = &ran.iter().find(|(name, _)| name == "snapshot").expect("one snapshot").1;
     assert_eq!(
         (snapshot.status.as_str(), snapshot.message.as_str()),
-        ("ok", "156 files changed: initial snapshot of cestmoi")
+        ("ok", "156 files changed: initial snapshot of cestmoi; state bundle pushed")
     );
     assert_eq!(next(&daemon, "snapshot"), i64::MAX);
     s.fixture.advance(Duration::from_secs(600));

@@ -198,7 +198,12 @@ impl Net {
     pub fn connect(self: &Arc<Self>, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>> {
         let address = format!("{host}:{port}");
         let refused = || io::Error::new(io::ErrorKind::ConnectionRefused, "Connection refused");
-        let tcp = match self.tcp.get(&address) {
+        // connecting by name goes to the address the name resolves to
+        let by_name = || match self.dns.get(host).map(|dns| &dns.answer) {
+            Some(Answer::Address(ip)) => self.tcp.get(&format!("{ip}:{port}")),
+            _ => None,
+        };
+        let tcp = match self.tcp.get(&address).or_else(by_name) {
             Some(tcp) => tcp.clone(),
             // an address some `http` line is about accepts connections without being listed
             None if self.http.keys().any(|url| {

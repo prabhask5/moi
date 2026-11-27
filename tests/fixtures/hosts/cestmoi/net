@@ -49,3 +49,8 @@ http shortless.example.com/api/health 200
 dns compiler.example.com 203.0.113.17 took=0.004
 tcp 203.0.113.17:443 ok connect=0.012 tls=0.050 first=0.300 rest=0.046
 http compiler.example.com/healthz 200
+
+# Cloudflare's analytics API: real R2 usage of the account, asked before every upload
+dns api.cloudflare.com 198.51.100.20
+tcp 198.51.100.20:443 ok
+http api.cloudflare.com/client/v4/graphql 200 {"data":{"viewer":{"accounts":[{"ops":[{"sum":{"requests":1200},"dimensions":{"actionType":"PutObject"}},{"sum":{"requests":300},"dimensions":{"actionType":"ListObjectsV2"}},{"sum":{"requests":9000},"dimensions":{"actionType":"GetObject"}},{"sum":{"requests":800},"dimensions":{"actionType":"HeadObject"}},{"sum":{"requests":5000},"dimensions":{"actionType":"DeleteObject"}}],"sto":[{"max":{"payloadSize":2147483648,"metadataSize":1048576},"dimensions":{"bucketName":"cestmoi-backup"}},{"max":{"payloadSize":2000000000,"metadataSize":0},"dimensions":{"bucketName":"cestmoi-backup"}},{"max":{"payloadSize":1073741824,"metadataSize":0},"dimensions":{"bucketName":"moi-share"}}]}]}},"errors":null}
