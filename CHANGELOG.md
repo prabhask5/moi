@@ -21,7 +21,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - `moi context share [--ttl]`: uploads CONTEXT.md to a private S3/R2 bucket under a random key and prints a presigned link that expires (default 1 h, capped by `max_ttl`); `--list`, `--revoke` (deletes every shared copy at once), a bucket lifecycle rule as a safety net.
 - Health checks: `resources` (CPU, RAM, swap, CPU temperature, OOM kills, container restarts) and `storage` (SMART, kernel disk errors, space, inodes, read-only, writable mounts), whose messages are byte-identical to the legacy scripts; custom check scripts; `moi check [name] [--push] [--json]`.
 - `services` check: containers, swarm services, apps over HTTP, databases, reverse-proxy routing on the LAN and from the Internet with a staged diagnosis (DNS, connect, TLS, response), proxy errors, firewall rules — byte-identical to the legacy script — and the heal rules these results trigger (reattach a container to its network, restart sequence with cooldown). `[[heal]]` gains `report_failed`.
-- Uptime Kuma: read-only inventory from `kuma.db` (no credentials), the adoption planner, `moi monitors list` and `moi monitors sync --dry-run`.
+- Uptime Kuma: read-only inventory from `kuma.db` (no credentials), the adoption planner, `moi monitors list` and `moi monitors sync [--dry-run] [--update] [--prune]`, which adopts existing monitors (never changing their token), creates the missing ones over Kuma's socket API (1.23 and 2.x), and pauses — or with `--prune` deletes — only monitors it created.
 
 ### Changed
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

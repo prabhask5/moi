@@ -87,7 +87,7 @@ moi context share --list       # active shares and their expiry
 - The lifecycle rule (`moi-ctx-expire`: delete `ctx/` after 1 day) is added on the first share and remembered. A bucket that already has lifecycle rules keeps them untouched (setting a lifecycle configuration replaces the whole set) and moi says so; failing to set the rule is a warning, not an error — moi deletes expired copies itself.
 - `--ttl` is a duration (`30m`, `2h`); above `max_ttl` it is refused, and S3's own limit of 7 days applies. `--revoke` and `--list` take no `--ttl`.
 - Output: the URL on the first line, then `expires <time> UTC (in <ttl>)`. `--json`: `{ "ok": true, "share": { url, key, expires, ttl, lifecycle } }`, `{ "ok": true, "shares": [{key, created, expires}] }`, `{ "ok": true, "revoked": N }`.
-- `notify`: every share and revoke is written to the journal at notice level (`MOI_KEY=<object key>`). The push to the freshness monitor is added with the monitors (M5); R2 operation counting with the R2 guard (M7).
+- `notify`: every share and revoke is written to the journal at notice level (`MOI_KEY=<object key>`). The push to the freshness monitor happens when that monitor is bound (06); R2 operation counting with the R2 guard (M7).
 - HTTPS uses the system's CA bundle read through the host (`/etc/ssl/certs/ca-certificates.crt` and the usual alternatives); no certificates are compiled in. Redirects are not followed.
 
 ## Acceptance

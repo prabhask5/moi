@@ -706,6 +706,11 @@ fn context_share(
         &format!("context shared, expires {} UTC", history::display_time(&shared.expires)),
         &[("key", &shared.key)],
     );
+    // and, with `notify`, on the server's freshness monitor (when there is one)
+    if config.context.share.notify {
+        let message = format!("context shared, expires {} UTC", history::display_time(&shared.expires));
+        let _ = crate::monitors::push(&host, &config, &db, "freshness:snapshot", "up", &message);
+    }
     if let Some(lifecycle) =
         shared.lifecycle.as_deref().filter(|l| l.starts_with("not set") || l.starts_with("skipped"))
     {
@@ -797,29 +802,69 @@ fn monitors(cli: &Cli, command: &MonitorsCommand, host: Arc<dyn Host>, out: &mut
     match command {
         MonitorsCommand::Sync { dry_run, update, prune } => {
             let options = Options { update: *update, prune: *prune };
-            let (plan, _) = monitors::gather(host.as_ref(), &loaded.config, &docker, &state, &db, options)?;
-            if !*dry_run {
-                return Err(Error::NotImplemented {
-                    what: "applying the monitor plan (use --dry-run to see it)",
-                    milestone: "M5",
-                });
+            let config = &loaded.config;
+            if *dry_run {
+                // a dry run needs no login: Kuma's own database says what it has
+                let inventory = monitors::local_inventory(host.as_ref(), config, &docker)?;
+                let plan = monitors::plan_for(host.as_ref(), config, &docker, &state, &db, &inventory, options)?;
+                if cli.json {
+                    print_json(
+                        out,
+                        &json!({ "ok": true, "dry_run": true, "changes": plan.changes(), "plan": plan.steps, "warnings": plan.warnings }),
+                    );
+                } else {
+                    let _ = write!(out, "{}", plan.render());
+                    for warning in &plan.warnings {
+                        let _ = writeln!(out, "warning: {warning}");
+                    }
+                }
+                return Ok(());
+            }
+            let mut kuma = monitors::connect(&host, config)?;
+            let inventory = kuma.inventory().map_err(Error::Monitors)?;
+            let plan = monitors::plan_for(host.as_ref(), config, &docker, &state, &db, &inventory, options)?;
+            let report = monitors::apply::apply(&host, config, &docker, &db, &mut kuma, &plan, &inventory)?;
+            let log = Logger::new(Arc::clone(&host), "moi").with_masker(loaded.masker.clone());
+            if plan.changes() > 0 {
+                log.info(&format!("monitors sync: {}", report.summary()), &[("job", "monitors-sync")]);
             }
             if cli.json {
                 print_json(
                     out,
-                    &json!({ "ok": true, "dry_run": true, "changes": plan.changes(), "plan": plan.steps, "warnings": plan.warnings }),
+                    &json!({ "ok": true, "dry_run": false, "changes": plan.changes(), "plan": plan.steps, "result": report, "warnings": plan.warnings, "kuma": kuma.version }),
                 );
             } else {
-                let _ = write!(out, "{}", plan.render());
+                // what was done, without the monitors that are none of moi's business
+                let rows: Vec<[String; 4]> = plan
+                    .steps
+                    .iter()
+                    .filter(|s| s.owner.is_some())
+                    .map(|s| [s.action.as_str().to_string(), s.monitor.clone(), s.kind.clone(), s.detail.clone()])
+                    .collect();
+                if !rows.is_empty() {
+                    let _ = write!(out, "{}", monitors::table(["ACTION", "MONITOR", "TYPE", "DETAIL"], &rows));
+                }
+                for failure in &report.failed {
+                    let _ = writeln!(out, "failed: {}: {}", failure.monitor, failure.error);
+                }
                 for warning in &plan.warnings {
                     let _ = writeln!(out, "warning: {warning}");
                 }
+                let _ = writeln!(out, "{}", report.summary());
             }
-            Ok(())
+            if report.failed.is_empty() { Ok(()) } else { Err(Error::ProblemsFound) }
         }
         MonitorsCommand::List => {
-            let (plan, inventory) =
-                monitors::gather(host.as_ref(), &loaded.config, &docker, &state, &db, Options::default())?;
+            let inventory = monitors::local_inventory(host.as_ref(), &loaded.config, &docker)?;
+            let plan = monitors::plan_for(
+                host.as_ref(),
+                &loaded.config,
+                &docker,
+                &state,
+                &db,
+                &inventory,
+                Options::default(),
+            )?;
             // who a monitor belongs to: its binding, or what a sync would bind it to
             let owner = |id: i64| {
                 plan.steps

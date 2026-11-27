@@ -1,7 +1,10 @@
 //! Uptime Kuma: what moi wants monitored, what Kuma has, and the plan that reconciles the two without
 //! duplicating or severing anything (docs/spec/06-monitors.md).
 
+pub mod apply;
 pub mod inventory;
+pub mod kuma;
+pub mod socket;
 
 use std::collections::BTreeMap;
 
@@ -9,7 +12,7 @@ use serde::Serialize;
 
 pub use inventory::{Inventory, KumaMonitor};
 
-use crate::config::Config;
+use crate::config::{Config, MonitorMode};
 use crate::docker::Docker;
 use crate::error::Error;
 use crate::host::Host;
@@ -420,15 +423,8 @@ impl Plan {
     }
 }
 
-/// Everything a plan is made from, gathered from the machine. Needs no Kuma credentials.
-pub fn gather(
-    host: &dyn Host,
-    config: &Config,
-    docker: &Docker,
-    state: &StateDir,
-    db: &Db,
-    options: Options,
-) -> Result<(Plan, Inventory), Error> {
+/// The inventory without credentials: from Kuma's own database on this machine.
+pub fn local_inventory(host: &dyn Host, config: &Config, docker: &Docker) -> Result<Inventory, Error> {
     if !config.monitors.kuma.enabled {
         return Err(Error::Usage(
             "monitors are not configured: add a [monitors.kuma] section with the url of your Uptime Kuma to moi.toml"
@@ -441,9 +437,87 @@ pub fn gather(
                 .to_string(),
         )
     })?;
-    let inventory = inventory::read(host, &located)
-        .ok_or_else(|| Error::Usage(format!("cannot read {located} (read-only): is it Uptime Kuma's database?")))?;
+    inventory::read(host, &located)
+        .ok_or_else(|| Error::Usage(format!("cannot read {located} (read-only): is it Uptime Kuma's database?")))
+}
+
+/// Log in to Kuma's socket API with the configured user.
+pub fn connect(host: &std::sync::Arc<dyn Host>, config: &Config) -> Result<kuma::Kuma, Error> {
+    let settings = &config.monitors.kuma;
+    let (Some(url), true) = (&settings.url, settings.enabled) else {
+        return Err(Error::Usage(
+            "monitors are not configured: add a [monitors.kuma] section with the url of your Uptime Kuma to moi.toml"
+                .to_string(),
+        ));
+    };
+    let (Some(username), Some(password)) = (&settings.username, &settings.password) else {
+        return Err(Error::Usage(
+            "changing monitors needs a Uptime Kuma login: set username and password in [monitors.kuma] (as secret:… references) — `moi monitors sync --dry-run` works without".to_string(),
+        ));
+    };
+    let mut kuma = kuma::Kuma::connect(host, url).map_err(Error::Monitors)?;
+    kuma.login(username.expose(), password.expose()).map_err(Error::Monitors)?;
+    Ok(kuma)
+}
+
+/// The plan for an inventory, with everything else gathered from the machine.
+pub fn plan_for(
+    host: &dyn Host,
+    config: &Config,
+    docker: &Docker,
+    state: &StateDir,
+    db: &Db,
+    inventory: &Inventory,
+    options: Options,
+) -> Result<Plan, Error> {
     let wanted = desired(config, docker);
-    let plan = plan(config, &wanted, &inventory, &bindings(db)?, &feeders(host, config, state), options);
-    Ok((plan, inventory))
+    Ok(plan(config, &wanted, inventory, &bindings(db)?, &feeders(host, config, state), options))
+}
+
+/// Push one status and one message to the push monitor bound to `owner`. `Ok` when Kuma took it;
+/// otherwise why nothing was pushed — never a reason to fail what was being reported.
+pub fn push(
+    host: &std::sync::Arc<dyn Host>,
+    config: &Config,
+    db: &Db,
+    owner: &str,
+    status: &str,
+    message: &str,
+) -> Result<(), String> {
+    let kuma = &config.monitors.kuma;
+    if config.monitors.mode == MonitorMode::Shadow {
+        return Err("not pushed: monitors.mode is shadow".to_string());
+    }
+    let base = if kuma.push_base.is_empty() { kuma.url.clone().unwrap_or_default() } else { kuma.push_base.clone() };
+    if !kuma.enabled || base.is_empty() {
+        return Err("not pushed: no [monitors.kuma] url".to_string());
+    }
+    let token: Option<String> = db
+        .conn()
+        .query_row(
+            "SELECT push_token FROM monitor_bindings WHERE owner = ?1 AND push_token IS NOT NULL",
+            [owner],
+            |r| r.get(0),
+        )
+        .ok();
+    let Some(token) = token else {
+        return Err(format!("not pushed: no monitor is bound to {owner} yet (run `moi monitors sync`)"));
+    };
+    let url = format!(
+        "{}/api/push/{}?status={status}&msg={}&ping=",
+        base.trim_end_matches('/'),
+        crate::net::encode(&token),
+        crate::net::encode(message)
+    );
+    let client = crate::net::Client::new(std::sync::Arc::clone(host)).with_timeout(std::time::Duration::from_secs(15));
+    let mut last = String::new();
+    // one try and two retries, as `curl --retry 2` did
+    for _ in 0..3 {
+        match client.send("GET", &url, &[], None) {
+            Ok(response) if response.is_success() => return Ok(()),
+            Ok(response) => last = format!("HTTP {}", response.status),
+            Err(e) => last = e.to_string(),
+        }
+    }
+    Err(format!("push failed: {last}"))
 }

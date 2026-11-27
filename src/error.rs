@@ -32,6 +32,10 @@ pub enum Error {
     #[error("context share: {0}")]
     Share(String),
 
+    /// Uptime Kuma refused or could not be reached.
+    #[error("{0}")]
+    Monitors(String),
+
     #[error("history: {0}")]
     History(String),
 
@@ -62,6 +66,7 @@ impl Error {
             | Error::History(_)
             | Error::Usage(_)
             | Error::Share(_)
+            | Error::Monitors(_)
             | Error::Host { .. }
             | Error::Io(_) => 2,
         }
@@ -77,6 +82,7 @@ impl Error {
             Error::Docker(_) => "docker",
             Error::Usage(_) => "usage",
             Error::Share(_) => "share",
+            Error::Monitors(_) => "monitors",
             Error::Host { .. } | Error::Io(_) => "io",
         }
     }

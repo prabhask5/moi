@@ -53,7 +53,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `context` | CONTEXT.md generation + redaction |
 | `audit` | Coverage, restorability, reboot survival, disk placement |
 | `checks` | Check engine + built-ins (`resources`, `storage`, `services`, `edge`, `backup`) + `custom` scripts; sustained-state store |
-| `monitors` | Uptime Kuma (socket.io client, push HTTP, read-only `kuma.db` inventory), healthchecks.io awareness, adoption planner |
+| `monitors` | Uptime Kuma (socket.io client over HTTP long-polling, push HTTP, read-only `kuma.db` inventory), healthchecks.io awareness, adoption planner and its application |
 | `backup` | DB dump discovery/execution, volume/path selection, local archive, restic driver, R2 free-tier guard, retention |
 | `bundle` | State bundle (stored as a tagged restic snapshot), bootstrap |
 | `restore` | Phases, interactive storage mapping, DB import, verify + reboot expectations |
@@ -66,7 +66,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
-- Async (tokio) only where it pays: the daemon and Kuma's socket.io. Plain outbound HTTP (`net`) is blocking. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
+- Async (tokio) only where it pays: the daemon. Plain outbound HTTP (`net`) is blocking, and so is Kuma's socket.io client, which uses the long-polling transport on top of it. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
 - External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.
@@ -98,7 +98,7 @@ MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-sta
 - **Tests live in `tests/`** (CI fails on test files elsewhere; small `#[cfg(test)]` unit tests inside modules are allowed for pure functions). Fixture hosts: `tests/fixtures/hosts/<name>/` (a fake root: `proc/`, `sys/`, `etc/`, `docker/` API responses, `commands/` canned outputs).
 - **`MOI_ROOT=<fixture dir>`** makes the binary use `FixtureHost` instead of the real machine: files from `<dir>/root`, canned commands, fixed clock, no journal, only `MOI_*` environment. It is read-only unless `MOI_ROOT_OVERLAY=<dir>` gives it somewhere to write. A `MOI_ROOT` that is not a fixture is an error, never a fallback to the real system.
 - **Parity tests**: `tests/parity/` holds inputs and the exact Kuma messages the legacy scripts in `reference/cestmoi/scripts/` produce; built-in checks must reproduce them byte for byte (see `docs/spec/05-checks.md`).
-- **Integration tests that need services** (Uptime Kuma 1.23.17, Postgres, restic with a local repo) run in CI service containers and are `#[ignore]` locally unless `MOI_IT=1`.
+- **Integration tests that need services** (Uptime Kuma 1.23.17 and 2.x, Postgres, an S3 server, restic with a local repo) run in CI service containers and are `#[ignore]` locally unless `MOI_IT=1`.
 - Never run moi against the development machine's real system in tests. Never commit secrets: `reference/` is redacted; fixtures use fake tokens (`FAKE…`).
 - Formatting `rustfmt` (config in `rustfmt.toml`), lints `clippy -D warnings` with the lint set in `Cargo.toml`, dependency policy `cargo deny` (`deny.toml`: permissive licenses only, no duplicate majors without reason, no git deps).
 - Keep dependencies few and justified; add a line to `docs/spec/14-security.md#dependencies` when adding one.
