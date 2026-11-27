@@ -72,8 +72,8 @@ Specs: 07, 08
 - [x] Identity set computation, `--dry-run` report, local archive + retention + size guard
 - [x] restic driver, rate limit, R2 free-tier guard (GraphQL), retention/prune/check, repo size guard
 - [x] State bundle (`moi-bundle` tag), `moi push`/`pull`, `moi recovery-card`
-- [ ] Legacy log format to `backup.log_file`; backup monitor push; drill (optional)
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Legacy log format to `backup.log_file`; backup monitor push; drill (optional)
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M8 — Restore & verify
 Specs: 09

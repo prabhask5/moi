@@ -319,6 +319,32 @@ impl Docker {
         self.list("/services?status=true")
     }
 
+    /// Create a container (not started) from an Engine API description; returns its id.
+    pub fn create_container(&self, name: &str, spec: &Value) -> Result<String> {
+        let path = format!("/containers/create?name={}", http::encode(name));
+        let raw = self.send("POST", &path, Some(spec), false)?.bytes().map_err(|e| DockerError::Protocol {
+            method: "POST",
+            path: path.clone(),
+            message: e.to_string(),
+        })?;
+        let created: Value = serde_json::from_slice(&raw).unwrap_or(Value::Null);
+        created["Id"].as_str().map(str::to_string).ok_or(DockerError::Protocol {
+            method: "POST",
+            path,
+            message: "no container id in the answer".into(),
+        })
+    }
+
+    pub fn start(&self, container: &str) -> Result<()> {
+        self.send("POST", &format!("/containers/{}/start", http::encode(container)), None, false).map(|_| ())
+    }
+
+    /// Remove a container with its anonymous volumes, running or not.
+    pub fn remove_container(&self, container: &str) -> Result<()> {
+        self.send("DELETE", &format!("/containers/{}?force=true&v=true", http::encode(container)), None, false)
+            .map(|_| ())
+    }
+
     /// Restart a container (stop, then start), by id or name.
     pub fn restart(&self, container: &str) -> Result<()> {
         self.send("POST", &format!("/containers/{}/restart", http::encode(container)), None, false).map(|_| ())
