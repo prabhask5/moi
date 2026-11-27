@@ -1,0 +1,270 @@
+moi restore (DRY RUN — nothing will change)  bundle: /root/moi-bundle  (2026-03-01T12:00:00Z)
+
+==> phase: preflight — compare the old machine with this one; install base tools
+  Source machine : cestmoi  captured 2026-11-26T17:00:00Z
+  Source OS      : Ubuntu 26.04.1 LTS
+  This machine   : myserver — Ubuntu 24.04.3 LTS
+WARN: the operating system differs: package names and repositories may not match exactly; review the packages phase
+  Containers: 35  stacks: 14  custom units: 10
+    [dry-run] apt-get update -q
+    [dry-run] apt-get install -y -q curl ca-certificates gnupg restic
+
+==> phase: packages — apt repositories and keys, manually installed packages, holds, snaps, pipx, npm
+    kept this machine's apt sources; the old third-party repositories are in the bundle under files/etc/apt/sources.list.d
+    [dry-run] apt-get update -q
+    installing 7 apt packages
+    [dry-run] apt-get install -y -q bash chrony docker-compose-v2 docker.io incus restic smartmontools
+    [dry-run] apt-get install -y -q pipx
+    [dry-run] pipx install yt-dlp
+    [dry-run] npm install -g @anthropic-ai/claude-code
+
+==> phase: users — groups and users with the same ids, password hashes, group memberships
+    [dry-run] groupadd -g 1000 prabhas
+    [dry-run] useradd -u 1000 -g 1000 -d /home/prabhas -m -s /bin/bash -c Prabhas prabhas
+    [dry-run] chpasswd -e
+    [dry-run] usermod -aG sudo prabhas
+    [dry-run] groupadd -r docker
+    [dry-run] usermod -aG docker prabhas
+    [dry-run] groupadd -r incus-admin
+    [dry-run] usermod -aG incus-admin prabhas
+
+==> phase: home — home directories as captured: dotfiles, ~/.ssh, tool configuration
+    root: /root
+    [dry-run] restore /root (1 files)
+    prabhas: /home/prabhas
+    [dry-run] restore /home/prabhas (6 files)
+
+==> phase: storage — map the old mounts to this machine's disks; fstab
+  OLD machine disks:
+    /dev/sda             4000 GB  TOSHIBA MQ04UBB400  -  
+    /dev/sda1            4000 GB  TOSHIBA MQ04UBB400  storage  aaaaaaaa-0000-4000-8000-000000000001
+    /dev/nvme0n1          256 GB  SAMSUNG MZVLB256HBHQ  -  
+    /dev/nvme0n1p1          1 GB  SAMSUNG MZVLB256HBHQ  -  1111-2222
+    /dev/nvme0n1p2          2 GB  SAMSUNG MZVLB256HBHQ  -  aaaaaaaa-0000-4000-8000-000000000002
+    /dev/nvme0n1p3        252 GB  SAMSUNG MZVLB256HBHQ  -  FAKE-LVM-UUID
+    /dev/mapper/ubuntu--vg-ubuntu--lv    252 GB  SAMSUNG MZVLB256HBHQ  -  aaaaaaaa-0000-4000-8000-000000000003
+  THIS machine:
+    NAME   SIZE TYPE FSTYPE LABEL MODEL       MOUNTPOINT
+    vda    100G disk              QEMU HARDDISK
+    └─vda2 100G part ext4               /
+    sdb    3.6T disk              WDC WD40
+
+  ── /mnt/storage   (old: LABEL=storage  ext4  defaults,nofail)
+     old device: /dev/sda1  4000 GB  TOSHIBA MQ04UBB400
+    [dry-run] would ask which device holds /mnt/storage here (formatting only after typing FORMAT <device>)
+    [dry-run] systemctl daemon-reload
+    [dry-run] mount -a
+
+==> phase: dirs — recreate the directory trees of the data roots with owners and modes
+    [dry-run] would create 8 directories under /home (it does not exist here yet)
+    [dry-run] would create 11 directories under /mnt/storage (it does not exist here yet)
+    [dry-run] would create 31 directories under /opt (it does not exist here yet)
+
+==> phase: docker-engine — install Docker and the compose plugin; /etc/docker and its drop-ins
+    [dry-run] apt-get install -y -q docker.io docker-compose-v2
+    [dry-run] restore /etc/docker (1 files)
+    [dry-run] restore /etc/systemd/system/docker.service.d (3 files)
+    [dry-run] systemctl daemon-reload
+    [dry-run] systemctl enable docker
+    [dry-run] systemctl restart docker
+
+==> phase: data — restore the backed-up data from the off-site repository
+  The data comes back from the backup repository (the bundle holds none of it):
+    /opt/services
+    /opt/yams
+    /opt/scripts
+    /etc/dokploy
+    /etc/iptables
+    /etc/ssh/sshd_config.d
+    /etc/systemd/system
+    /etc/docker
+    /mnt/storage/database/db-config
+    /mnt/storage/database/storage
+    /mnt/storage/outline/data
+    /etc/moi
+    not in the backup: /mnt/storage/media — media library — temporary, re-downloadable
+    not in the backup: /var/lib/incus — devbox VM — rebuilt from github.com/prabhask5/dotfiles
+    the repository does not answer from here yet (restic comes with the preflight phase): the latest `nightly` snapshot would be used
+    [dry-run] restic restore latest --target /
+    [dry-run] mkdir -p /mnt/storage/media
+    [dry-run] mkdir -p /var/lib/incus
+
+==> phase: config — /etc as it was: ssh, sysctl, sudoers and every other captured file; hostname, time zone
+    [dry-run] restore /etc/apparmor.d (1 files)
+    [dry-run] restore /etc/chrony (1 files)
+    [dry-run] restore /etc/default (1 files)
+    [dry-run] restore /etc/dokploy (3 files)
+    [dry-run] restore /etc/host-firewall (2 files)
+    [dry-run] restore /etc/hosts (1 files)
+    [dry-run] restore /etc/ssh (2 files)
+    [dry-run] restore /etc/sysctl.d (1 files)
+    [dry-run] restore /etc/systemd/resolved.conf (1 files)
+    13 files under /etc would be put back
+    [dry-run] hostnamectl set-hostname cestmoi
+    [dry-run] timedatectl set-timezone America/New_York
+    [dry-run] sysctl --system
+    [dry-run] sshd -t, then (after asking) systemctl reload ssh
+
+==> phase: scripts — script directories and every script a unit or cron job refers to
+    [dry-run] restore /usr/local/bin (3 files)
+    [dry-run] restore /usr/local/sbin (1 files)
+    [dry-run] restore /opt/scripts (13 files)
+    [dry-run] restore /home/prabhas/bin/weekly-note.sh (1 files)
+
+==> phase: incus — Incus with its storage pools, networks and profiles; instances as declared
+    [dry-run] apt-get install -y -q incus
+    [dry-run] incus admin init --preseed
+    instance devbox: not restored — devbox VM — rebuilt from github.com/prabhask5/dotfiles
+
+==> phase: docker — networks, databases first with their dumps, then every stack; swarm services
+    [dry-run] create network database_default (bridge 172.21.0.0/16)
+    [dry-run] create network homelab (bridge 172.19.0.0/16)
+    [dry-run] create network outline_default (bridge 172.20.0.0/16)
+    [dry-run] create network yams_default (bridge 172.22.0.0/16)
+    [dry-run] restore /opt/services/adguard (1 files, keeping what is there)
+  stack adguard
+    [dry-run] docker compose -p adguard --project-directory /opt/services/adguard -f /opt/services/adguard/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p adguard --project-directory /opt/services/adguard -f /opt/services/adguard/docker-compose.yml up -d
+    [dry-run] restore /opt/services/cloudflared (3 files, keeping what is there)
+  stack cloudflared
+    [dry-run] docker compose -p cloudflared --project-directory /opt/services/cloudflared -f /opt/services/cloudflared/docker-compose.yml --env-file /opt/services/cloudflared/.env pull -q --ignore-pull-failures
+    [dry-run] docker compose -p cloudflared --project-directory /opt/services/cloudflared -f /opt/services/cloudflared/docker-compose.yml --env-file /opt/services/cloudflared/.env up -d
+    [dry-run] restore /opt/services/database (3 files, keeping what is there)
+  stack database
+    [dry-run] docker compose -p database --project-directory /opt/services/database -f /opt/services/database/docker-compose.yml --env-file /opt/services/database/.env pull -q --ignore-pull-failures
+    [dry-run] docker compose -p database --project-directory /opt/services/database -f /opt/services/database/docker-compose.yml --env-file /opt/services/database/.env up -d db
+    [dry-run] supabase-db: if its data directory is empty, load its newest dump (<backup>/db/supabase-db.sql.gz)
+    [dry-run] docker compose -p database --project-directory /opt/services/database -f /opt/services/database/docker-compose.yml --env-file /opt/services/database/.env up -d
+    [dry-run] restore /opt/services/ddns (2 files, keeping what is there)
+  stack ddns
+    [dry-run] docker compose -p ddns --project-directory /opt/services/ddns -f /opt/services/ddns/docker-compose.yml --env-file /opt/services/ddns/.env pull -q --ignore-pull-failures
+    [dry-run] docker compose -p ddns --project-directory /opt/services/ddns -f /opt/services/ddns/docker-compose.yml --env-file /opt/services/ddns/.env up -d
+    [dry-run] restore /opt/services/dozzle (1 files, keeping what is there)
+  stack dozzle
+    [dry-run] docker compose -p dozzle --project-directory /opt/services/dozzle -f /opt/services/dozzle/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p dozzle --project-directory /opt/services/dozzle -f /opt/services/dozzle/docker-compose.yml up -d
+    [dry-run] restore /opt/services/monitoring/glances (1 files, keeping what is there)
+  stack glances
+    [dry-run] docker compose -p glances --project-directory /opt/services/monitoring/glances -f /opt/services/monitoring/glances/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p glances --project-directory /opt/services/monitoring/glances -f /opt/services/monitoring/glances/docker-compose.yml up -d
+    [dry-run] restore /opt/services/homepage (2 files, keeping what is there)
+  stack homepage
+    [dry-run] docker compose -p homepage --project-directory /opt/services/homepage -f /opt/services/homepage/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p homepage --project-directory /opt/services/homepage -f /opt/services/homepage/docker-compose.yml up -d
+    [dry-run] restore /opt/services/host-logs (1 files, keeping what is there)
+  stack host-logs
+    [dry-run] docker compose -p host-logs --project-directory /opt/services/host-logs -f /opt/services/host-logs/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p host-logs --project-directory /opt/services/host-logs -f /opt/services/host-logs/docker-compose.yml up -d
+    [dry-run] restore /opt/services/old-wiki (1 files, keeping what is there)
+    stack old-wiki was not running on the old server: its files are back, it is not started
+    [dry-run] restore /opt/services/outline (2 files, keeping what is there)
+  stack outline
+    [dry-run] docker compose -p outline --project-directory /opt/services/outline -f /opt/services/outline/docker-compose.yml --env-file /opt/services/outline/.env pull -q --ignore-pull-failures
+    [dry-run] docker compose -p outline --project-directory /opt/services/outline -f /opt/services/outline/docker-compose.yml --env-file /opt/services/outline/.env up -d postgres
+    [dry-run] outline-postgres: if its data directory is empty, load its newest dump (<backup>/db/outline-postgres.sql.gz)
+    [dry-run] docker compose -p outline --project-directory /opt/services/outline -f /opt/services/outline/docker-compose.yml --env-file /opt/services/outline/.env up -d
+    [dry-run] restore /opt/services/monitoring/scrutiny (1 files, keeping what is there)
+  stack scrutiny
+    [dry-run] docker compose -p scrutiny --project-directory /opt/services/monitoring/scrutiny -f /opt/services/monitoring/scrutiny/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p scrutiny --project-directory /opt/services/monitoring/scrutiny -f /opt/services/monitoring/scrutiny/docker-compose.yml up -d
+    [dry-run] restore /opt/services/seerr (1 files, keeping what is there)
+  stack seerr
+    [dry-run] docker compose -p seerr --project-directory /opt/services/seerr -f /opt/services/seerr/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p seerr --project-directory /opt/services/seerr -f /opt/services/seerr/docker-compose.yml up -d
+    [dry-run] restore /opt/services/monitoring/uptime-kuma (1 files, keeping what is there)
+  stack uptime-kuma
+    [dry-run] docker compose -p uptime-kuma --project-directory /opt/services/monitoring/uptime-kuma -f /opt/services/monitoring/uptime-kuma/docker-compose.yml pull -q --ignore-pull-failures
+    [dry-run] docker compose -p uptime-kuma --project-directory /opt/services/monitoring/uptime-kuma -f /opt/services/monitoring/uptime-kuma/docker-compose.yml up -d
+    [dry-run] restore /opt/yams (6 files, keeping what is there)
+  stack yams
+    [dry-run] docker compose -p yams --project-directory /opt/yams -f /opt/yams/docker-compose.yml --env-file /opt/yams/.env pull -q --ignore-pull-failures
+    [dry-run] docker compose -p yams --project-directory /opt/yams -f /opt/yams/docker-compose.yml --env-file /opt/yams/.env up -d bookorbit-db
+    [dry-run] bookorbit-db: if its data directory is empty, load its newest dump (<backup>/db/bookorbit-db.sql.gz)
+    [dry-run] docker compose -p yams --project-directory /opt/yams -f /opt/yams/docker-compose.yml --env-file /opt/yams/.env up -d
+    [dry-run] docker swarm init
+    [dry-run] create overlay network dokploy-network
+    [dry-run] create service dokploy (dokploy/dokploy:v0.31.0)
+    [dry-run] create service dokploy-postgres (postgres:16)
+    [dry-run] dokploy-postgres: if its data directory is empty, load its newest dump (<backup>/db/dokploy-postgres.sql.gz)
+    [dry-run] create service shortless-redis-m3n4 (redis:8)
+WARN: these services ran images that were built on the old server and exist nowhere else — deploy them again from where they were built (Dokploy: open each application and redeploy): compiler-ui-a5b6 dokploy-bridge-c7d8 shortless-app-p9q1 stellar-planner-x7k2
+
+    #!/bin/sh
+    # Recreate standalone container "dokploy-traefik": generated by moi from the Docker API.
+    # Review before running. Better: move it into a compose file.
+    set -e
+    docker run -d \
+      --name dokploy-traefik \
+      --restart always \
+      --network dokploy-network \
+      -p 443:443 \
+      -p 80:80 \
+      -v /etc/dokploy/traefik/dynamic:/etc/dokploy/traefik/dynamic \
+      -v /etc/dokploy/traefik/traefik.yml:/etc/traefik/traefik.yml \
+      -v /var/run/docker.sock:/var/run/docker.sock:ro \
+      -e CF_DNS_API_TOKEN=… \
+      --log-opt max-file=3 \
+      --log-opt max-size=10m \
+      traefik:v3.6.1
+    docker network connect homelab dokploy-traefik
+    [dry-run] sh /root/moi-bundle/var/lib/moi/state/snapshot/docker/standalone/dokploy-traefik.sh
+
+==> phase: moi — moi's own configuration and history; the service
+    [dry-run] restore /etc/moi (4 files)
+    [dry-run] copy the old server's state and history to /var/lib/moi/state
+    [dry-run] install /etc/systemd/system/moi.service; systemctl daemon-reload; systemctl enable --now moi.service
+
+==> phase: systemd — remaining custom units; units that were enabled
+    [dry-run] restore /etc/systemd/system/docker.service.d/10-boot-order.conf (1 files)
+    [dry-run] restore /etc/systemd/system/docker.service.d/storage.conf (1 files)
+    [dry-run] restore /etc/systemd/system/docker.service.d/wait-for-storage.conf (1 files)
+    [dry-run] restore /etc/systemd/system/homelab-selfcheck.service (1 files)
+    [dry-run] restore /etc/systemd/system/homelab-selfcheck.timer (1 files)
+    [dry-run] restore /etc/systemd/system/homelab-services.service (1 files)
+    [dry-run] restore /etc/systemd/system/host-firewall.service (1 files)
+    [dry-run] restore /etc/systemd/system/server-backup.service (1 files)
+    [dry-run] restore /etc/systemd/system/server-backup.timer (1 files)
+    [dry-run] restore /etc/systemd/system/traefik-config-guard.path (1 files)
+    [dry-run] restore /etc/systemd/system/traefik-config-guard.service (1 files)
+    [dry-run] restore /etc/systemd/system/traefik-homelab.service (1 files)
+    [dry-run] restore /etc/systemd/system/yams.service (1 files)
+    [dry-run] systemctl daemon-reload
+    [dry-run] systemctl enable chrony.service
+    [dry-run] systemctl enable cron.service
+    [dry-run] systemctl enable docker.service
+    [dry-run] systemctl enable homelab-selfcheck.timer
+    [dry-run] systemctl enable homelab-services.service
+    [dry-run] systemctl enable host-firewall.service
+    [dry-run] systemctl enable incus-startup.service
+    [dry-run] systemctl enable server-backup.timer
+    [dry-run] systemctl enable ssh.socket
+    [dry-run] systemctl enable traefik-config-guard.path
+    [dry-run] systemctl enable traefik-homelab.service
+    [dry-run] systemctl enable yams.service
+  custom units: homelab-selfcheck.service homelab-selfcheck.timer homelab-services.service host-firewall.service server-backup.service server-backup.timer traefik-config-guard.path traefik-config-guard.service traefik-homelab.service yams.service
+    [dry-run] systemctl restart homelab-selfcheck.timer
+    [dry-run] systemctl restart homelab-services.service
+    [dry-run] systemctl restart host-firewall.service
+    [dry-run] systemctl restart server-backup.timer
+    [dry-run] systemctl restart traefik-config-guard.path
+    [dry-run] systemctl restart traefik-homelab.service
+    [dry-run] systemctl restart yams.service
+
+==> phase: cron — crontabs and /etc/cron.*
+    [dry-run] crontab -u prabhas /root/moi-bundle/var/lib/moi/state/snapshot/cron/user-prabhas.crontab
+    crontab of prabhas
+    [dry-run] restore /etc/crontab (1 files)
+    [dry-run] restore /etc/cron.d (3 files)
+
+==> phase: firewall — the managed firewall chains, with the way back arranged first
+    rules may name the old machine's interfaces: enp1s0 incusbr0
+    managed chains: INPUT, DOCKER-USER
+    [dry-run] moi firewall apply (previous rules saved; over SSH the rollback is scheduled first and the rules kept only when confirmed)
+
+==> phase: monitors — Uptime Kuma: every monitor must be found again, none created
+    [dry-run] moi monitors sync --dry-run: every monitor must be `keep` or `adopt` (Kuma's data came back with the backup; push tokens are unchanged)
+
+==> phase: verify — check everything against the old server; the reboot that proves it
+    [dry-run] moi verify against what ran on the old server; then the reboot that proves it survives one
+
+dry run finished: nothing was changed

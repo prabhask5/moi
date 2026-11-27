@@ -19,6 +19,9 @@ pub(crate) struct DockerState {
     pub requests: Vec<String>,
     /// Request path (no query) → JSON body, shadowing the fixture's files.
     pub overrides: BTreeMap<String, String>,
+    /// What was sent with a request: the body of a `POST`, and for an exec whatever was written to its
+    /// standard input afterwards. `(request line, bytes)`.
+    pub sent: Vec<(String, Vec<u8>)>,
 }
 
 #[derive(Debug)]
@@ -28,11 +31,14 @@ pub(crate) struct FakeConn {
     state: Arc<Mutex<DockerState>>,
     request: Vec<u8>,
     response: Option<io::Cursor<Vec<u8>>>,
+    /// The request line once answered, and what was written after the answer (an exec's input).
+    line: String,
+    stream: Vec<u8>,
 }
 
 impl FakeConn {
     pub fn new(dirs: Vec<PathBuf>, state: Arc<Mutex<DockerState>>) -> Self {
-        Self { dirs, state, request: Vec::new(), response: None }
+        Self { dirs, state, request: Vec::new(), response: None, line: String::new(), stream: Vec::new() }
     }
 
     /// Where a fixture file is: in the first directory that has it (else where the last would have it).
@@ -48,7 +54,11 @@ impl FakeConn {
 
 impl Write for FakeConn {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.request.extend_from_slice(buf);
+        if self.response.is_some() {
+            self.stream.extend_from_slice(buf);
+        } else {
+            self.request.extend_from_slice(buf);
+        }
         Ok(buf.len())
     }
 
@@ -72,6 +82,12 @@ impl Read for FakeConn {
 
 impl Conn for FakeConn {
     fn set_timeout(&mut self, _timeout: Option<Duration>) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn close_write(&mut self) -> io::Result<()> {
+        let stream = std::mem::take(&mut self.stream);
+        self.state.lock().unwrap_or_else(PoisonError::into_inner).sent.push((self.line.clone(), stream));
         Ok(())
     }
 }
@@ -112,8 +128,12 @@ impl FakeConn {
         let override_body = {
             let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
             state.requests.push(format!("{method} {target}"));
+            if method == "POST" && !body.is_empty() {
+                state.sent.push((format!("{method} {target}"), body.as_bytes().to_vec()));
+            }
             state.overrides.get(&path).cloned()
         };
+        self.line = format!("{method} {target}");
         let segments: Vec<&str> = path.trim_matches('/').split('/').collect();
         // `docker/fail`: requests this engine refuses, as `METHOD /path-prefix status message`
         for line in fs::read_to_string(self.file("fail")).unwrap_or_default().lines() {

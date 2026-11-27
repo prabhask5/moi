@@ -26,7 +26,7 @@ The fake Docker engine (`docker/`, absent = no Docker on this host):
 
 - `GET /x/y?query` is answered from `docker/x/y.json`, the query ignored (`/containers/json` → `containers/json.json`, `/networks` → `networks.json`). Containers can be addressed by id, id prefix or name; their files live under `containers/<full id>/`.
 - `GET /events` streams the lines of `events.jsonl` and closes.
-- `exec` is answered from `exec/<container name>/<key>.out` (+ `.err`, `.exit`; `.cmd` for humans), keyed like `commands/` by the command line.
+- `exec` is answered from `exec/<container name>/<key>.out` (+ `.err`, `.exit`; `.cmd` for humans), keyed like `commands/` by the command line. What an exec is sent on its standard input, and every `POST` body, is recorded (`FixtureHost::docker_sent`).
 - `GET /containers/<c>/logs` returns `containers/<id>/logs.txt` as stdout and `logs.err` as stderr.
 - `GET /services?status=true` adds `ServiceStatus` to `services.json`: every wanted replica running, unless `service-status.json` (`{"name": "running/wanted"}`) says otherwise.
 - `fail` lists requests the engine refuses: `METHOD /path-prefix status message` per line.

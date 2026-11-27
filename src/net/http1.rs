@@ -125,6 +125,11 @@ impl Response {
 }
 
 impl Body {
+    /// The connection itself, for writing to an upgraded stream (the standard input of an exec).
+    pub fn conn(&mut self) -> &mut Box<dyn Conn> {
+        self.reader.get_mut()
+    }
+
     /// Change the read timeout of the underlying connection (`None` blocks forever, for event streams).
     pub fn set_timeout(&mut self, timeout: Option<std::time::Duration>) -> io::Result<()> {
         self.reader.get_mut().set_timeout(timeout)

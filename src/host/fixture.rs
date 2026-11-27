@@ -440,6 +440,11 @@ impl FixtureHost {
         self.docker.lock().unwrap_or_else(PoisonError::into_inner).requests.clone()
     }
 
+    /// What the fake Docker engine was sent: `POST` bodies, and the standard input of execs.
+    pub fn docker_sent(&self) -> Vec<(String, Vec<u8>)> {
+        self.docker.lock().unwrap_or_else(PoisonError::into_inner).sent.clone()
+    }
+
     /// Answer `GET <path>` (no query) with this JSON instead of the fixture's file: how a test changes
     /// the engine's state between two snapshots.
     pub fn set_docker(&self, path: &str, json: &str) {

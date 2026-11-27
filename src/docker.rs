@@ -499,6 +499,83 @@ impl Docker {
         Ok((state["ExitCode"].as_i64().unwrap_or(-1), stderr))
     }
 
+    /// Run a command inside a container with `input` as its standard input (a dump being loaded).
+    /// Returns the exit code and the last of what it printed.
+    pub fn exec_from(
+        &self,
+        container: &str,
+        cmd: &[&str],
+        options: &ExecOptions,
+        input: &mut dyn std::io::Read,
+    ) -> Result<(i64, Vec<u8>)> {
+        use std::io::Write;
+        let create_path = format!("/containers/{}/exec", http::encode(container));
+        let mut spec =
+            json!({ "AttachStdin": true, "AttachStdout": true, "AttachStderr": true, "Tty": false, "Cmd": cmd });
+        if let Some(user) = &options.user {
+            spec["User"] = json!(user);
+        }
+        if !options.env.is_empty() {
+            spec["Env"] = json!(options.env);
+        }
+        let protocol = |method: &'static str, path: &str, message: String| DockerError::Protocol {
+            method,
+            path: path.to_string(),
+            message,
+        };
+        let raw = self
+            .send("POST", &create_path, Some(&spec), false)?
+            .bytes()
+            .map_err(|e| protocol("POST", &create_path, e.to_string()))?;
+        let created: Value = serde_json::from_slice(&raw).unwrap_or(Value::Null);
+        let id = created["Id"]
+            .as_str()
+            .ok_or_else(|| protocol("POST", &create_path, "no exec id in the answer".into()))?
+            .to_string();
+        let start_path = format!("/exec/{id}/start");
+        let mut stream =
+            self.send("POST", &start_path, Some(&json!({ "Detach": false, "Tty": false })), true)?.into_body();
+        stream.set_timeout(None).map_err(|e| protocol("POST", &start_path, e.to_string()))?;
+        let failed = |e: std::io::Error| protocol("POST", &start_path, e.to_string());
+        // everything in, then say that was all; the command's own output is short and read afterwards
+        let mut chunk = vec![0u8; 64 * 1024];
+        loop {
+            let n = input.read(&mut chunk).map_err(failed)?;
+            if n == 0 {
+                break;
+            }
+            stream.conn().write_all(&chunk[..n]).map_err(failed)?;
+        }
+        stream.conn().flush().map_err(failed)?;
+        stream.conn().close_write().map_err(failed)?;
+        let mut output = Vec::new();
+        stream.read_to_end(&mut output).map_err(failed)?;
+        let (mut said, stderr) = http::demux(&output);
+        said.extend(stderr);
+        let keep = said.len().saturating_sub(4096);
+        let state = self.get(&format!("/exec/{id}/json"))?;
+        Ok((state["ExitCode"].as_i64().unwrap_or(-1), said[keep..].to_vec()))
+    }
+
+    /// Create a network from an Engine API description.
+    pub fn network_create(&self, spec: &Value) -> Result<()> {
+        self.send("POST", "/networks/create", Some(spec), false).map(|_| ())
+    }
+
+    /// Make this engine a one-node swarm.
+    pub fn swarm_init(&self, advertise: Option<&str>) -> Result<()> {
+        let mut spec = json!({ "ListenAddr": "0.0.0.0:2377" });
+        if let Some(address) = advertise {
+            spec["AdvertiseAddr"] = json!(address);
+        }
+        self.send("POST", "/swarm/init", Some(&spec), false).map(|_| ())
+    }
+
+    /// Create a swarm service from an Engine API description.
+    pub fn service_create(&self, spec: &Value) -> Result<()> {
+        self.send("POST", "/services/create", Some(spec), false).map(|_| ())
+    }
+
     /// A container's log output so far, as (stdout, stderr). TTY containers have everything in stdout.
     pub fn logs(&self, container: &str, options: &LogOptions) -> Result<(Vec<u8>, Vec<u8>)> {
         let mut path = format!("/containers/{}/logs?stdout=true&stderr=true", http::encode(container));
