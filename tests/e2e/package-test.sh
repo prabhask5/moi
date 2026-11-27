@@ -19,7 +19,6 @@ grep -q "ExecStart=/usr/bin/moi daemon" /usr/lib/systemd/system/moi.service
 test ! -e /etc/systemd/system/multi-user.target.wants/moi.service
 test -f /usr/share/bash-completion/completions/moi
 test -f /usr/share/fish/vendor_completions.d/moi.fish
-ls /usr/share/man/man1/moi.1* >/dev/null
 moi restore --list | grep -q "^preflight"
 moi completions bash | grep -q "_moi()"
 '
@@ -28,6 +27,8 @@ for image in ubuntu:24.04 ubuntu:26.04 debian:13; do
   echo "=== $deb on $image"
   docker run --rm -v "$dist:/dist:ro" "$image" sh -c "
     set -e
+    # container images are set up to drop man pages on installation: look into the package for it
+    dpkg -c /dist/$deb | grep -q usr/share/man/man1/moi.1
     dpkg -i /dist/$deb
     $looks_right
     dpkg -r moi
@@ -38,6 +39,7 @@ for image in fedora:latest; do
   echo "=== $rpm on $image"
   docker run --rm -v "$dist:/dist:ro" "$image" sh -c "
     set -e
+    rpm -qlp /dist/$rpm | grep -q /usr/share/man/man1/moi.1
     rpm -i --nodeps /dist/$rpm
     $looks_right
     rpm -e moi
