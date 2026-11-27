@@ -27,6 +27,7 @@ mod storage;
 mod systemd;
 mod trees;
 mod users;
+mod view;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -37,6 +38,7 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 pub use collect::{Collector, Ctx, Output, Walk, run_tool, walk_files};
+pub use view::{CronJob, View, parse_crontab};
 
 use crate::config::Config;
 use crate::docker::Docker;
@@ -104,6 +106,20 @@ pub fn collectors() -> Vec<Arc<dyn Collector>> {
         Arc::new(incus::Incus),
         Arc::new(monitoring::Monitoring),
     ]
+}
+
+/// What `moi snapshot` and the daemon do: capture, add note stubs for new things, commit if something
+/// changed. Returns the capture report and the commit, if one was made.
+pub fn capture(
+    host: &Arc<dyn Host>,
+    config: &Arc<Config>,
+    state: &StateDir,
+    db: &Db,
+) -> Result<(Report, Option<crate::state::history::Entry>), Error> {
+    let report = run(host, config, state, db)?;
+    crate::state::notes::update(host.as_ref(), state)?;
+    let commit = crate::state::history::record(host.as_ref(), state)?;
+    Ok((report, commit))
 }
 
 /// Capture the host's state with the built-in collectors.

@@ -16,7 +16,7 @@ use serde_json::json;
 
 use crate::config::Paths;
 use crate::error::Error;
-use crate::host::{FixtureHost, Host, RealHost};
+use crate::host::{Cmd, FixtureHost, Host, RealHost};
 use crate::log::{Level, Logger};
 use crate::redact::Masker;
 use crate::state::StateDir;
@@ -298,10 +298,21 @@ fn select_host() -> Result<Arc<dyn Host>, Error> {
     if let Some(overlay) = std::env::var_os("MOI_ROOT_OVERLAY") {
         host = host.with_overlay(Path::new(&overlay)).map_err(ctx)?;
     }
-    for (name, value) in std::env::vars().filter(|(name, _)| name.starts_with("MOI_")) {
+    let passed = |name: &str| name.starts_with("MOI_") || name == "EDITOR" || name == "VISUAL";
+    for (name, value) in std::env::vars().filter(|(name, _)| passed(name)) {
         host.set_env(&name, &value);
     }
     Ok(Arc::new(host))
+}
+
+/// Parse a command line (without the program name). For tests and embedding; `run` is the real entry.
+pub fn parse(args: &[&str]) -> Result<Cli, String> {
+    Cli::try_parse_from(std::iter::once("moi").chain(args.iter().copied())).map_err(|e| e.to_string())
+}
+
+/// Run one parsed command against a host, writing its result to `out`.
+pub fn execute(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    dispatch(cli, host, out)
 }
 
 fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
@@ -310,7 +321,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Snapshot(args) => return snapshot(cli, args, host, out),
         Command::Log { count } => return log(cli, *count, host, out),
         Command::Diff { rev, show_secrets } => return diff(cli, rev, *show_secrets, host, out),
-        Command::Context { .. } | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
+        Command::Notes => return notes(cli, host, out),
+        Command::Context { .. } | Command::Audit => ("context & audit", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
@@ -416,8 +428,7 @@ fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn W
     let state = StateDir::new(state_root);
     state.ensure(host.as_ref())?;
     let db = state.open_db(host.as_ref())?;
-    let report = crate::snapshot::run(&host, &Arc::new(loaded.config), &state, &db)?;
-    let commit = history::record(host.as_ref(), &state)?;
+    let (report, commit) = crate::snapshot::capture(&host, &Arc::new(loaded.config), &state, &db)?;
 
     for failed in report.failed() {
         let error = failed.error.as_deref().unwrap_or_default();
@@ -509,6 +520,56 @@ fn diff(cli: &Cli, rev: &str, show_secrets: bool, host: Arc<dyn Host>, out: &mut
     }
     if !show_secrets {
         let _ = writeln!(out, "\n(secrets are masked; `sudo moi diff {rev} --show-secrets` shows them)");
+    }
+    Ok(())
+}
+
+fn notes(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    if !host.exists(&state.snapshot()) {
+        return Err(Error::Usage(
+            "no snapshot yet: run `moi snapshot` first (notes are attached to what it finds)".into(),
+        ));
+    }
+    crate::state::notes::update(host.as_ref(), &state)?;
+    let path = state.notes();
+    let real = host.real_path(&path).map_err(|e| Error::host(format!("cannot open {}", path.display()), e))?;
+
+    // $VISUAL, then $EDITOR (either may carry arguments), then whatever is installed
+    let configured: Vec<String> =
+        ["VISUAL", "EDITOR"].iter().filter_map(|v| host.env(v)).filter(|v| !v.trim().is_empty()).collect();
+    let candidates: Vec<String> = if configured.is_empty() { vec!["nano".into(), "vi".into()] } else { configured };
+    let mut edited = false;
+    for candidate in &candidates {
+        let mut words = candidate.split_whitespace();
+        let Some(program) = words.next() else { continue };
+        let cmd = Cmd::new(program).args(words).arg(real.display().to_string());
+        match host.run_interactive(&cmd) {
+            Ok(0) => {
+                edited = true;
+                break;
+            }
+            Ok(code) => return Err(Error::Usage(format!("{program} exited with status {code}: notes not recorded"))),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(Error::host(format!("cannot run {program}"), e)),
+        }
+    }
+    if !edited {
+        return Err(Error::Usage(format!(
+            "no editor found ({}): set EDITOR, or edit {} yourself and run `moi snapshot`",
+            candidates.join(", "),
+            path.display()
+        )));
+    }
+    let commit = history::record(host.as_ref(), &state)?;
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "notes": path, "commit": commit }));
+    } else {
+        let _ = match &commit {
+            Some(c) => writeln!(out, "notes saved: recorded {}", &c.id[..10.min(c.id.len())]),
+            None => writeln!(out, "notes unchanged"),
+        };
     }
     Ok(())
 }
