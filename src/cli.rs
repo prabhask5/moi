@@ -329,9 +329,12 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         }
         Command::Check(args) => return check(cli, args, host, out),
         Command::Monitors(command) => return monitors(cli, command, host, out),
-        Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
-            ("daemon, init & firewall", "M6")
+        Command::Daemon => {
+            let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+            return crate::daemon::Daemon::new(host, loaded)?.run();
         }
+        Command::Status => return status(cli, host, out),
+        Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => ("init & firewall", "M6"),
         Command::Backup(_) | Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => {
             ("backup & state bundle", "M7")
         }
@@ -910,4 +913,74 @@ fn monitors(cli: &Cli, command: &MonitorsCommand, host: Arc<dyn Host>, out: &mut
             Ok(())
         }
     }
+}
+
+fn status(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let asked = crate::daemon::ask(host.as_ref(), &json!({ "cmd": "status" }));
+    let Some(status) = asked else {
+        // no daemon: say so, and show what the last one left in moi.db
+        let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+        let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+        let mut last: Vec<serde_json::Value> = Vec::new();
+        if host.exists(&state.db()) {
+            let db = state.open_db(host.as_ref())?;
+            let mut stmt = db
+                .conn()
+                .prepare("SELECT job, last_run, last_status FROM schedule_runs ORDER BY job")
+                .map_err(|e| Error::Db(e.to_string()))?;
+            let rows = stmt
+                .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?, r.get::<_, Option<String>>(2)?)))
+                .map_err(|e| Error::Db(e.to_string()))?;
+            for (job, at, status) in rows.flatten() {
+                let at = crate::host::format_rfc3339(
+                    std::time::UNIX_EPOCH + std::time::Duration::from_secs(u64::try_from(at).unwrap_or(0)),
+                );
+                last.push(json!({ "name": job, "last": { "at": at, "status": status } }));
+            }
+        }
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "running": false, "jobs": last }));
+        } else {
+            let _ = writeln!(out, "daemon: not running (systemctl status moi)");
+            for job in &last {
+                let _ = writeln!(
+                    out,
+                    "  {:<18} last {} at {} UTC",
+                    job["name"].as_str().unwrap_or_default(),
+                    job["last"]["status"].as_str().unwrap_or("?"),
+                    history::display_time(job["last"]["at"].as_str().unwrap_or_default())
+                );
+            }
+        }
+        return Err(Error::ProblemsFound);
+    };
+    if cli.json {
+        let mut status = status;
+        status["ok"] = json!(true);
+        print_json(out, &status);
+        return Ok(());
+    }
+    let when = |v: &serde_json::Value| v.as_str().map(history::display_time).unwrap_or_default();
+    let _ = writeln!(
+        out,
+        "daemon: running since {} UTC (moi {})",
+        when(&status["started"]),
+        status["version"].as_str().unwrap_or_default()
+    );
+    let mut down = 0;
+    for job in status["jobs"].as_array().into_iter().flatten() {
+        let name = job["name"].as_str().unwrap_or_default();
+        let last = &job["last"];
+        let state = match (job["running"].as_bool(), last["status"].as_str()) {
+            (Some(true), _) => "running".to_string(),
+            (_, Some(status)) => format!("{status}: {}", last["message"].as_str().unwrap_or_default()),
+            _ => "not run yet".to_string(),
+        };
+        if matches!(last["status"].as_str(), Some("down" | "failed")) {
+            down += 1;
+        }
+        let _ = writeln!(out, "  {name:<18} {state}");
+        let _ = writeln!(out, "  {:<18} next {} UTC", "", when(&job["next"]));
+    }
+    if down > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
 }

@@ -21,7 +21,9 @@ WatchdogSec=60
 WantedBy=multi-user.target
 ```
 
-## Components (tokio tasks)
+## Components
+
+Each is a job or a thread of the one process (see Decisions: no async runtime).
 
 | Task | Behaviour |
 |---|---|
@@ -35,6 +37,19 @@ WantedBy=multi-user.target
 | notify | `sd_notify(READY=1)`, watchdog pings, `STATUS=` line with the next scheduled jobs |
 
 A slow or hung job never blocks others; each job has a timeout and is cancelled and reported on expiry. Idle budget: < 30 MB RSS, < 0.5 % CPU averaged over an hour on the cestmoi fixture workload (13).
+
+### Decisions (M6, core)
+
+- **Threads, no async runtime.** The loop sleeps on a channel until the next job is due, a job finishes, or the CLI asks for something; each due job runs on its own thread and reports back. Jobs are blocking work that already bounds itself (check timeouts, collector timeouts). This replaces the "tokio tasks" of the first draft: the daemon has nothing to gain from an async runtime, and the binary and its dependency tree stay small (14). A job never runs twice at once; one that is still running when it is next due skips that turn.
+- **Interval jobs** (checks) run once at start, then every `interval` counted from when they were *due* — a slow or late run does not push the grid. Turns that passed while nothing could run (a suspended machine) are skipped, not made up for.
+- **Calendar jobs** are due at local times of the server's zone, read from its zoneinfo file (`/usr/share/zoneinfo/<name>`, else `/etc/localtime`; daylight saving included; no zone data → UTC). A local time that happens twice (clocks set back) counts once, at its first occurrence; one that never happens (clocks set forward) runs an hour after the hour before it, as systemd does. The syntax is the subset of `OnCalendar` that 01 accepts: optional weekdays (`Mon`, `Mon..Fri`, `Sat,Sun`), optional date (`[year-]month-day`), time (`h:m[:s]`), each field a list of values, ranges (`a..b`) and steps (`/n`), `*` for any; and the shorthands `minutely` … `yearly`.
+- **Persistence**: the last run of every job is in `moi.db` (`schedule_runs`). At start a calendar job whose time has passed since its last run is due 5 minutes later; one that has never run waits for its first time.
+- **The daily job** runs at 05:00 local time: full snapshot (whatever the watcher saw), audit, context; deletes expired shared links; logs what `moi monitors sync` would change (`monitors: N changes and M differences pending`, never changing anything itself) and the plan's warnings; then pushes `snapshot OK, N changes today` (N = snapshots recorded in the last 24 h; ` (stale: collector, …)` appended when a collector failed) — or `down` with `snapshot failed: …` — to the freshness monitor.
+- **A check's scheduled run** is a recorded run (05): result and memory stored, written to the journal under the check's `journal_tag` (info when up, warning when down), pushed to its monitor when one is bound and `monitors.mode` is `live`. A push that fails is logged and does not change the result.
+- **IPC**: `/run/moi.sock` (mode 0600), one JSON line each way. `{"cmd":"status"}` → `{running, started, now, version, jobs: [{name, running, next, last: {at, status, message, duration_ms}}]}`; `{"cmd":"run","job":"<name>"}` makes a job due now. Job names: `check:<name>`, `daily`.
+- **`moi status`** prints that per job (`up: message` / `running` / `not run yet`, and when it is next due) and exits 1 when a job's last run was `down` or `failed`. Without a daemon it says so, lists the last run of each job from `moi.db`, and exits 1.
+- **systemd**: `READY=1` once the socket listens; `WATCHDOG=1` and a `STATUS=` line (`4 jobs, 0 running; next: …`) every time the loop turns, which is at least every half watchdog interval (`WATCHDOG_USEC`) and at least once a minute. Only the loop pings: if it hangs, systemd restarts the service.
+- **Stopping**: moi handles no signals. SIGTERM ends the process; every file is written atomically and `moi.db` is transactional, so a job cut short leaves the previous state, and its calendar turn is caught up at the next start.
 
 ## Heal rules
 

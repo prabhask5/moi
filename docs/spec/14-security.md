@@ -22,7 +22,7 @@ Each dependency and why (keep this list current when adding one):
 | thiserror | library errors |
 | sha2 | SHA-256 of captured files (manifest, change detection) |
 | md-5 | comparing package config files with the MD5 sums dpkg records (audit § 4); never used for security |
-| tokio | daemon runtime, async I/O |
+| *(none)* for the daemon | Decided in M6: no async runtime. The daemon waits (for the next due job, a finished job, a CLI connection) and runs blocking jobs that bound themselves with timeouts; plain threads and a channel do that. tokio would have been the largest dependency of the binary for no concurrency the jobs could use |
 | *(none)* for the Docker Engine API | Decided in M2: a ~200-line blocking HTTP/1.1 client over the unix socket (`docker::http`) instead of hyper/hyperlocal or bollard. moi makes a handful of local requests per run; an async HTTP stack would be most of the dependency tree for no measurable gain |
 | rustls (`ring` provider, no default features) | TLS for outbound HTTPS: the share bucket now; staged probes, Kuma and the R2 guard later. Trust anchors are the system CA bundle read through `Host` — neither `webpki-roots` (certificates compiled in) nor `rustls-native-certs` is used. The HTTP/1.1 client on top is moi's own (`net::http1`, shared with the Docker client); HMAC-SHA256 and SigV4 are implemented on `sha2` and verified against published vectors |
 | rustix (`fs` only) | `statvfs` for the storage check (space and inodes of a filesystem) without `unsafe` or running `df`; already in the dependency tree |
@@ -30,5 +30,5 @@ Each dependency and why (keep this list current when adding one):
 | gix (`sha1`, `revision` features only) | state history without a git binary: object writing, commits, revision parsing and walking. No network, worktree, index-status or blob-diff features; tree comparison and the line diff are moi's own |
 | (planned) zbus | systemd over D-Bus |
 | (planned) notify | inotify watcher |
-| (planned) rust_socketio or a minimal socket.io v4 client | Uptime Kuma API |
+| *(none)* for Uptime Kuma's API | Decided in M5: a socket.io v4 client over Engine.IO long-polling on moi's own HTTP client (`monitors::socket`) |
 | (planned) flate2 / zstd, tar | dumps and local archives |
