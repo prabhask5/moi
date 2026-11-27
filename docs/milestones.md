@@ -10,7 +10,7 @@ Ordered. Each milestone lists the spec sections it implements; acceptance criter
 - unused dependencies and features removed (`cargo machete`), new ones listed in spec 14;
 - docs updated for what shipped (README for users, spec for behaviour), nothing describing behaviour that doesn't exist.
 
-The repo must be publishable after any milestone; M12 makes it public-ready for 1.0.
+The repo must be publishable after any milestone; M13 makes it public-ready for 1.0.
 
 ## M0 — Repository scaffold ✅
 - [x] Crate `cestmoi`, binary `moi`, every command wired (prints "not implemented yet", exit 3)
@@ -96,7 +96,19 @@ Specs: 12
 - [ ] Shell completions, man page, `moi --version` build info
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
-## M11 — Performance & hardening
+## M11 — devbox integration
+Specs: 15 (and the devbox rows in 01, 02, 03, 06, 09, 14). Starts when `devbox-core` 0.1.0 is on crates.io (devbox publishes it after its own M8); until then this milestone waits and M12 can go first.
+- [ ] Dependency on `devbox-core` (pinned `0.<minor>`), `cargo deny` clean; spec 14 updated
+- [ ] `src/devbox/`: `DevboxHost` adapter (`Host` → `devbox_core::system::System`), prompts through `Host::ask`, `Confirm` for plans
+- [ ] `moi devbox up|down|status|doctor|connect|password` with output byte-identical to `devbox` (golden, also under `MOI_ROOT`)
+- [ ] moi's firewall manager for devbox: marked block in the `DOCKER-USER` rules files, applied through `moi firewall apply`'s path; refusal when firewall management is off
+- [ ] Records after changes: snapshot, CONTEXT.md, `backup.paths` additions; `[devbox]` config + `moi init` detection; `/var/lib/incus` fungible with the devbox rebuild note
+- [ ] Snapshot collector, context block + Attention entries, audit classification, `Devbox` monitor row with adoption/drift
+- [ ] Restore phase `devbox` (non-interactive rebuild or reconcile, health verification)
+- [ ] cestmoi fixture: `moi devbox up` adoption plan golden; `down` restores
+- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+
+## M12 — Performance & hardening
 Specs: 13, 14
 - [ ] `budgets` job with real measurements and thresholds
 - [ ] Fuzz config parsing and Docker payload parsing; review every `unwrap` on external data
@@ -104,7 +116,7 @@ Specs: 13, 14
 - [ ] Daemon budgets measured on Linux (`daemon_rss_mb`, `daemon_cpu_percent`); a time limit for the daily job as a whole
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
-## M12 — Public release readiness (v1.0.0)
+## M13 — Public release readiness (v1.0.0)
 Specs: all; this milestone removes every development artifact
 - [ ] `reference/` deleted: legacy script semantics fully captured in `tests/parity/` (inputs + expected messages) and spec 05; prototype behaviour captured in specs and tests; all links to `reference/` updated (git history keeps the originals)
 - [ ] No scaffolding: `Error::NotImplemented` and exit code 3 removed from code, docs and tests; no `TODO(M…)` left; `scripts/check-hygiene.sh --release` green (and made the default in CI)

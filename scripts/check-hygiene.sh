@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Repo hygiene: no implementation leftovers. Runs in CI on every PR.
 #   scripts/check-hygiene.sh            normal mode (during development)
-#   scripts/check-hygiene.sh --release  release mode (M12 and every release): zero scaffolding allowed
+#   scripts/check-hygiene.sh --release  release mode (M13 and every release): zero scaffolding allowed
 #
 # Normal mode allows TODOs only when tagged with the milestone or issue that removes them: TODO(M10), TODO(#12).
 # Release mode allows none, and also forbids the NotImplemented scaffolding and the reference/ directory.

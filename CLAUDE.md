@@ -35,6 +35,7 @@ Product pillars, used to break ties:
 | `moi daemon` | The service: scheduler, watcher, checks, heal actions, boot tasks, backups | 10 |
 | `moi migrate {plan,shadow,compare,switch,rollback}` | Move a server from legacy scripts/cron to moi without breaking monitors | 11 |
 | `moi config check` | Validate config + secrets, print the effective config | 01 |
+| `moi devbox {up,down,status,doctor,connect,password}` | Set up and run a [devbox](https://github.com/prabhask5/devbox) VM through devbox's library, with moi's firewall, monitors and records | 15 |
 | `moi uninstall [--purge]` | Remove moi, restore anything it replaced | 11 |
 
 ## 3. Architecture
@@ -62,6 +63,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `heal` | Heal rule actions (network connect, restart sequence, run), cooldowns and reports; fired by the services check and by the daemon's triggers |
 | `daemon` | The service loop (threads and a channel, no async runtime): scheduler, watchers (docker events, inotify), heal triggers, boot tasks, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |
+| `devbox` | `moi devbox`: the `Host` → `devbox_core::system::System` adapter, moi's firewall manager for devbox's rule, the devbox snapshot collector, context block, monitor row and restore phase. All logic beyond that lives in the `devbox-core` crate (15) |
 | `log` | Structured journal entries under systemd (native protocol via `Host`), stderr lines otherwise; masks known secrets |
 | `net` | Outbound HTTP(S): a blocking HTTP/1.1 client over connections from `Host`, TLS by rustls with the system CA bundle; the staged probe (DNS → TCP → TLS → HTTP, each timed) |
 | `redact` | One place for secret detection and masking (env keys, URLs with credentials, tokens, hc-ping keys) |
@@ -112,7 +114,7 @@ MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-sta
 Milestones are in `docs/milestones.md` (also GitHub issues). One milestone ≈ one or a few PRs. For each:
 1. Read this file and the spec sections the milestone names. If the spec is ambiguous, decide, write the decision into the spec in the same PR.
 2. Write tests from the acceptance criteria first, then implement.
-3. Cleanup pass: remove what the milestone superseded (stubs, `NotImplemented` arms), debug code, scratch files, unused fixtures and dependencies (`scripts/check-hygiene.sh`). The repo must be publishable after every milestone; M12 makes it public-ready (`check-hygiene.sh --release`).
+3. Cleanup pass: remove what the milestone superseded (stubs, `NotImplemented` arms), debug code, scratch files, unused fixtures and dependencies (`scripts/check-hygiene.sh`). The repo must be publishable after every milestone; M13 makes it public-ready (`check-hygiene.sh --release`).
 4. `scripts/ci.sh` green, update `README.md`/spec if user-visible behaviour changed, tick the milestone checkbox.
 
 The agent workflow (prompts, PR conventions) is in `docs/agent-workflow.md`.

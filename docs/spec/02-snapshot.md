@@ -114,6 +114,10 @@ The Engine API is spoken directly over `/var/run/docker.sock` with unversioned p
 
 Every captured text file (scripts, units, crontabs, compose files and env files) is scanned for Uptime Kuma push URLs (`/api/push/<token>`) and healthchecks.io ping URLs; each hit records file, kind, base URL, token, and the cron line/unit that runs that file. Container env vars are scanned too (e.g. `UPTIMEKUMA=http://…/api/push/<token>`). Files ending `.bak/.old/.orig/~` are marked stale copies.
 
+### devbox
+
+When devbox is present, the `devbox` collector adds its config, routing file, gateway app description and status (secrets never) — 15 § Snapshot.
+
 ## History
 
 - The state dir is a git repository (gitoxide; no `git` binary needed). One commit per snapshot that changed `snapshot/` or `NOTES.md`; no-op snapshots create no commit.
