@@ -28,6 +28,7 @@ pub struct Config {
     pub capture: Capture,
     pub data: Data,
     pub context: Context,
+    pub audit: Audit,
     pub checks: Checks,
     pub heal: Vec<HealRule>,
     pub boot: Boot,
@@ -47,6 +48,7 @@ impl Config {
             capture: Capture::read(root.table(cx, "capture"), cx),
             data: Data::read(root.table(cx, "data"), cx),
             context: Context::read(root.table(cx, "context"), cx),
+            audit: Audit::read(root.table(cx, "audit"), cx),
             checks: Checks::read(root.table(cx, "checks"), cx, &mut used),
             heal: read_heal(root, cx),
             boot: Boot::read(root.table(cx, "boot"), cx, &mut used),
@@ -282,6 +284,69 @@ impl ContextShare {
         }
         t.finish(cx);
         this
+    }
+}
+
+// -------------------------------------------------------------------------------------------- audit
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Audit {
+    pub placement: Placement,
+}
+
+/// Keywords for the storage placement audit (04 § 6), matched case-insensitively against a mount's
+/// `source destination`. A keyword ending in `$` must be followed by `/` or the end of that text.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Placement {
+    /// Paths that belong on fast storage: databases, application config.
+    pub hot: Vec<String>,
+    /// Paths that hold bulk files and belong on the big disk.
+    pub bulk: Vec<String>,
+}
+
+impl Audit {
+    fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Self {
+        let mut p = t.table(cx, "placement");
+        let placement = Placement {
+            hot: p.strings_or(
+                cx,
+                "hot",
+                &[
+                    "postgres",
+                    "pgdata",
+                    "postgresql",
+                    "redis",
+                    "/config",
+                    "/db$",
+                    "database",
+                    "sqlite",
+                    "/var/lib/glances",
+                    "/app/data",
+                ],
+            ),
+            bulk: p.strings_or(
+                cx,
+                "bulk",
+                &[
+                    "/data$",
+                    "media",
+                    "movies",
+                    "/tv$",
+                    "music",
+                    "books",
+                    "download",
+                    "torrent",
+                    "usenet",
+                    "complete",
+                    "library",
+                    "/var/lib/storage",
+                    "backup",
+                ],
+            ),
+        };
+        p.finish(cx);
+        t.finish(cx);
+        Self { placement }
     }
 }
 

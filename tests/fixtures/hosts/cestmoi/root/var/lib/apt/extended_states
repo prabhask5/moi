@@ -9,3 +9,11 @@ Auto-Installed: 1
 Package: docker.io
 Architecture: amd64
 Auto-Installed: 0
+
+Package: systemd-resolved
+Architecture: amd64
+Auto-Installed: 1
+
+Package: openssh-server
+Architecture: amd64
+Auto-Installed: 1

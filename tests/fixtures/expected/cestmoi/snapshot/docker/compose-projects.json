@@ -46,6 +46,7 @@
       "supabase-db",
       "supabase-envoy",
       "supabase-meta",
+      "supabase-pooler",
       "supabase-realtime",
       "supabase-rest",
       "supabase-storage",
@@ -59,7 +60,8 @@
       "realtime",
       "storage",
       "meta",
-      "studio"
+      "studio",
+      "pooler"
     ],
     "env_files": [
       "/opt/services/database/.env"
@@ -70,6 +72,7 @@
       "db",
       "envoy",
       "meta",
+      "pooler",
       "realtime",
       "rest",
       "storage",

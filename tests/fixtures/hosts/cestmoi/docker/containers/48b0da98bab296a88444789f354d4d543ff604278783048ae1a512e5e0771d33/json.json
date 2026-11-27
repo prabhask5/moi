@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1028
+  "Pid": 1029
  },
  "Image": "sha256:48aab4399ee4b4b72be41e3c033fba52711e7d1cf1ac1beac1ab8f6d9af4512e",
  "Name": "/bazarr",
@@ -93,9 +93,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "a048c4ca53fc17b0c0b45db0323e3c568237bc4bb162000cb4a2b23091df45df",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.39",
+    "IPAddress": "172.19.0.40",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:27"
+    "MacAddress": "02:42:ac:13:00:28"
    }
   },
   "Ports": {}

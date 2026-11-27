@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1027
+  "Pid": 1028
  },
  "Image": "sha256:69f316460879c57151c3623c143cd4867ceda66b43233b9e64c2807fd5353782",
  "Name": "/prowlarr",
@@ -93,9 +93,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "abcb09974a91c85fa6989f4d761d129651d84f4216782c549d14b76d4256eed5",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.38",
+    "IPAddress": "172.19.0.39",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:26"
+    "MacAddress": "02:42:ac:13:00:27"
    }
   },
   "Ports": {}

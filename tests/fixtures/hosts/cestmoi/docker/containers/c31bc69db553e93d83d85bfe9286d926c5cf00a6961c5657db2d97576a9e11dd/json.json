@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1030
+  "Pid": 1031
  },
  "Image": "sha256:ae7e9011a87f1cd0de8a9dceacb2d92d2d171a19afa5a989f6e92f6dd0d98bc7",
  "Name": "/bookorbit-db",
@@ -84,9 +84,9 @@
     "NetworkID": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
     "EndpointID": "f4b510069bbaa820016c550997605b36b548c372408dd3692e0104e00e571896",
     "Gateway": "172.22.0.1",
-    "IPAddress": "172.22.0.42",
+    "IPAddress": "172.22.0.43",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:2a"
+    "MacAddress": "02:42:ac:13:00:2b"
    }
   },
   "Ports": {}

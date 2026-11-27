@@ -1,5 +1,36 @@
 {
   "config": {
+    "audit": {
+      "placement": {
+        "bulk": [
+          "/data$",
+          "media",
+          "movies",
+          "/tv$",
+          "music",
+          "books",
+          "download",
+          "torrent",
+          "usenet",
+          "complete",
+          "library",
+          "/var/lib/storage",
+          "backup"
+        ],
+        "hot": [
+          "postgres",
+          "pgdata",
+          "postgresql",
+          "redis",
+          "/config",
+          "/db$",
+          "database",
+          "sqlite",
+          "/var/lib/glances",
+          "/app/data"
+        ]
+      }
+    },
     "backup": {
       "databases": "auto",
       "enabled": true,

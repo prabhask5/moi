@@ -192,7 +192,7 @@ pub(crate) fn expand_glob(host: &dyn Host, pattern: &str) -> Vec<PathBuf> {
 }
 
 /// `*` matches any run of characters.
-pub(crate) fn wildcard(pattern: &str, name: &str) -> bool {
+pub fn wildcard(pattern: &str, name: &str) -> bool {
     let mut parts = pattern.split('*');
     let Some(first) = parts.next() else { return pattern == name };
     let Some(mut rest) = name.strip_prefix(first) else { return false };

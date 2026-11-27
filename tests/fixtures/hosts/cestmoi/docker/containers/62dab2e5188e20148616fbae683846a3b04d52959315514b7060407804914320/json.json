@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1033
+  "Pid": 1034
  },
  "Image": "sha256:76d08e84df7f0b5a7c6051c8cebe4ee29aa2c7e4409db487a86a87fd7cf8a44e",
  "Name": "/dokploy-traefik",
@@ -111,9 +111,9 @@
     "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
     "EndpointID": "4581c77beb7bf2084a2ded1d872d558455c4546c9572ec1611a119bec12dd9f4",
     "Gateway": "10.0.0.1",
-    "IPAddress": "10.0.0.45",
+    "IPAddress": "10.0.0.46",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:2d"
+    "MacAddress": "02:42:ac:13:00:2e"
    },
    "homelab": {
     "IPAMConfig": null,
@@ -125,9 +125,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "d11e4b2dc4b9b1424361e44a8ce418059d30f771fb23616fed89b2775741a51e",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.46",
+    "IPAddress": "172.19.0.47",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:2e"
+    "MacAddress": "02:42:ac:13:00:2f"
    }
   },
   "Ports": {}

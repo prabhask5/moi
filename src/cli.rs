@@ -322,7 +322,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Log { count } => return log(cli, *count, host, out),
         Command::Diff { rev, show_secrets } => return diff(cli, rev, *show_secrets, host, out),
         Command::Notes => return notes(cli, host, out),
-        Command::Context { .. } | Command::Audit => ("context & audit", "M3"),
+        Command::Audit => return audit(cli, host, out),
+        Command::Context { .. } => ("context", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
@@ -360,6 +361,10 @@ fn print_json(out: &mut dyn Write, value: &serde_json::Value) {
 /// Errors go to stderr for people and, with `--json`, also to stdout as `{"ok": false, "error": …}` so a
 /// consumer always gets a document.
 fn report_error(cli: &Cli, e: &Error, out: &mut dyn Write) {
+    // The command worked and already printed what it found; only the exit code says "problems".
+    if matches!(e, Error::ProblemsFound) {
+        return;
+    }
     let message = match e {
         Error::ConfigInvalid(diagnostics) => {
             for d in diagnostics {
@@ -572,4 +577,42 @@ fn notes(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Erro
         };
     }
     Ok(())
+}
+
+fn audit(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let config = Arc::new(loaded.config);
+    if !host.exists(&state.snapshot()) {
+        state.ensure(host.as_ref())?;
+        let db = state.open_db(host.as_ref())?;
+        crate::snapshot::capture(&host, &config, &state, &db)?;
+    }
+    let audit = crate::audit::run(&host, &config, &state)?;
+    let gaps = audit.gaps();
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "gaps": gaps, "file": state.audit(), "audit": audit }));
+    } else {
+        for section in &audit.sections {
+            let lines: Vec<String> = section
+                .blocks
+                .iter()
+                .filter_map(|b| match b {
+                    crate::audit::Block::Finding { level: crate::audit::Level::Gap, text } => {
+                        Some(format!("  ✗ {text}"))
+                    }
+                    crate::audit::Block::Finding { level: crate::audit::Level::Review, text } if !cli.quiet => {
+                        Some(format!("  review {text}"))
+                    }
+                    _ => None,
+                })
+                .collect();
+            if !lines.is_empty() {
+                let _ = writeln!(out, "{}\n{}", section.title, lines.join("\n"));
+            }
+        }
+        let reviews = audit.findings(crate::audit::Level::Review).len();
+        let _ = writeln!(out, "{gaps} gap(s), {reviews} to review — full report: {}", state.audit().display());
+    }
+    if gaps > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
 }

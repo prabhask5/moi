@@ -1,0 +1,3 @@
+/etc/ssh/sshd_config
+/etc/ssh/sshd_config.d
+/usr/sbin/sshd

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1018
+  "Pid": 1019
  },
  "Image": "sha256:71a80bff819ab2ab50cd564204d415a8424386865cf0a266ffa765bb9f00abfd",
  "Name": "/glances",
@@ -82,9 +82,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "394c319891e317843857020fffd9c1fbd2be669ba2c7f782fbebbc4d42185220",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.30",
+    "IPAddress": "172.19.0.31",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:1e"
+    "MacAddress": "02:42:ac:13:00:1f"
    }
   },
   "Ports": {}

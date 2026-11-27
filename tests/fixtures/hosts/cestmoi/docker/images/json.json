@@ -4,12 +4,18 @@
   "RepoTags": [
    "adguard/adguardhome:v0.107.71"
   ],
+  "RepoDigests": [
+   "adguard/adguardhome@sha256:cbc368d0ac71b3e7a8531e113f834b068955c70d8456d9d2f4ec610b73127708"
+  ],
   "Size": 129000000
  },
  {
   "Id": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
   "RepoTags": [
    "amir20/dozzle:v8.13.0"
+  ],
+  "RepoDigests": [
+   "amir20/dozzle@sha256:6225c20d3425b84e19f437052e4ea4c17525b3080cac21dadd6b124988ba47b5"
   ],
   "Size": 121000000
  },
@@ -18,6 +24,9 @@
   "RepoTags": [
    "cloudflare/cloudflared:2026.10.0"
   ],
+  "RepoDigests": [
+   "cloudflare/cloudflared@sha256:34e0b4f88284fa8b8d86860083d020953e0cbd4f3156e21c82c196af696749d4"
+  ],
   "Size": 132000000
  },
  {
@@ -25,12 +34,16 @@
   "RepoTags": [
    "compiler-ui-a5b6:latest"
   ],
+  "RepoDigests": [],
   "Size": 123000000
  },
  {
   "Id": "sha256:8c1db9fedd90a8ab92e9a33287369995a3843e68ef04bb430991c36089adc978",
   "RepoTags": [
    "containrrr/watchtower:1.7.1"
+  ],
+  "RepoDigests": [
+   "containrrr/watchtower@sha256:2bd918dfe4ce5456d61f83f6b11db0572408e848a72a77a58171438186474708"
   ],
   "Size": 127000000
  },
@@ -39,12 +52,16 @@
   "RepoTags": [
    "dokploy-bridge-c7d8:latest"
   ],
+  "RepoDigests": [],
   "Size": 126000000
  },
  {
   "Id": "sha256:2af5a4f9977f067fdb9bccea89509249da5e2b4c91b5f9722b5c5ce415d9ac7a",
   "RepoTags": [
    "dokploy/dokploy:v0.31.0"
+  ],
+  "RepoDigests": [
+   "dokploy/dokploy@sha256:edf0aae700c2480b4bbf2106c12b45d7c79ff581caf2a0bf6e8fc5d07e50b69a"
   ],
   "Size": 123000000
  },
@@ -53,12 +70,18 @@
   "RepoTags": [
    "envoyproxy/envoy:v1.36.2"
   ],
+  "RepoDigests": [
+   "envoyproxy/envoy@sha256:7fb0fba4beaf93b4dd5b4d4166589b319f40e24708e7d0cc77d635c876ddbdac"
+  ],
   "Size": 124000000
  },
  {
   "Id": "sha256:3c5f28f96f3a3e603180bf8ea7a3e3e401a636f834ebc8fc3dda45ec2759fa95",
   "RepoTags": [
    "favonia/cloudflare-ddns:1.15.1"
+  ],
+  "RepoDigests": [
+   "favonia/cloudflare-ddns@sha256:6b1016a6af08a2828df65f2088cda7043a411a6517ef4f1d8174f8d220857e85"
   ],
   "Size": 130000000
  },
@@ -67,12 +90,18 @@
   "RepoTags": [
    "ghcr.io/analogj/scrutiny:v0.8.1-omnibus"
   ],
+  "RepoDigests": [
+   "ghcr.io/analogj/scrutiny@sha256:8ae631c294c5b8c92f16f0094716b2417f50c02e66310ff4f62de52a4cb788ee"
+  ],
   "Size": 139000000
  },
  {
   "Id": "sha256:0b45f061d7f4f9911d6c007c20110c5797024fe19194eb84ea31f09661916241",
   "RepoTags": [
    "ghcr.io/bookorbit/bookorbit:0.9.2"
+  ],
+  "RepoDigests": [
+   "ghcr.io/bookorbit/bookorbit@sha256:3016cac879000839723a3e14d60baa5058382308024f1f145c2fdadeac06fbd9"
   ],
   "Size": 133000000
  },
@@ -81,12 +110,18 @@
   "RepoTags": [
    "ghcr.io/gethomepage/homepage:v1.5.0"
   ],
+  "RepoDigests": [
+   "ghcr.io/gethomepage/homepage@sha256:17981e0e55f3a2773fa3cc9e047536b8a85408551a8d397e970bb207a388c6bb"
+  ],
   "Size": 135000000
  },
  {
   "Id": "sha256:89ed3e5226c9f64f7d8fa787cda1fb03151074efe77d1bd1fad1dd8a770ef136",
   "RepoTags": [
    "ghcr.io/seerr-team/seerr:v3.0.1"
+  ],
+  "RepoDigests": [
+   "ghcr.io/seerr-team/seerr@sha256:6548e53487dd54b9b7c787126af47f39d41622ec4fa5d8872f1521bf2615237d"
   ],
   "Size": 131000000
  },
@@ -95,12 +130,18 @@
   "RepoTags": [
    "louislam/uptime-kuma:1.23.17"
   ],
+  "RepoDigests": [
+   "louislam/uptime-kuma@sha256:44a728fdb26125c8851fe5ff9644b63258887ff226b41d95e824dd32ce1179da"
+  ],
   "Size": 128000000
  },
  {
   "Id": "sha256:48aab4399ee4b4b72be41e3c033fba52711e7d1cf1ac1beac1ab8f6d9af4512e",
   "RepoTags": [
    "lscr.io/linuxserver/bazarr:1.5.3"
+  ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/bazarr@sha256:2eb0e2964cafa82265afdc4b33c8bdc63754f1bbd72e284f480879aa3f33fe4d"
   ],
   "Size": 132000000
  },
@@ -109,12 +150,18 @@
   "RepoTags": [
    "lscr.io/linuxserver/jellyfin:10.11.3"
   ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/jellyfin@sha256:4aeda3c52288c5dd5c1008864156fcf31e8ee75b783f663a778bff08f361099f"
+  ],
   "Size": 136000000
  },
  {
   "Id": "sha256:69f316460879c57151c3623c143cd4867ceda66b43233b9e64c2807fd5353782",
   "RepoTags": [
    "lscr.io/linuxserver/prowlarr:2.3.0"
+  ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/prowlarr@sha256:e320393a2140a2c136e96c3fd8a15d9897947eb92b6d3308ca6d9f294657e4d2"
   ],
   "Size": 134000000
  },
@@ -123,12 +170,18 @@
   "RepoTags": [
    "lscr.io/linuxserver/qbittorrent:5.1.4"
   ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/qbittorrent@sha256:230b0cd7a6dbf5f412c826b839149dcbe891325543238a867807f99994fda233"
+  ],
   "Size": 137000000
  },
  {
   "Id": "sha256:59af99cdecf8c87ce44e6e585a167967cb2735eaa19563305b2753ed854247a4",
   "RepoTags": [
    "lscr.io/linuxserver/radarr:6.0.4"
+  ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/radarr@sha256:29a58d3390d59a268b222b8a8c1834acd681b5a6472169e8609fb83ced162f47"
   ],
   "Size": 132000000
  },
@@ -137,12 +190,18 @@
   "RepoTags": [
    "lscr.io/linuxserver/sabnzbd:4.5.5"
   ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/sabnzbd@sha256:cc218961060d8ca5aafa12f8478ee179ec485ad801c7533ac2195da44cbe3079"
+  ],
   "Size": 133000000
  },
  {
   "Id": "sha256:c27f1245f24770b50489272cb9807bfd01036a8592fd30d413d8ab0e1c6f4d9e",
   "RepoTags": [
    "lscr.io/linuxserver/sonarr:4.0.16"
+  ],
+  "RepoDigests": [
+   "lscr.io/linuxserver/sonarr@sha256:3330e7d2c82c327c92a1405eff0fdc4b4736402c37e3193ec04d8acb0588171f"
   ],
   "Size": 133000000
  },
@@ -151,12 +210,18 @@
   "RepoTags": [
    "nicolargo/glances:4.4.1"
   ],
+  "RepoDigests": [
+   "nicolargo/glances@sha256:65761910a4cd31bd57b4020f9b9b46ed545c7f7b63c846a180ccbd782df43934"
+  ],
   "Size": 123000000
  },
  {
   "Id": "sha256:19f2a49eb782b5ae3138ff2092e8c70975c7d9eeb2d3aefa68f03cd18cb31391",
   "RepoTags": [
    "outlinewiki/outline:1.1.0"
+  ],
+  "RepoDigests": [
+   "outlinewiki/outline@sha256:482038fb1bb0a5a89bed2ea999168362c948913146b201b7a8d1d59dd3c854dc"
   ],
   "Size": 125000000
  },
@@ -165,12 +230,18 @@
   "RepoTags": [
    "pgvector/pgvector:pg18"
   ],
+  "RepoDigests": [
+   "pgvector/pgvector@sha256:f2afa2304e18da8aea05e44caf4c1beb07301af74c2a97f6a1c562fa6d1dc672"
+  ],
   "Size": 122000000
  },
  {
   "Id": "sha256:ff2134dda14979366fa44ba2a58e93920208c14f6cb6f8dc94e071d7a17f6ba0",
   "RepoTags": [
    "portainer/portainer-ce:2.33.4"
+  ],
+  "RepoDigests": [
+   "portainer/portainer-ce@sha256:ffbf6c66fd238df2295c1df923c47f283d75b40499492bb6157964e486f5279b"
   ],
   "Size": 129000000
  },
@@ -179,12 +250,18 @@
   "RepoTags": [
    "postgres:16"
   ],
+  "RepoDigests": [
+   "postgres@sha256:7622c7b1bceca291357b7a88086fe495ef294b8132228d1c88ab429a4b69b8af"
+  ],
   "Size": 111000000
  },
  {
   "Id": "sha256:ca106b21aca5236e874960c47af9b6cfcb981962aeb379542cdf2cd17825467c",
   "RepoTags": [
    "postgres:18"
+  ],
+  "RepoDigests": [
+   "postgres@sha256:397971466764ff8961a58b51cf06840fa4411467987ac939f88f73abf2ada826"
   ],
   "Size": 111000000
  },
@@ -193,12 +270,18 @@
   "RepoTags": [
    "postgrest/postgrest:v14.1"
   ],
+  "RepoDigests": [
+   "postgrest/postgrest@sha256:6cad07e88e80eec775cb93d1ff06655b5385cafc2db87cc5959ca3e37fb131fb"
+  ],
   "Size": 125000000
  },
  {
   "Id": "sha256:9ba87916e5d731108d99ec4b7b660d190f0df1745ba3a566f357261cf347aad6",
   "RepoTags": [
    "qmcgaw/gluetun:v3.40.3"
+  ],
+  "RepoDigests": [
+   "qmcgaw/gluetun@sha256:425ff59c435342ea6c123cc1c95c9373444e982a16ccff62bf1791f0f37f540c"
   ],
   "Size": 122000000
  },
@@ -207,12 +290,18 @@
   "RepoTags": [
    "redis:8"
   ],
+  "RepoDigests": [
+   "redis@sha256:8b6a95272cca60bcfecdf6ec1e3982c2e8bbf013e6668322dfd187eb4ddb7419"
+  ],
   "Size": 107000000
  },
  {
   "Id": "sha256:e0c42b7387b52519fee99b365e6202acc2a109d1e054b4d664b9e9471611ca05",
   "RepoTags": [
    "redis:8-alpine"
+  ],
+  "RepoDigests": [
+   "redis@sha256:759df35d8b1afe75461e9dd5ffb174a6712e1ad352ed3a1271f22f91ec746501"
   ],
   "Size": 114000000
  },
@@ -221,6 +310,7 @@
   "RepoTags": [
    "shortless-app-p9q1:latest"
   ],
+  "RepoDigests": [],
   "Size": 125000000
  },
  {
@@ -228,12 +318,16 @@
   "RepoTags": [
    "stellar-planner-x7k2:latest"
   ],
+  "RepoDigests": [],
   "Size": 127000000
  },
  {
   "Id": "sha256:723e8d4c193a6e305e901ca00ab4e8eb899b6c69c5037c7608c3639831e4194b",
   "RepoTags": [
    "supabase/gotrue:v2.182.1"
+  ],
+  "RepoDigests": [
+   "supabase/gotrue@sha256:d5dade967eb2bd9f8c7c3169be88866e99d30c81489710fc65cbc8de4ebe5d17"
   ],
   "Size": 124000000
  },
@@ -242,12 +336,18 @@
   "RepoTags": [
    "supabase/postgres-meta:v0.93.1"
   ],
+  "RepoDigests": [
+   "supabase/postgres-meta@sha256:5e4e04756b93f01c5e70d753cf76e12155610523f4c8909862fc2a887dfe3075"
+  ],
   "Size": 130000000
  },
  {
   "Id": "sha256:96e5d97de01bc17ea2584791ef46e42630ff53865681cf98aaa83273ecd33aac",
   "RepoTags": [
    "supabase/postgres:17.6.1.054"
+  ],
+  "RepoDigests": [
+   "supabase/postgres@sha256:bd5ad9d8e1338fee91adec2ad290a96511ed52131c5d5a499266d0ed61adb216"
   ],
   "Size": 128000000
  },
@@ -256,12 +356,18 @@
   "RepoTags": [
    "supabase/realtime:v2.63.0"
   ],
+  "RepoDigests": [
+   "supabase/realtime@sha256:477c0b1296310ad92d39d0c218d76f84904df4152b5fe402bd675ddff2c3b364"
+  ],
   "Size": 125000000
  },
  {
   "Id": "sha256:0570ab0aa170779cb1d441ae86c91832f830ca48de8602f02a7dd8909b2a802d",
   "RepoTags": [
    "supabase/storage-api:v1.32.0"
+  ],
+  "RepoDigests": [
+   "supabase/storage-api@sha256:98df3200daa5f8f4027825fa4d645120646c421f0375d8804ec25d73d2094beb"
   ],
   "Size": 128000000
  },
@@ -270,12 +376,28 @@
   "RepoTags": [
    "supabase/studio:2026.11.03"
   ],
+  "RepoDigests": [
+   "supabase/studio@sha256:3591a6bdb8c3dac8f1d25e17e4723df41e1884040b4d7ad5259b52f48fba84ad"
+  ],
   "Size": 126000000
+ },
+ {
+  "Id": "sha256:57e37d746e72b32e835ee7c5e4640f862057bdab20ad516f7f349d1c51abce23",
+  "RepoTags": [
+   "supabase/supavisor:2.7.4"
+  ],
+  "RepoDigests": [
+   "supabase/supavisor@sha256:7aac0b0ebf794c07d85ac87c9a923c4fa62336df9416bcc10169ec1871a7fa66"
+  ],
+  "Size": 124000000
  },
  {
   "Id": "sha256:76d08e84df7f0b5a7c6051c8cebe4ee29aa2c7e4409db487a86a87fd7cf8a44e",
   "RepoTags": [
    "traefik:v3.6.1"
+  ],
+  "RepoDigests": [
+   "traefik@sha256:05eb4ebcff7e3680ecb6a0b361d4095d0a1d39bbf112e389de74a591c170bdfa"
   ],
   "Size": 114000000
  }

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1024
+  "Pid": 1025
  },
  "Image": "sha256:9437a571336af9b5b3e391ee5465847913844eefcdb152330910270ec4b5444d",
  "Name": "/jellyfin",
@@ -99,9 +99,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "26f15ee6eb854bcf92ccaaff2e60e6d859b19b90d7037da87518fb982320d684",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.35",
+    "IPAddress": "172.19.0.36",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:23"
+    "MacAddress": "02:42:ac:13:00:24"
    }
   },
   "Ports": {}

@@ -37,7 +37,8 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-pub use collect::{Collector, Ctx, Output, Walk, run_tool, walk_files};
+pub use collect::{Collector, Ctx, Output, Walk, run_tool, walk_files, wildcard};
+pub use firewall::stable_rules;
 pub use view::{CronJob, View, parse_crontab};
 
 use crate::config::Config;

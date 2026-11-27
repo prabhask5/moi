@@ -9,3 +9,4 @@ traefik-config-guard.path                enabled enabled
 ssh.socket                               enabled enabled
 cron.service                             enabled enabled
 chrony.service                           enabled enabled
+incus-startup.service                    enabled enabled

@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1022
+  "Pid": 1023
  },
  "Image": "sha256:54cbeb5dcb699c8f587bdc2d0f50a6229de8ff4eb46f906b95502d04944d7014",
  "Name": "/qbittorrent",

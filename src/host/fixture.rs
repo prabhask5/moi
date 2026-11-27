@@ -31,6 +31,9 @@ pub struct FixtureHost {
     base: PathBuf,
     overlay: Option<PathBuf>,
     modes: BTreeMap<PathBuf, (u32, u32, u32)>,
+    mtimes: BTreeMap<PathBuf, SystemTime>,
+    /// Modification time of every fixture file not listed in `mtimes`: 30 days before the clock.
+    default_mtime: SystemTime,
     state: Mutex<State>,
     docker: Arc<Mutex<DockerState>>,
 }
@@ -87,11 +90,25 @@ impl FixtureHost {
             Err(e) if e.kind() == io::ErrorKind::NotFound => {}
             Err(e) => return Err(e),
         }
+        let mut mtimes = BTreeMap::new();
+        if let Ok(text) = fs::read_to_string(dir.join("mtimes")) {
+            for (n, line) in text.lines().enumerate().filter(|(_, l)| !l.trim().is_empty() && !l.starts_with('#')) {
+                let parsed = line
+                    .split_once(' ')
+                    .and_then(|(time, path)| Some((PathBuf::from(path.trim()), super::parse_rfc3339(time)?)));
+                let (path, time) = parsed.ok_or_else(|| {
+                    bad_fixture(format!("{}/mtimes:{}: expected `<RFC 3339 time> /path`", dir.display(), n + 1))
+                })?;
+                mtimes.insert(path, time);
+            }
+        }
         Ok(Self {
             dir: dir.to_path_buf(),
             base,
             overlay: None,
             modes,
+            mtimes,
+            default_mtime: now - Duration::from_secs(30 * 86_400),
             state: Mutex::new(State {
                 now,
                 env: BTreeMap::new(),
@@ -190,6 +207,8 @@ impl FixtureHost {
             if let Some(&(mode, uid, gid)) = self.modes.get(&r.logical) {
                 (md.mode, md.uid, md.gid) = (mode, uid, gid);
             }
+            // …and their timestamps are the time of the checkout.
+            md.mtime = self.mtimes.get(&r.logical).copied().unwrap_or(self.default_mtime);
         }
         Ok(md)
     }

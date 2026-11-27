@@ -90,6 +90,11 @@ default_ttl = "1h"
 max_ttl = "24h"                      # refuse longer links (S3 presigning allows up to 7 days)
 notify = true                        # push a message to the freshness monitor when a link is created
 
+# ---------------------------------------------------------------- audit (04)
+[audit.placement]                # keywords for the storage placement audit; a trailing $ means "followed by / or the end"
+hot = ["postgres", "pgdata", "postgresql", "redis", "/config", "/db$", "database", "sqlite", "/var/lib/glances", "/app/data"]
+bulk = ["/data$", "media", "movies", "/tv$", "music", "books", "download", "torrent", "usenet", "complete", "library", "/var/lib/storage", "backup"]
+
 # ---------------------------------------------------------------- health checks (05)
 [checks]
 default_interval = "5m"

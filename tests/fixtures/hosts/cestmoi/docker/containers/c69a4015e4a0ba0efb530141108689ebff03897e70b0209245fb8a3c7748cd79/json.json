@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1035
+  "Pid": 1036
  },
  "Image": "sha256:a35647c49bc8fa45d98b5bb5c151fafdd70f5f734f86ff01930daae179534745",
  "Name": "/dokploy-postgres.1.70129bcd5327002b39f022e98",
@@ -84,9 +84,9 @@
     "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
     "EndpointID": "ef18609afbc44ffdbd0c0d86c1ea741f7307b375c8883de9db5e2c52048b7879",
     "Gateway": "10.0.0.1",
-    "IPAddress": "10.0.0.48",
+    "IPAddress": "10.0.0.49",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:30"
+    "MacAddress": "02:42:ac:13:00:31"
    }
   },
   "Ports": {}

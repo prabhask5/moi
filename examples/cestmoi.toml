@@ -142,7 +142,7 @@ local_dir = "/mnt/storage/backups"
 require_mount = "/mnt/storage"
 keep_local = "7d"
 max_local = "20GB"
-paths = ["/opt/services", "/opt/yams", "/etc/dokploy", "/etc/iptables", "/etc/ssh/sshd_config.d", "/etc/systemd/system", "/etc/docker",
+paths = ["/opt/services", "/opt/yams", "/opt/scripts", "/etc/dokploy", "/etc/iptables", "/etc/ssh/sshd_config.d", "/etc/systemd/system", "/etc/docker",
          "/mnt/storage/database/db-config", "/mnt/storage/database/storage", "/mnt/storage/outline/data", "/etc/moi"]
 exclude = ["*/cache", "*/Cache", "*/transcodes", "*/logs", "*/log", "/etc/dokploy/applications", "/etc/dokploy/compose", "/etc/dokploy/logs"]
 databases = "auto"

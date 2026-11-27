@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1029
+  "Pid": 1030
  },
  "Image": "sha256:0b45f061d7f4f9911d6c007c20110c5797024fe19194eb84ea31f09661916241",
  "Name": "/bookorbit",
@@ -83,9 +83,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "c11b95244932ccfff5ca9e00b8b96c77c2256a737420c744f1b80e647914f7d8",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.40",
+    "IPAddress": "172.19.0.41",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:28"
+    "MacAddress": "02:42:ac:13:00:29"
    },
    "yams_default": {
     "IPAMConfig": null,
@@ -97,9 +97,9 @@
     "NetworkID": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
     "EndpointID": "164a826f8e92c310a74cbad6b2624f3bc27604df63c563adada93f14ea366bbf",
     "Gateway": "172.22.0.1",
-    "IPAddress": "172.22.0.41",
+    "IPAddress": "172.22.0.42",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:29"
+    "MacAddress": "02:42:ac:13:00:2a"
    }
   },
   "Ports": {}

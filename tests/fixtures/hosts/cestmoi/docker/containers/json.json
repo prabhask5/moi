@@ -14,7 +14,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/adguard",
    "com.docker.compose.project.config_files": "/opt/services/adguard/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "54aff3c942f75987e7342d00d19fb4b4cf7af729799af8751599b3304cfc2ec5",
@@ -32,7 +34,9 @@
    "com.docker.compose.project.config_files": "/opt/services/cloudflared/docker-compose.yml",
    "com.docker.compose.version": "2.40.3",
    "com.docker.compose.project.environment_file": "/opt/services/cloudflared/.env"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "72c43ee868e6593fb9c57324625facde31860f9f28bc447901239f0c78601137",
@@ -50,7 +54,9 @@
    "com.docker.compose.project.config_files": "/opt/services/ddns/docker-compose.yml",
    "com.docker.compose.version": "2.40.3",
    "com.docker.compose.project.environment_file": "/opt/services/ddns/.env"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "f6733a147f63e2bc1ee401d88b5366c9d1015de476a7c8e36c1c6959cec7a7e6",
@@ -67,7 +73,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/dozzle",
    "com.docker.compose.project.config_files": "/opt/services/dozzle/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "c018d5a76a6083edc9a2d77411a12e31c8b41a3789d4af9cc0819d7a89e3b2b6",
@@ -84,7 +92,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/homepage",
    "com.docker.compose.project.config_files": "/opt/services/homepage/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "21fb299c8fdeac6da2269afc4f3e53c5cfeeb5bb26bff6ee4988d884e66542de",
@@ -101,7 +111,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/host-logs",
    "com.docker.compose.project.config_files": "/opt/services/host-logs/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "b3415b84a566491e5e6ca705d80c0d5da100cf0e0b3d4fd9358c633e53350953",
@@ -119,7 +131,9 @@
    "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
    "com.docker.compose.version": "2.40.3",
    "com.docker.compose.project.environment_file": "/opt/services/outline/.env"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "ceb712381397a40d6186d73bce75829998dbdf60290127c97390a9d4931156ce",
@@ -136,7 +150,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/outline",
    "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "f7ae0dadf5f8df68a321ccd77b77a5a3660d3c348abd06d243c57ccc6534fef5",
@@ -153,7 +169,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/outline",
    "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "a91f0e72a26ff0d3fd7ad2a321a7e4fe93c80e0d852acf6a16bc304963267e6f",
@@ -170,7 +188,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/seerr",
    "com.docker.compose.project.config_files": "/opt/services/seerr/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "097667611e6e0c52a4981aae04b5fb05a8ee22e6243c74f65ea73b27da6ad51c",
@@ -188,7 +208,9 @@
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3",
    "com.docker.compose.project.environment_file": "/opt/services/database/.env"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "2abce365a11e89d12af0d68537f5516bfc87cd72ace95ded3a64853aaffce06b",
@@ -205,7 +227,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "277cb6c4b68b0a842bcf7ee7e79cedf55349a2f5b8f705c527600011aa8672cf",
@@ -222,7 +246,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "43332e408dad0a20b2812f6b41f6767189d39af41bf46d6f0378046236b4a860",
@@ -239,7 +265,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "43cba199609d4905adf296552441c7bbfa8df33822a82217fcfd424013eeda15",
@@ -256,7 +284,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "d89db91c1c4e6223532ae3f98466be1538fafe0d7dae02577b4b88f51c610474",
@@ -273,7 +303,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "3cd2b8a9f92a6898cb2d431de867fb9b1b71bfa889d4d2a901b2b36070613b30",
@@ -290,7 +322,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "bf0b0d066e80201d74b08d2c75792250c34941e63adabb5aa14ef6d6c7ef36e3",
@@ -307,7 +341,28 @@
    "com.docker.compose.project.working_dir": "/opt/services/database",
    "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
+ },
+ {
+  "Id": "8bd7c452ce7286fbe839139df9e0c3cdecd3529ae6d5da5ede4acc36602b72cf",
+  "Names": [
+   "/supabase-pooler"
+  ],
+  "Image": "supabase/supavisor:2.7.4",
+  "ImageID": "sha256:57e37d746e72b32e835ee7c5e4640f862057bdab20ad516f7f349d1c51abce23",
+  "State": "running",
+  "Status": "Up 5 days",
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "pooler",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "SizeRw": 367001600,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "050ec439adbb202f23776f55497225eaa63877d16b8a5afd646217eac87b4d97",
@@ -324,7 +379,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/monitoring/glances",
    "com.docker.compose.project.config_files": "/opt/services/monitoring/glances/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "ec27c89ecfec3f5fd330894740d35e8a5fa8b1fcb432020d18ef051fc31025a9",
@@ -341,7 +398,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/monitoring/scrutiny",
    "com.docker.compose.project.config_files": "/opt/services/monitoring/scrutiny/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "637ed89cb667242bdfeb1cbf647ec453eead371812d527695591d87cadb49fa8",
@@ -358,7 +417,9 @@
    "com.docker.compose.project.working_dir": "/opt/services/monitoring/uptime-kuma",
    "com.docker.compose.project.config_files": "/opt/services/monitoring/uptime-kuma/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "d12c9f99a419328f8ede43ee28eb12ab43872b327adc3fb434e2ad577fc39472",
@@ -376,7 +437,9 @@
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3",
    "com.docker.compose.project.environment_file": "/opt/yams/.env"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "931a0c58211ad0dbacdf272b2d1708e4a391684039c53cb3188300f9f69f8ae8",
@@ -393,7 +456,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "679a83f205885bf0334043f696f1c10bf9c7efa35dd9ffcde01e031b8ba377f7",
@@ -410,7 +475,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "46b2f89fbc0ab83c3690333c0ae9ff696fb81f4b59ad2a5092ec2132a187a068",
@@ -427,7 +494,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 52428800,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "10bfa6ea0ec120ca6e6987c2f44d365b777d7bfa1b66217a2288d825e79a40fd",
@@ -444,7 +513,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "0796a400a882dd8308c612f3ece3f0b6f4a482317ca964590df6c94dad3c0931",
@@ -461,7 +532,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "742bf0bf71371b3101d1b544ed465812d80e3bae7b19767874c586102eb78815",
@@ -478,7 +551,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "48b0da98bab296a88444789f354d4d543ff604278783048ae1a512e5e0771d33",
@@ -495,7 +570,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "32bc8dd7f85db80bc007b2318722195d5a4a8c350a7dd6d6eeb754456f23a949",
@@ -512,7 +589,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "c31bc69db553e93d83d85bfe9286d926c5cf00a6961c5657db2d97576a9e11dd",
@@ -529,7 +608,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "6a1d8fc776da7013ac1063d6e241e4a20ed5646ac4ba65e536624875c2d3061f",
@@ -546,7 +627,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "9b98f9495261845bf8f216f570ec9247289bccf9607a471c2dc66f1f3dfb77f3",
@@ -563,7 +646,9 @@
    "com.docker.compose.project.working_dir": "/opt/yams",
    "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
    "com.docker.compose.version": "2.40.3"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "62dab2e5188e20148616fbae683846a3b04d52959315514b7060407804914320",
@@ -576,7 +661,9 @@
   "Status": "Up 5 days",
   "Labels": {
    "org.opencontainers.image.title": "Traefik"
-  }
+  },
+  "SizeRw": 4096,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "406a1a0cea7c92aa5455711b6dec91bfb29f1ee6262470c521d1e2a21d167ccb",
@@ -591,7 +678,9 @@
    "com.docker.swarm.service.name": "dokploy",
    "com.docker.swarm.task.id": "056d0f4775fe5f5d58718386c",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "c69a4015e4a0ba0efb530141108689ebff03897e70b0209245fb8a3c7748cd79",
@@ -606,7 +695,9 @@
    "com.docker.swarm.service.name": "dokploy-postgres",
    "com.docker.swarm.task.id": "647c72d4b8ebb04afab5c62cb",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "0e22903c65beb8c4667a0b7e236805cff1cd2a1d6b1d4bfdb460e673e8b33276",
@@ -621,7 +712,9 @@
    "com.docker.swarm.service.name": "stellar-planner-x7k2",
    "com.docker.swarm.task.id": "c23b11f930225640de8314db1",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "622e096c08b638625915364453acf20c10f42d5dc69776846e5b02aa09804ee3",
@@ -636,7 +729,9 @@
    "com.docker.swarm.service.name": "shortless-app-p9q1",
    "com.docker.swarm.task.id": "764a0483e33d3605bf7d77676",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "6e3d1756671027b9eef3fef8a4ccd978a9b19cba196356d0235334a2e7a7d82e",
@@ -651,7 +746,9 @@
    "com.docker.swarm.service.name": "shortless-redis-m3n4",
    "com.docker.swarm.task.id": "06884b9c35d209d7e1e99f928",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "151fc6c925db1322c61875e4fc447affaa467a703073844cefdbf0e17f6b4df1",
@@ -666,7 +763,9 @@
    "com.docker.swarm.service.name": "compiler-ui-a5b6",
    "com.docker.swarm.task.id": "0789f4bf6a64772ae08786a68",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  },
  {
   "Id": "3e9fe7d0a21b820080170e397600cccc40d0ff3a6cb54cbcdbb316b70d0d7cd9",
@@ -681,6 +780,8 @@
    "com.docker.swarm.service.name": "dokploy-bridge-c7d8",
    "com.docker.swarm.task.id": "c27bdd3bd467fd02cb47a96f7",
    "com.docker.swarm.node.id": "n0decestmoi"
-  }
+  },
+  "SizeRw": 0,
+  "SizeRootFs": 300000000
  }
 ]

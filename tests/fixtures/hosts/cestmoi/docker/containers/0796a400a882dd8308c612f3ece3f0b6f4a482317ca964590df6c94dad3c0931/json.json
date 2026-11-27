@@ -8,7 +8,7 @@
   "Running": true,
   "ExitCode": 0,
   "StartedAt": "2026-11-21T09:00:12.123456789Z",
-  "Pid": 1026
+  "Pid": 1027
  },
  "Image": "sha256:59af99cdecf8c87ce44e6e585a167967cb2735eaa19563305b2753ed854247a4",
  "Name": "/radarr",
@@ -93,9 +93,9 @@
     "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
     "EndpointID": "caa4e4ddca71a8a9fce36cffa521a034d05da63b6ed337f4896aac04e11cde8c",
     "Gateway": "172.19.0.1",
-    "IPAddress": "172.19.0.37",
+    "IPAddress": "172.19.0.38",
     "IPPrefixLen": 16,
-    "MacAddress": "02:42:ac:13:00:25"
+    "MacAddress": "02:42:ac:13:00:26"
    }
   },
   "Ports": {}
