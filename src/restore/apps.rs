@@ -330,6 +330,19 @@ impl Run<'_> {
     }
 }
 
+/// Host directories that hold a database's raw data. Nothing may be put into them before the
+/// database has started for the first time: it initializes only a directory that is empty.
+pub(super) fn database_dirs(run: &Run<'_>) -> Vec<String> {
+    parsed(run, "docker/containers.json")
+        .iter()
+        .chain(&parsed(run, "docker/services.json"))
+        .filter_map(database)
+        .flat_map(|db| db.data)
+        .filter(|(kind, _)| kind != "volume")
+        .map(|(_, source)| source)
+        .collect()
+}
+
 pub(super) fn docker(run: &mut Run<'_>) {
     let docker = Docker::new(Arc::clone(run.host));
     if !run.dry() && !docker.ping() {
@@ -505,6 +518,18 @@ pub(super) fn docker(run: &mut Run<'_>) {
             if have.contains(&name) {
                 continue;
             }
+            // Docker never gives the value of a secret back, so neither the snapshot nor the backup has it
+            let sealed: Vec<&str> = ["secrets", "configs"]
+                .iter()
+                .flat_map(|key| service[*key].as_array().into_iter().flatten().filter_map(Value::as_str))
+                .collect();
+            if !sealed.is_empty() {
+                run.warn(&format!(
+                    "service {name} uses Docker secrets or configs ({}) whose values Docker does not give back: create them, then the service (its description is in the bundle, snapshot/docker/services.json)",
+                    sealed.join(", ")
+                ));
+                continue;
+            }
             // an image built on the old server for this very service exists nowhere else
             let repository = image.split(':').next().unwrap_or(image);
             if repository == name {
@@ -515,7 +540,7 @@ pub(super) fn docker(run: &mut Run<'_>) {
                 .as_array()
                 .into_iter()
                 .flatten()
-                .map(|m| json!({ "Type": m["type"], "Source": m["source"], "Target": m["destination"] }))
+                .map(|m| json!({ "Type": m["type"], "Source": m["source"], "Target": m["destination"], "ReadOnly": m["ro"].as_bool().unwrap_or(false) }))
                 .collect();
             let attach: Vec<Value> = service["networks"]
                 .as_array()
@@ -524,10 +549,18 @@ pub(super) fn docker(run: &mut Run<'_>) {
                 .map(|n| json!({ "Target": n["name"], "Aliases": n["aliases"] }))
                 .collect();
             let ports: Vec<Value> = service["ports"].as_array().into_iter().flatten().map(|p| json!({ "Protocol": p["protocol"], "TargetPort": p["target"], "PublishedPort": p["published"], "PublishMode": p["mode"] })).collect();
+            let mut container = json!({ "Image": image, "Env": service["env"].as_array().cloned().unwrap_or_default(), "Mounts": mounts });
+            for (key, field) in
+                [("command", "Command"), ("args", "Args"), ("hostname", "Hostname"), ("container_labels", "Labels")]
+            {
+                if !service[key].is_null() {
+                    container[field] = service[key].clone();
+                }
+            }
             let spec = json!({
                 "Name": name, "Labels": service["labels"].as_object().cloned().unwrap_or_default(),
                 "TaskTemplate": {
-                    "ContainerSpec": { "Image": image, "Env": service["env"].as_array().cloned().unwrap_or_default(), "Mounts": mounts },
+                    "ContainerSpec": container,
                     "RestartPolicy": { "Condition": service["restart"].as_str().unwrap_or("any") },
                     "Placement": { "Constraints": service["constraints"].as_array().cloned().unwrap_or_default() },
                     "Networks": attach,

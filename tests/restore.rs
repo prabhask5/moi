@@ -491,3 +491,41 @@ fn users_come_back_with_their_ids_and_the_password_hash_stays_off_the_command_li
     let log = host.read_to_string(Path::new("/var/lib/moi/restore/restore.log")).unwrap();
     assert!(!log.contains(input.trim().split(':').nth(1).unwrap()), "the hash is in the log");
 }
+
+#[test]
+fn a_service_with_docker_secrets_is_named_not_recreated() {
+    // Docker never gives a secret's value back: such a service cannot be rebuilt from what was captured
+    let host = new_machine("restore-swarm-secrets");
+    let file = Path::new(BUNDLE).join("var/lib/moi/state/snapshot/docker/services.json");
+    let mut services: serde_json::Value = serde_json::from_slice(&host.read(&file).unwrap()).unwrap();
+    for service in services.as_array_mut().unwrap() {
+        if service["name"] == "dokploy-postgres" {
+            service["secrets"] = serde_json::json!(["dokploy_postgres_password"]);
+        }
+    }
+    host.write(&file, services.to_string().as_bytes(), 0o600).unwrap();
+    let (_, out) = run(&host, &Options { dry_run: true, only: vec!["docker".to_string()], ..Options::default() });
+    assert!(
+        out.contains("WARN: service dokploy-postgres uses Docker secrets or configs (dokploy_postgres_password) whose values Docker does not give back"),
+        "{out}"
+    );
+    assert!(!out.contains("create service dokploy-postgres"), "{out}");
+    assert!(out.contains("create service dokploy (dokploy/dokploy:v0.31.0)"), "{out}");
+}
+
+#[test]
+fn the_directory_tree_stops_at_a_database_data_directory() {
+    // a database initializes only an empty directory: its subdirectories are its own to create
+    let host = new_machine("restore-dirs-db");
+    let trees = Path::new(BUNDLE).join("var/lib/moi/state/volatile/trees");
+    let file = host.read_dir(&trees).unwrap().into_iter().find(|n| n.contains("opt")).expect("a tree of /opt");
+    let mut tree = host.read_to_string(&trees.join(&file)).unwrap();
+    tree.push_str(
+        "0700\troot\troot\t/opt/services/outline/pgdata\n0700\troot\troot\t/opt/services/outline/pgdata/base\n",
+    );
+    host.write(&trees.join(&file), tree.as_bytes(), 0o600).unwrap();
+    host.create_dir_all(Path::new("/opt"), 0o755).unwrap();
+    let (_, out) = run(&host, &only(&["dirs"]));
+    assert!(host.exists(Path::new("/opt/services/outline/pgdata")), "{out}");
+    assert!(!host.exists(Path::new("/opt/services/outline/pgdata/base")), "{out}");
+}

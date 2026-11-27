@@ -186,8 +186,12 @@ pub(super) fn packages(run: &mut Run<'_>) {
         .iter()
         .filter_map(|l| {
             let (path, kind) = l.split_once('\t')?;
-            (!kind.contains("script") && !kind.contains("text") && !kind.contains("symbolic") && !run.captured(path))
-                .then(|| path.rsplit('/').next().unwrap_or(path).to_string())
+            (!kind.contains("script")
+                && !kind.contains("text")
+                && !kind.contains("symbolic")
+                && !run.captured(path)
+                && !path.ends_with("/moi"))
+            .then(|| path.rsplit('/').next().unwrap_or(path).to_string())
         })
         .collect();
     if !manual.is_empty() {
@@ -311,6 +315,7 @@ pub(super) fn home(run: &mut Run<'_>) {
 
 pub(super) fn dirs(run: &mut Run<'_>) {
     let trees = run.vol.join("trees");
+    let databases = super::apps::database_dirs(run);
     let (users, groups) = (run.ids("/etc/passwd"), run.ids("/etc/group"));
     for file in run.host.read_dir(&trees).unwrap_or_default() {
         let rows: Vec<Vec<String>> = run
@@ -322,6 +327,11 @@ pub(super) fn dirs(run: &mut Run<'_>) {
             .filter(|r: &Vec<String>| r.len() == 4)
             .collect();
         let Some(root) = rows.first().map(|r| r[3].clone()) else { continue };
+        // the inside of a database's data directory is the database's to create
+        let rows: Vec<Vec<String>> = rows
+            .into_iter()
+            .filter(|r| !databases.iter().any(|d| r[3] != *d && crate::backup::under(&r[3], d)))
+            .collect();
         if !run.host.exists(Path::new(&root)) && run.dry() {
             run.info(&format!(
                 "[dry-run] would create {} directories under {root} (it does not exist here yet)",

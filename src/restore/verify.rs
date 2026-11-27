@@ -103,6 +103,12 @@ impl Expect {
                 .into_iter()
                 .map(|f| format!("/etc/cron.d/{f}")),
         );
+        // Only what boot starts is held to running: a service that the bus or a socket starts on demand
+        // (packagekit, ssh behind ssh.socket) stops again when idle and is not missing then.
+        let started_at_boot: BTreeSet<String> = lines(host, snapshot.join("systemd/enabled-units.txt"))
+            .iter()
+            .filter_map(|l| l.split_whitespace().next().map(str::to_string))
+            .collect();
         Self {
             containers,
             services,
@@ -111,6 +117,7 @@ impl Expect {
             units: lines(host, volatile.join("running-services.txt"))
                 .iter()
                 .filter_map(|l| l.split_whitespace().next().map(str::to_string))
+                .filter(|unit| started_at_boot.contains(unit))
                 .collect(),
             timers: lines(host, snapshot.join("cron/enabled-timers.txt"))
                 .iter()

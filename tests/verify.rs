@@ -125,7 +125,7 @@ fn a_server_in_order_passes_every_check() {
         "✓ listening ports: all 3",
         "✓ mounts: all 5",
         "✓ /mnt/storage is writable",
-        "✓ services running: all 8",
+        "✓ services running: all 4",
         "✓ no failed units",
         "✓ cron entries: all 4",
         "✓ firewall (v4): the managed chains are what moi applied",
