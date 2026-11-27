@@ -38,6 +38,7 @@ Specs: 02
 Specs: 03, 04
 - [ ] CONTEXT.md generator with redaction; golden test; no-secret-leak test
 - [ ] NOTES.md stubs + `moi notes`; Claude Code pointer block
+- [ ] `moi context share` (expiring presigned links from a private R2 bucket, `--revoke`, `--list`, lifecycle safety net)
 - [ ] Audit incl. reboot survival, coverage with fungible paths, restorability, placement (disk-audit parity), monitoring integrity
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 

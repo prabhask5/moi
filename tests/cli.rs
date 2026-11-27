@@ -215,3 +215,13 @@ fn a_moi_root_that_is_not_a_fixture_is_an_error_not_a_fallback_to_the_real_syste
     assert_eq!(out.status.code(), Some(2));
     assert!(text(&out.stderr).contains("is not a fixture host"), "{}", text(&out.stderr));
 }
+
+#[test]
+fn context_share_is_wired() {
+    let out = moi(&["context", "share", "--help"]);
+    assert!(out.status.success());
+    let help = String::from_utf8_lossy(&out.stdout);
+    assert!(help.contains("--ttl") && help.contains("--revoke") && help.contains("--list"), "{help}");
+    let out = moi(&["context", "share", "--ttl", "1h"]);
+    assert_eq!(out.status.code(), Some(3));
+}

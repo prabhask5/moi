@@ -25,6 +25,7 @@ Product pillars, used to break ties:
 | `moi init` | Discover the server, write `/etc/moi/moi.toml` + `secrets.toml`, install `moi.service`, take the first snapshot | 01, 10 |
 | `moi snapshot` / `moi log` / `moi diff [rev]` | Capture full server state into the versioned state dir; show history | 02 |
 | `moi context` / `moi notes` | Regenerate `CONTEXT.md`; edit the owner's notes merged into it | 03 |
+| `moi context share [--ttl 1h]` | Expiring link to CONTEXT.md (private R2 bucket, presigned) for pasting into AI chats | 03 |
 | `moi audit` | Gaps: not backed up, not restorable, lost on reboot, data on the wrong disk | 04 |
 | `moi check [name] [--push]` | Run health checks (built-in + custom) and print/push results | 05 |
 | `moi monitors sync [--dry-run]` | Adopt/create Uptime Kuma monitors for checks, containers, backups | 06 |

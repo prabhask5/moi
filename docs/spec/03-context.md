@@ -47,9 +47,27 @@ Content caps keep the file usable: tables ≤ 200 rows, code blocks ≤ 150 line
 
 `context.copies` are written 0644 owned by the target dir's owner. With `claude_pointer = true`, a block between `<!-- moi:begin -->` and `<!-- moi:end -->` is maintained in `~/.claude/CLAUDE.md` of each copy owner and root, pointing to the copy (root: to the state dir file) and stating the change rules. Uninstall removes exactly that block (and the file if it becomes empty).
 
+## Sharing (`moi context share`)
+
+For pasting into AI chats (claude.ai, etc.) without making anything public:
+
+```
+moi context share [--ttl 1h]   # upload CONTEXT.md, print an expiring link
+moi context share --revoke     # delete every shared copy now (links stop working immediately)
+moi context share --list       # active shares and their expiry
+```
+
+- The current `CONTEXT.md` (already redacted) is uploaded to the **private** bucket in `context.share` under a random 128-bit object key (`ctx/<random>.md`), with `Content-Type: text/markdown; charset=utf-8`, `Cache-Control: no-store`.
+- moi prints an S3 **presigned GET URL** (SigV4, computed locally — no API call) valid for `--ttl` (default `default_ttl`, capped at `max_ttl`). R2 presigned URLs only work on the account's S3 API domain, not custom domains.
+- Expired or revoked objects are deleted by moi (on the next daemon tick after expiry, and by `--revoke`); a bucket lifecycle rule deleting `ctx/` objects after 1 day is created on first use as a safety net. Deleting the object kills the link even before it expires.
+- Only `CONTEXT.md` is ever uploaded — never the snapshot, audit internals beyond what CONTEXT.md contains, or secrets.
+- Cost: one PutObject per share (+ reads when opened); free-tier R2 handles thousands of shares a month. These operations are counted by the backup R2 guard like any other.
+- `notify = true`: a share pushes an informational message (`context shared, expires HH:MM`) so an unexpected share is noticed.
+
 ## Acceptance
 
 - [ ] Golden test: fixture `cestmoi` → `tests/fixtures/expected/cestmoi/CONTEXT.md`.
 - [ ] No fixture secret leaks (env, URLs, push tokens, hc-ping key, API keys in scripts).
 - [ ] Notes stubs appended once; owner text preserved byte for byte across 100 regenerations.
 - [ ] Generation < 200 ms on the fixture.
+- [ ] `context share`: presigned URL verified against a local S3-compatible server in the integration job (MinIO); TTL above `max_ttl` refused; `--revoke` deletes every `ctx/` object; nothing but CONTEXT.md is uploaded; no secret appears in the uploaded file.

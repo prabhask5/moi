@@ -572,3 +572,24 @@ fn durations_and_sizes_parse_and_print_canonically() {
         assert!(bad.parse::<Size>().is_err(), "{bad}");
     }
 }
+
+#[test]
+fn context_share_needs_its_bucket_credentials_as_secret_references() {
+    let l = lines(load("cfg-req-share", "[context.share]\n", None));
+    assert_eq!(l.len(), 3, "{l:#?}");
+    assert!(l[0].ends_with("context.share.endpoint: missing required key"), "{l:#?}");
+    assert!(l[1].ends_with("context.share.access_key_id: missing required key"), "{l:#?}");
+    assert!(l[2].ends_with("context.share.secret_access_key: missing required key"), "{l:#?}");
+    assert!(load("cfg-share-off", "[context.share]\nenabled = false\n", None).is_ok());
+    let literal = only(
+        "cfg-share-literal",
+        "[context.share]\nendpoint = \"https://x.r2.cloudflarestorage.com\"\naccess_key_id = \"id\"\nsecret_access_key = \"plain\"\n",
+    );
+    assert!(
+        literal.ends_with(
+            "context.share.secret_access_key: must be a \"secret:NAME\" reference (secrets never live in moi.toml)"
+        ),
+        "{literal}"
+    );
+    assert!(!literal.contains("plain"));
+}

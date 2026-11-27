@@ -61,8 +61,11 @@ pub enum Command {
         #[arg(default_value = "HEAD")]
         rev: String,
     },
-    /// Regenerate CONTEXT.md for AI assistants
-    Context,
+    /// Regenerate CONTEXT.md for AI assistants, or share it with an expiring link
+    Context {
+        #[command(subcommand)]
+        action: Option<ContextCommand>,
+    },
     /// Edit the owner's notes merged into CONTEXT.md
     Notes,
     /// Find what is not backed up, not restorable, lost on reboot, or on the wrong disk
@@ -140,6 +143,22 @@ pub struct CheckArgs {
     /// Push results to Uptime Kuma (manual runs never push otherwise)
     #[arg(long)]
     pub push: bool,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ContextCommand {
+    /// Upload CONTEXT.md to the private share bucket and print an expiring link
+    Share {
+        /// Link lifetime (default from config, capped at context.share.max_ttl)
+        #[arg(long)]
+        ttl: Option<String>,
+        /// Delete every shared copy now (links stop working immediately)
+        #[arg(long, conflicts_with_all = ["ttl", "list"])]
+        revoke: bool,
+        /// List active shares and their expiry
+        #[arg(long, conflicts_with = "ttl")]
+        list: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -283,7 +302,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
     let (what, milestone) = match &cli.command {
         Command::Config(cmd) => return config(cli, cmd, host, out),
         Command::Snapshot(_) | Command::Log { .. } | Command::Diff { .. } => ("snapshot & history", "M2"),
-        Command::Context | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
+        Command::Context { .. } | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {

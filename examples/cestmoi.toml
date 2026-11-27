@@ -17,6 +17,13 @@ fungible_reason = { "/mnt/storage/media" = "media library — temporary, re-down
 copies = ["/home/prabhas/SERVER_CONTEXT.md"]
 claude_pointer = true
 
+[context.share]                    # `moi context share` -> expiring link to paste into AI chats
+endpoint = "secret:share_endpoint"
+bucket = "moi-share"               # private bucket, R2 token scoped to this bucket only
+access_key_id = "secret:share_key_id"
+secret_access_key = "secret:share_secret"
+default_ttl = "1h"
+
 # ------------------------------------------------------------------ checks (parity with the legacy scripts)
 [checks.resources]
 monitor = "Server Resources"

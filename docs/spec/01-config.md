@@ -80,6 +80,16 @@ fungible_reason = { "/mnt/storage/media" = "media library, re-downloadable", "/v
 copies = ["/home/prabhas/SERVER_CONTEXT.md"]   # readable copies (owner = owner of the dir)
 claude_pointer = true            # maintain a marked block in ~/.claude/CLAUDE.md of each copy owner + root
 
+[context.share]                  # `moi context share`: expiring links for pasting into AI chats (03 § Sharing)
+enabled = true
+endpoint = "secret:share_endpoint"   # S3 API endpoint, e.g. https://<account_id>.r2.cloudflarestorage.com
+bucket = "moi-share"                 # PRIVATE bucket (no public access, no custom domain)
+access_key_id = "secret:share_key_id"         # R2 API token scoped to Object Read & Write on this bucket only
+secret_access_key = "secret:share_secret"
+default_ttl = "1h"
+max_ttl = "24h"                      # refuse longer links (S3 presigning allows up to 7 days)
+notify = true                        # push a message to the freshness monitor when a link is created
+
 # ---------------------------------------------------------------- health checks (05)
 [checks]
 default_interval = "5m"

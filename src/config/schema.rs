@@ -217,12 +217,61 @@ pub struct Context {
     pub copies: Vec<String>,
     /// Maintain a marked block in `~/.claude/CLAUDE.md` of each copy owner and root.
     pub claude_pointer: bool,
+    /// `moi context share`: expiring links from a private bucket (docs/spec/03-context.md § Sharing).
+    pub share: ContextShare,
 }
 
 impl Context {
     fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Self {
-        let this =
-            Self { copies: t.paths_or(cx, "copies", &[]), claude_pointer: t.bool_or(cx, "claude_pointer", true) };
+        let this = Self {
+            copies: t.paths_or(cx, "copies", &[]),
+            claude_pointer: t.bool_or(cx, "claude_pointer", true),
+            share: ContextShare::read(t.table(cx, "share"), cx),
+        };
+        t.finish(cx);
+        this
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ContextShare {
+    pub enabled: bool,
+    /// S3 API endpoint of the private bucket. Required when enabled.
+    pub endpoint: Option<Secret>,
+    /// Private bucket (no public access, no custom domain).
+    pub bucket: String,
+    /// API token scoped to this bucket. Required when enabled.
+    pub access_key_id: Option<Secret>,
+    /// Required when enabled.
+    pub secret_access_key: Option<Secret>,
+    /// Link lifetime when `--ttl` is not given.
+    pub default_ttl: Dur,
+    /// Longer links are refused.
+    pub max_ttl: Dur,
+    /// Push a message to the freshness monitor when a link is created.
+    pub notify: bool,
+}
+
+impl ContextShare {
+    fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Self {
+        let enabled = t.bool_or(cx, "enabled", t.present());
+        if enabled {
+            for key in ["endpoint", "access_key_id", "secret_access_key"] {
+                if !t.has(key) {
+                    t.missing(cx, key);
+                }
+            }
+        }
+        let this = Self {
+            enabled,
+            endpoint: t.secret(cx, "endpoint", false),
+            bucket: t.string_or(cx, "bucket", "moi-share"),
+            access_key_id: t.secret(cx, "access_key_id", false),
+            secret_access_key: t.secret(cx, "secret_access_key", true),
+            default_ttl: t.dur_or(cx, "default_ttl", Dur::from_secs(3600)),
+            max_ttl: t.dur_or(cx, "max_ttl", Dur::from_secs(24 * 3600)),
+            notify: t.bool_or(cx, "notify", true),
+        };
         t.finish(cx);
         this
     }
