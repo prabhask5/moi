@@ -1,0 +1,18 @@
+{
+ "device": {
+  "name": "/dev/sda",
+  "type": "sat"
+ },
+ "ata_smart_attributes": {
+  "table": [
+   {
+    "id": 5,
+    "name": "Reallocated_Sector_Ct",
+    "raw": {
+     "value": 0,
+     "string": "0"
+    }
+   }
+  ]
+ }
+}

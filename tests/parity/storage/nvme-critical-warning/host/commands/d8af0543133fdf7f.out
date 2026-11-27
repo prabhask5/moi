@@ -1,0 +1,13 @@
+{
+ "device": {
+  "name": "/dev/nvme0n1",
+  "type": "nvme"
+ },
+ "nvme_smart_health_information_log": {
+  "critical_warning": 4,
+  "temperature": 34,
+  "available_spare": 100,
+  "percentage_used": 3,
+  "media_errors": 0
+ }
+}

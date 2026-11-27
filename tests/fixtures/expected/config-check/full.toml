@@ -158,7 +158,7 @@ oom_window = "6m"
 sustain_runs = 2
 swap_limit = 80
 temp_limit = 85
-timeout = "1m"
+timeout = "150s"
 
 [checks.services]
 enabled = true
@@ -167,7 +167,7 @@ ignore = []
 interval = "5m"
 journal_tag = "moi-check-services"
 monitor = "Server Internal Services"
-timeout = "1m"
+timeout = "150s"
 
 [[checks.services.http]]
 api_key = "***"
@@ -187,7 +187,7 @@ journal_tag = "moi-check-storage"
 kernel_error_window = "6m"
 mounts = ["/"]
 nvme_wear_limit = 90
-timeout = "1m"
+timeout = "150s"
 writable = []
 
 [context]

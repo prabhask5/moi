@@ -39,6 +39,7 @@ use serde::Serialize;
 
 pub use collect::{Collector, Ctx, Output, Walk, run_tool, walk_files, wildcard};
 pub use firewall::stable_rules;
+pub use storage::{Mount, mounts};
 pub use view::{CronJob, View, parse_crontab};
 
 use crate::config::Config;

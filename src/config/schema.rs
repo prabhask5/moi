@@ -369,10 +369,12 @@ pub struct CheckCommon {
 
 impl CheckCommon {
     fn read(t: &mut Tbl<'_, '_>, cx: &mut Ctx<'_>, name: &str, interval: Dur, used: &mut MonitorNames) -> Self {
+        let interval = t.dur_or(cx, "interval", interval);
         Self {
             enabled: t.bool_or(cx, "enabled", t.present()),
-            interval: t.dur_or(cx, "interval", interval),
-            timeout: t.dur_or(cx, "timeout", Dur::from_secs(60)),
+            interval,
+            // a check must be done well before its next run
+            timeout: t.dur_or(cx, "timeout", Dur::from_secs((interval.as_secs() / 2).clamp(1, 240))),
             monitor: used.read(t, cx, "monitor"),
             journal_tag: t.string_or(cx, "journal_tag", &format!("moi-check-{name}")),
         }

@@ -1,0 +1,3 @@
+# mount blocks free available inodes inodes-free (statvfs, in blocks)
+/ 60000000 42330000 39330000 15000000 14250000
+/mnt/storage 960000000 786910000 737910000 244000000 243900000

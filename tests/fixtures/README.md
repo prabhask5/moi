@@ -28,6 +28,21 @@ The fake Docker engine (`docker/`, absent = no Docker on this host):
 - `GET /containers/<c>/logs` returns `containers/<id>/logs.txt` as stdout and `logs.err` as stderr.
 - Anything else (`POST`, `DELETE`) is accepted with 204 and changes nothing. Every request is recorded (`docker_requests()`), and a test can replace an answer with `set_docker(path, json)`.
 
+### Cases
+
+`FixtureHost::with_case(dir)` layers a *case* over a fixture host: a directory with the same layout in which
+every part is optional. Files in its `root/`, `commands/` and `docker/` shadow the host's; lines in its `modes`,
+`mtimes` and `statvfs` override the host's; its `clock` replaces the host's. Three more files only make sense in
+a case or need saying explicitly:
+
+- `statvfs` — `/mount blocks free available inodes inodes-free` per filesystem (what `statvfs` reports). In a case,
+  `/mount -` takes the filesystem away and `/mount error` makes asking about it fail.
+- `absent` — host paths that do not exist in this case (a disk that dropped off the bus).
+- `unwritable` — paths below which writes fail.
+- `commands/<key>.missing` — the tool is not installed; `commands/<key>.timeout` — it never finishes.
+
+The parity suites (`tests/parity/`) are cases over `cestmoi`.
+
 ## `minimal`
 
 A server with nothing on it: hostname `myserver.lan`, timezone link, an empty `/etc/moi/moi.toml`, and `cases/` with config files for the `moi config check` tests (`full` valid with secrets, `bad` with one error of each kind, `open-secrets` whose `secrets.toml` is world-readable because `modes` does not list it).

@@ -25,6 +25,23 @@ Push: `GET {push_base}/api/push/{token}?status={up|down}&msg={urlencoded}&ping=`
 - Results: `moi check` prints `status: message` per check (exit 0 if all up, 1 if any down, 2 on error); `--json`; `--push` pushes even when run by hand; without `--push` a manual run never pushes (so testing does not disturb Kuma).
 - Every result also goes to the journal (`SYSLOG_IDENTIFIER=moi-check-<name>`), replacing `systemd-cat -t <name>-check`.
 
+### Decisions (M4)
+
+- **Dry and recorded runs.** A recorded run (the daemon's) stores the check's memory (previous counters, restart counts, sustain counts) and its result in `moi.db` (`check_values`, `sustained`, `check_results`, last 500 per check). A manual `moi check` is a dry run: it reads the memory and writes nothing, so it can be repeated without moving deltas or counting a hot run twice.
+- **Sustain** generalises the scripts' `hot-*` files to `sustain_runs`: a condition is reported from the N-th consecutive recorded run on, and forgotten as soon as it does not hold. The text `for {M}+ min` uses M = `sustain_runs` × `interval` in whole minutes.
+- **A check that dies still reports** (Deviation 2): a panic or a run longer than `timeout` gives `down` with `check crashed: {reason}` and leaves the memory untouched. `timeout` defaults to half the interval, at most 4 minutes (this replaces the 60 s default noted in 01).
+- **Kernel log** entries are read with `journalctl -k --since -{window} --no-pager -q` (the scripts' own command; the window is written in minutes when it is whole minutes). No journal → no events.
+- **`resources`**: container restart counts come from the Docker API for every container, task containers included, exactly as `docker ps -aq` gave them; names compare in byte order. An unreachable engine means "no containers", as it did for the script.
+- **`storage`**: `smartctl --json -H -A -d {type} {dev}`, 30 s. The exit status is the script's bit mask; a missing `smartctl` is `SMART unreadable` (exit 127 has that bit set). NVMe values come from `nvme_smart_health_information_log` (`critical_warning` printed as `0x%02x`, `percentage_used`, `media_errors`, `temperature`); ATA values from `ata_smart_attributes.table`, taking the leading integer of each `raw.string` (what awk's `$10` saw), sectors = attributes 5 + 197 + 198, temperature = the first of 194 / 190 in table order. `disks = "auto"` means every block device in `/sys/block` except loop, ram, zram, dm, sr, md, fd and nbd, typed `nvme` by name and `auto` otherwise; `temp_max` defaults to 70 for NVMe and 55 for everything else.
+- Space is `statvfs`: used % = ⌈used / (used + available to users)⌉ like `df`, inodes likewise (no inode count → not judged). A filesystem is read-only when `ro` is among its mount or superblock options. Each filesystem probe and the write test get 10 s; no answer in time is `(df failed)` / `(not writable)`. `writable` may list several mounts; each is tested in order.
+- **`custom`**: `run` is split on whitespace (no shell); a script that prints nothing gets `OK` (or `exit status N`); one that cannot be started is `down` with `cannot run …`; stderr goes to the journal under the check's tag.
+- **`moi check [name] [--push] [--json]`** runs the enabled checks (or one). One check prints exactly `status: message`, as the script did; several print `[name] status: message`. Exit 0 when all are up, 1 when any is down, 2 on errors. `--json`: `{ "ok": true, "down": N, "checks": [{name, status, message, duration_ms, monitor, pushed}] }`. `--push` pushes each result and writes it to the journal under the check's `journal_tag`; `pushed` is `"ok"` or the reason nothing was pushed (no binding yet, `monitors.mode = "shadow"`, Kuma's answer). A failed push never changes the check's own result or the exit code.
+- **Push** needs the monitor's token, which `moi monitors sync` records in `moi.db` when it adopts the monitor (06). The message is percent-encoded; three attempts in all (the scripts' `--retry 2`).
+
+### Parity evidence
+
+`tests/parity/<check>/<case>/` cases run through `tests/parity.rs`. For `resources`, the same test file also runs the **legacy script itself** (paths redirected into a sandbox; `journalctl`, `docker` and `curl` stubbed with the case's data) and requires its output to equal the case's `expected` file — so those files are the script's word, not a transcription of the implementation. `storage-check.sh` parses smartctl's text output, which the cases do not carry (moi reads `--json`), so its `expected` files are derived by hand from the script; the first runs on cestmoi in shadow mode (11) are the check on those.
+
 ## Built-ins
 
 ### `resources`

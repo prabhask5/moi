@@ -1,0 +1,6 @@
+{
+ "values": {
+  "cpu": "9332000 8023000",
+  "restarts": "{\"gluetun\": 0, \"sonarr\": 1, \"radarr\": 5}"
+ }
+}

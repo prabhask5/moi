@@ -1,0 +1,2 @@
+down
+Problem: kernel killed processes for lack of memory (3 events; journalctl -k --since -10min) | CPU 10%, RAM 38%, swap 2%, CPU 48C

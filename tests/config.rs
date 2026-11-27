@@ -92,7 +92,7 @@ url = "http://kuma.lan:3001"
     let r = &c.checks.resources;
     assert!(r.common.enabled);
     assert_eq!(r.common.interval.as_duration(), Duration::from_secs(300));
-    assert_eq!(r.common.timeout.as_duration(), Duration::from_secs(60));
+    assert_eq!(r.common.timeout.as_duration(), Duration::from_secs(150), "half the interval (spec 05)");
     assert_eq!(r.common.journal_tag, "moi-check-resources");
     assert_eq!(r.common.monitor, None);
     assert_eq!((r.cpu_limit, r.mem_limit, r.swap_limit, r.temp_limit, r.sustain_runs), (90, 90, 80, 85, 2));

@@ -1,0 +1,79 @@
+{
+ "json_format_version": [
+  1,
+  0
+ ],
+ "smartctl": {
+  "exit_status": 0
+ },
+ "device": {
+  "name": "/dev/sda",
+  "type": "sat"
+ },
+ "model_name": "TOSHIBA MQ04UBB400",
+ "smart_status": {
+  "passed": true
+ },
+ "ata_smart_attributes": {
+  "table": [
+   {
+    "id": 5,
+    "name": "Reallocated_Sector_Ct",
+    "value": 100,
+    "worst": 100,
+    "thresh": 0,
+    "raw": {
+     "value": 0,
+     "string": "0"
+    }
+   },
+   {
+    "id": 9,
+    "name": "Power_On_Hours",
+    "value": 100,
+    "worst": 100,
+    "thresh": 0,
+    "raw": {
+     "value": 14200,
+     "string": "14200"
+    }
+   },
+   {
+    "id": 194,
+    "name": "Temperature_Celsius",
+    "value": 100,
+    "worst": 100,
+    "thresh": 0,
+    "raw": {
+     "value": 31,
+     "string": "31 (Min/Max 20/45)"
+    }
+   },
+   {
+    "id": 197,
+    "name": "Current_Pending_Sector",
+    "value": 100,
+    "worst": 100,
+    "thresh": 0,
+    "raw": {
+     "value": 0,
+     "string": "0"
+    }
+   },
+   {
+    "id": 198,
+    "name": "Offline_Uncorrectable",
+    "value": 100,
+    "worst": 100,
+    "thresh": 0,
+    "raw": {
+     "value": 0,
+     "string": "0"
+    }
+   }
+  ]
+ },
+ "temperature": {
+  "current": 31
+ }
+}

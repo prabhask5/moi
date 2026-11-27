@@ -327,7 +327,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Context { action: Some(ContextCommand::Share { ttl, revoke, list }) } => {
             return context_share(cli, *ttl, *revoke, *list, host, out);
         }
-        Command::Check(_) => ("health checks", "M4"),
+        Command::Check(args) => return check(cli, args, host, out),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
             ("daemon, init & firewall", "M6")
@@ -726,4 +726,67 @@ fn context_share(
         );
     }
     Ok(())
+}
+
+fn check(cli: &Cli, args: &CheckArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::checks;
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let config = Arc::new(loaded.config);
+    // `services` (with its edge probes) is the last built-in still to come
+    if args.name.as_deref() == Some("services") {
+        return Err(Error::NotImplemented { what: "the services check", milestone: "M4" });
+    }
+    let all = checks::enabled(&config);
+    let selected: Vec<_> = match &args.name {
+        None => all,
+        Some(name) => {
+            let names: Vec<String> = all.iter().map(|c| c.name()).collect();
+            let found: Vec<_> = all.into_iter().filter(|c| c.name() == *name).collect();
+            if found.is_empty() {
+                let known = if names.is_empty() {
+                    "none are enabled in moi.toml".to_string()
+                } else {
+                    format!("enabled: {}", names.join(", "))
+                };
+                return Err(Error::Usage(format!("no such check: {name} ({known})")));
+            }
+            found
+        }
+    };
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let mut results = Vec::new();
+    for c in &selected {
+        // a manual run looks without recording, so the daemon's deltas and counters stay as they are
+        let mut result = checks::run(&host, &config, &db, c, checks::Mode::Dry)?;
+        if args.push {
+            result.pushed = Some(checks::push(&host, &config, &db, &result));
+            let line = format!("{}: {}", result.status.as_str(), result.message);
+            Logger::new(Arc::clone(&host), &c.journal_tag(&config))
+                .with_masker(loaded.masker.clone())
+                .info(&line, &[("check", &result.name)]);
+        }
+        results.push(result);
+    }
+    let down = results.iter().filter(|r| r.status == checks::Status::Down).count();
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "down": down, "checks": results }));
+    } else {
+        if results.is_empty() {
+            let _ = writeln!(
+                out,
+                "no checks are enabled: add [checks.resources], [checks.storage] or [[checks.custom]] to moi.toml"
+            );
+        }
+        for r in &results {
+            // one check prints exactly what the legacy script printed; several are told apart by name
+            let prefix = if results.len() > 1 { format!("[{}] ", r.name) } else { String::new() };
+            let _ = writeln!(out, "{prefix}{}: {}", r.status.as_str(), r.message);
+            if let Some(pushed) = r.pushed.as_deref().filter(|p| *p != "ok") {
+                let _ = writeln!(out, "{prefix}{pushed}");
+            }
+        }
+    }
+    if down > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
 }

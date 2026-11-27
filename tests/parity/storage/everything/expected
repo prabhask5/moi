@@ -1,0 +1,2 @@
+down
+Problem: nvme0n1 (92% of rated life used) sda (SMART says FAILING) sda (11 bad/pending sectors) sda (56C, too hot) kernel log (1 disk/USB errors in last 6 min, see: journalctl -k --since -10min) /mnt/storage (86% full) /mnt/storage (not writable) 

@@ -67,16 +67,20 @@ const DATA_FS: [&str; 17] = [
     "bcachefs",
 ];
 
+/// One mounted filesystem (`/proc/self/mountinfo`).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Mount {
+pub struct Mount {
     pub target: String,
     pub source: String,
     pub fstype: String,
+    /// Per-mount options (`rw,relatime`).
     pub options: String,
+    /// Options of the filesystem itself (`ro` here when the kernel remounted it read-only after errors).
+    pub super_options: String,
 }
 
 /// Parse `/proc/self/mountinfo` (`id parent maj:min root target options [tags…] - fstype source superopts`).
-pub(crate) fn mounts(host: &dyn Host) -> Vec<Mount> {
+pub fn mounts(host: &dyn Host) -> Vec<Mount> {
     let text = host.read_to_string(Path::new("/proc/self/mountinfo")).unwrap_or_default();
     let mut out = Vec::new();
     for line in text.lines() {
@@ -91,6 +95,7 @@ pub(crate) fn mounts(host: &dyn Host) -> Vec<Mount> {
                 source: unescape(source),
                 fstype: (*fstype).to_string(),
                 options: (*options).to_string(),
+                super_options: right.get(2).map(ToString::to_string).unwrap_or_default(),
             });
         }
     }
