@@ -55,6 +55,17 @@ impl Sandbox {
         let restic =
             String::from_utf8(Command::new("sh").args(["-c", "command -v restic"]).output().unwrap().stdout).unwrap();
         std::fs::copy(restic.trim(), root.join("restic")).expect("restic is installed in the integration job");
+        // a dynamically linked restic needs its loader and libraries at the same paths inside
+        let linked = Command::new("ldd")
+            .arg(restic.trim())
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+            .unwrap_or_default();
+        for library in linked.split_whitespace().filter(|word| word.starts_with('/')) {
+            let inside = root.join(library.trim_start_matches('/'));
+            std::fs::create_dir_all(inside.parent().unwrap()).unwrap();
+            std::fs::copy(library, &inside).unwrap_or_else(|e| panic!("{library}: {e}"));
+        }
         Arc::new(Self { inner: RealHost::with_root(&root), root, env: Mutex::default(), restic: Mutex::default() })
     }
 
