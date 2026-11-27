@@ -175,6 +175,10 @@ max_storage = "8GB"
 [restore]
 etc_paths = ["/etc/dokploy", "/etc/systemd/resolved.conf"]
 
+# ------------------------------------------------------------------ migration
+[migrate]
+remove = ["/opt/scripts/disk-audit.sh"]   # replaced by `moi audit`; nothing calls it, so moi cannot tell by itself
+
 # ------------------------------------------------------------------ monitors
 [monitors.kuma]
 url = "http://uptime.home"

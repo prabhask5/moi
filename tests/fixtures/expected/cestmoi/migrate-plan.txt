@@ -1,0 +1,67 @@
+heal:traefik-homelab  →  heal rule traefik-homelab
+  unit   /etc/systemd/system/traefik-homelab.service
+  file   /opt/scripts/traefik-homelab.sh
+
+heal:traefik-config-guard  →  heal rule traefik-config-guard
+  unit   /etc/systemd/system/traefik-config-guard.path
+  unit   /etc/systemd/system/traefik-config-guard.service
+  file   /opt/scripts/traefik-config-guard.py
+
+boot  →  boot.compose_up
+  unit   /etc/systemd/system/homelab-services.service
+  unit   /etc/systemd/system/yams.service
+  file   /opt/scripts/homelab-up.sh
+
+firewall  →  firewall
+  unit   /etc/systemd/system/host-firewall.service
+  file   /etc/host-firewall/rules4.txt
+  file   /etc/host-firewall/rules6.txt
+  file   /usr/local/sbin/host-firewall
+  keeps  the rules, now in /etc/moi/firewall/rules4.txt and /etc/moi/firewall/rules6.txt
+
+backup  →  backup + backup.offsite
+  unit   /etc/systemd/system/server-backup.service
+  unit   /etc/systemd/system/server-backup.timer
+  file   /opt/scripts/backup.sh
+  file   /opt/scripts/offsite-backup.sh
+  state  /root/.config/restic/r2.env
+  state  /var/lib/offsite-backup
+  keeps  push token …0004 of "Server Backup"
+  keeps  log lines in /var/log/server-backup.log
+  keeps  the off-site repository, its password and its snapshots
+
+resources  →  checks.resources
+  cron   /etc/cron.d/resource-check
+  file   /opt/scripts/resource-check.sh
+  state  /var/lib/resource-check
+  keeps  push token …ok01 of "Server Resources"
+  keeps  journal tag resource-check
+
+services  →  checks.services + checks.edge + 1 heal rule
+  cron   /etc/cron.d/service-check
+  unit   /etc/systemd/system/homelab-selfcheck.service
+  unit   /etc/systemd/system/homelab-selfcheck.timer
+  file   /opt/scripts/service-check.sh
+  state  /var/tmp/service-check-heal
+  keeps  push token …k002 of "Server Internal Services"
+  keeps  journal tag service-check
+
+storage  →  checks.storage
+  cron   /etc/cron.d/storage-check
+  file   /opt/scripts/storage-check.sh
+  keeps  push token …0003 of "Server Storage"
+  keeps  journal tag storage-check
+
+stale  →  nothing (stale copies and what `migrate.remove` names)
+  file   /opt/scripts/backup.sh.bak
+  file   /opt/scripts/disk-audit.sh
+
+serverstate  →  moi's state (snapshot, history, context)
+  file   /etc/serverstate.conf
+  file   /usr/local/bin/serverstate
+  file   /usr/local/lib/serverstate
+  state  /var/lib/serverstate
+  keeps  its history and NOTES.md, imported into moi's state
+
+untouched
+  container ddns — pushes to a monitor of its own

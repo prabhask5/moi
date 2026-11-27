@@ -357,6 +357,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         }
         Command::Verify => return verify(cli, host, out),
         Command::Restore(args) => return restore(cli, args, host, out),
+        Command::Migrate(MigrateCommand::Plan) => return migrate_plan(cli, host, out),
         Command::Migrate(_) => ("migration", "M9"),
     };
     Err(Error::NotImplemented { what, milestone })
@@ -1452,6 +1453,24 @@ fn restore(cli: &Cli, args: &RestoreArgs, host: Arc<dyn Host>, out: &mut dyn Wri
         print_json(out, &json!({ "ok": true, "dry_run": args.dry_run, "warnings": warnings, "log": lines }));
     } else {
         restore::restore(&host, bundle, &options, out)?;
+    }
+    Ok(())
+}
+
+fn migrate_plan(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    // the plan is read off the last snapshot: what calls what, which script pushes where
+    if !host.exists(&state.snapshot()) {
+        return Err(Error::Usage(
+            "no snapshot yet: run `moi snapshot` first — the plan is made from what it records".to_string(),
+        ));
+    }
+    let plan = crate::migrate::plan(host.as_ref(), &loaded.config, &state);
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "items": plan.items, "untouched": plan.untouched }));
+    } else {
+        let _ = write!(out, "{}", loaded.masker.mask(&crate::migrate::render(&plan)));
     }
     Ok(())
 }

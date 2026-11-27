@@ -92,3 +92,11 @@ an Incus loop mount, read-only and log bind mounts, fungible media, a stale `bac
 `expected/cestmoi/CONTEXT.md` is the golden context file (after an audit) and `expected/cestmoi/audit.md` the golden audit of this host. `expected/cestmoi/snapshot/` is the golden stable tree of a snapshot of this host (without `files/`, which the manifest pins by hash).
 
 Golden files are regenerated with `MOI_UPDATE_GOLDEN=1 cargo test` and reviewed in the PR diff.
+
+## `cases/legacy-state`
+
+A case over `cestmoi` for the migration tests: what the legacy scripts left behind and the prototype's
+installation — `/var/lib/resource-check` (CPU counters, restart counts), `/var/lib/offsite-backup/last-upload`,
+`/var/tmp/service-check-heal`, `/root/.config/restic/r2.env` with its password file, `/etc/serverstate.conf`,
+`/var/lib/serverstate` and `/usr/local/lib/serverstate`. Kept out of the host itself so that its snapshot,
+audit and context goldens stay what they are.

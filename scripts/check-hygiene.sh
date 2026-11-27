@@ -26,8 +26,8 @@ fi
 [[ -n $hits ]] && problem "untracked TODO/FIXME (tag them TODO(M<n>) or TODO(#<issue>), or remove):"$'\n'"$hits"
 
 # 3. stray files: editor/merge/backup leftovers, scratch dirs, OS junk
-# (a fixture host's root/ imitates a server's filesystem, where *.bak and *.log files are the point)
-hits=$(echo "$files" | grep -vE '^tests/fixtures/hosts/[^/]+/root/' | grep -E '(\.orig|\.rej|\.bak|\.swp|~|\.tmp|\.log|\.DS_Store|Thumbs\.db)$|(^|/)(scratch|tmp|spike|notes-wip)/' || true)
+# (a fixture host's or case's root/ imitates a server's filesystem, where *.bak and *.log files are the point)
+hits=$(echo "$files" | grep -vE '^tests/fixtures/(hosts|cases)/[^/]+/root/' | grep -E '(\.orig|\.rej|\.bak|\.swp|~|\.tmp|\.log|\.DS_Store|Thumbs\.db)$|(^|/)(scratch|tmp|spike|notes-wip)/' || true)
 [[ -n $hits ]] && problem "stray files:"$'\n'"$hits"
 
 # 4. large files (fixtures should be minimal; binaries never)
