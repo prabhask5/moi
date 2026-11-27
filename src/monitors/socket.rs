@@ -18,8 +18,12 @@ use crate::net::Client;
 const SEPARATOR: char = '\u{1e}';
 /// The server answers a poll at the latest when its ping is due (25 s by default).
 const POLL_TIMEOUT: Duration = Duration::from_secs(45);
-/// Polls without the awaited packet before giving up (each can last a ping interval).
-const MAX_POLLS: usize = 8;
+/// Silent polls — ones that bring nothing but a ping, each of which the server holds for a ping interval —
+/// before the awaited packet is given up on.
+const MAX_POLLS: usize = 4;
+/// Longest to wait for an acknowledgement or an event while the server keeps sending other things
+/// (a busy Kuma streams heartbeats of every monitor to every session).
+const PATIENCE: Duration = Duration::from_secs(120);
 
 #[derive(Debug)]
 pub struct Session {
@@ -37,6 +41,33 @@ pub struct Session {
 
 fn problem(what: impl Into<String>) -> String {
     what.into()
+}
+
+/// How long to keep polling for something: until the server has been silent for some polls in a row,
+/// or [`PATIENCE`] has passed while it kept talking about other things.
+struct Waiting {
+    host: Arc<dyn Host>,
+    started: Duration,
+    silent_left: usize,
+    /// A ceiling that holds even where no clock moves.
+    polls_left: usize,
+}
+
+impl Waiting {
+    fn new(host: &Arc<dyn Host>, silent_polls: usize) -> Self {
+        Self { host: Arc::clone(host), started: host.monotonic(), silent_left: silent_polls, polls_left: 5000 }
+    }
+
+    fn goes_on(&self) -> bool {
+        self.silent_left > 0 && self.polls_left > 0 && self.host.monotonic().saturating_sub(self.started) < PATIENCE
+    }
+
+    fn polled(&mut self, messages: usize) {
+        self.polls_left = self.polls_left.saturating_sub(1);
+        if messages == 0 {
+            self.silent_left = self.silent_left.saturating_sub(1);
+        }
+    }
 }
 
 impl Session {
@@ -61,10 +92,11 @@ impl Session {
         session.sid = open["sid"].as_str().ok_or_else(|| problem("handshake without a session id"))?.to_string();
         // socket.io: join the default namespace, and wait until the server says we are in
         session.post("40")?;
-        for _ in 0..MAX_POLLS {
+        let mut waiting = Waiting::new(&session.host, MAX_POLLS);
+        while waiting.goes_on() {
             let payload = session.get()?;
             let joined = payload.split(SEPARATOR).any(|p| p.starts_with("40"));
-            session.take(&payload)?;
+            waiting.polled(session.take(&payload)?);
             if joined {
                 return Ok(session);
             }
@@ -107,18 +139,23 @@ impl Session {
         Ok(())
     }
 
-    /// Take in one polled payload: answer pings, file events and acknowledgements.
-    fn take(&mut self, payload: &str) -> Result<(), String> {
+    /// Take in one polled payload: answer pings, file events and acknowledgements. Returns how many
+    /// messages it carried (none: the server had nothing to say for a whole ping interval).
+    fn take(&mut self, payload: &str) -> Result<usize, String> {
+        let mut messages = 0;
         for packet in payload.split(SEPARATOR) {
             match packet.as_bytes().first() {
                 // ping → pong, or the server drops the session
                 Some(b'2') => self.post("3")?,
                 Some(b'1') => return Err(problem("the server closed the session")),
-                Some(b'4') => self.message(&packet[1..])?,
+                Some(b'4') => {
+                    messages += 1;
+                    self.message(&packet[1..])?;
+                }
                 _ => {}
             }
         }
-        Ok(())
+        Ok(messages)
     }
 
     /// One socket.io packet: `2["event", args…]`, `3<id>[args…]`, `4{"message": …}`.
@@ -155,17 +192,17 @@ impl Session {
         let mut items = vec![Value::String(event.to_string())];
         items.extend_from_slice(args);
         self.post(&format!("42{id}{}", Value::Array(items)))?;
-        for _ in 0..MAX_POLLS {
+        let mut waiting = Waiting::new(&self.host, MAX_POLLS);
+        loop {
             if let Some(ack) = self.acks.remove(&id) {
                 return Ok(ack.get(0).cloned().unwrap_or(Value::Null));
             }
+            if !waiting.goes_on() {
+                return Err(problem(format!("no answer to `{event}`")));
+            }
             let payload = self.get()?;
-            self.take(&payload)?;
+            waiting.polled(self.take(&payload)?);
         }
-        self.acks
-            .remove(&id)
-            .map(|ack| ack.get(0).cloned().unwrap_or(Value::Null))
-            .ok_or_else(|| problem(format!("no answer to `{event}`")))
     }
 
     /// The first argument of the latest `event` the server emitted, polling until one has arrived.
@@ -173,16 +210,19 @@ impl Session {
         self.event_within(event, MAX_POLLS)
     }
 
-    /// Like [`Session::event`], giving up after this many polls (for events a version may not send).
+    /// Like [`Session::event`], giving up after this many silent polls (for events a version may not send).
     pub fn event_within(&mut self, event: &str, polls: usize) -> Result<Value, String> {
-        for _ in 0..polls {
+        let mut waiting = Waiting::new(&self.host, polls);
+        loop {
             if let Some(args) = self.events.get(event) {
                 return Ok(args.get(0).cloned().unwrap_or(Value::Null));
             }
+            if !waiting.goes_on() {
+                return Err(problem(format!("the server never sent `{event}`")));
+            }
             let payload = self.get()?;
-            self.take(&payload)?;
+            waiting.polled(self.take(&payload)?);
         }
-        Err(problem(format!("the server never sent `{event}`")))
     }
 
     /// The latest `event` if the server has sent one already (no waiting).
