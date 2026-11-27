@@ -84,6 +84,7 @@ claude_pointer = true            # maintain a marked block in ~/.claude/CLAUDE.m
 enabled = true
 endpoint = "secret:share_endpoint"   # S3 API endpoint, e.g. https://<account_id>.r2.cloudflarestorage.com
 bucket = "moi-share"                 # PRIVATE bucket (no public access, no custom domain)
+region = "auto"                      # SigV4 signing region: "auto" for R2, the bucket's region elsewhere
 access_key_id = "secret:share_key_id"         # R2 API token scoped to Object Read & Write on this bucket only
 secret_access_key = "secret:share_secret"
 default_ttl = "1h"

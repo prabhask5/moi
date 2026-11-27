@@ -19,6 +19,7 @@ pub mod host;
 pub mod log;
 pub mod migrate;
 pub mod monitors;
+pub mod net;
 pub mod redact;
 pub mod restore;
 pub mod snapshot;

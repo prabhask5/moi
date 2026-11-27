@@ -1,0 +1,210 @@
+//! Outbound HTTP(S): the share bucket now; Uptime Kuma pushes, probes and the R2 guard later.
+//!
+//! A blocking client over connections from `host::Host` (so tests answer requests themselves), with
+//! TLS by rustls. Trust anchors are the system's CA bundle, read through the host — no certificates
+//! are compiled in, and a fixture can bring its own.
+
+pub(crate) mod http1;
+
+use std::io::{self, Read, Write};
+use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
+
+use rustls::pki_types::pem::PemObject;
+use rustls::pki_types::{CertificateDer, ServerName};
+
+use crate::host::{Conn, Host};
+
+/// Where distributions keep the CA bundle.
+const CA_BUNDLES: [&str; 5] = [
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/pki/tls/certs/ca-bundle.crt",
+    "/etc/ssl/ca-bundle.pem",
+    "/etc/ssl/cert.pem",
+    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+];
+
+/// A parsed `http://` or `https://` URL.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Url {
+    pub https: bool,
+    pub host: String,
+    pub port: u16,
+    /// Path and query, starting with `/`.
+    pub target: String,
+}
+
+impl Url {
+    pub fn parse(url: &str) -> Result<Self, String> {
+        let (https, rest) = match (url.strip_prefix("https://"), url.strip_prefix("http://")) {
+            (Some(rest), _) => (true, rest),
+            (_, Some(rest)) => (false, rest),
+            _ => return Err(format!("not an http(s) URL: {url}")),
+        };
+        let (authority, target) = match rest.find(['/', '?']) {
+            Some(i) if rest.as_bytes()[i] == b'/' => (&rest[..i], rest[i..].to_string()),
+            Some(i) => (&rest[..i], format!("/{}", &rest[i..])),
+            None => (rest, "/".to_string()),
+        };
+        // credentials in a URL are never sent anywhere by this client
+        let authority = authority.rsplit('@').next().unwrap_or(authority);
+        let (host, port) = match authority.rsplit_once(':') {
+            Some((host, port)) if !host.is_empty() && port.bytes().all(|b| b.is_ascii_digit()) && !port.is_empty() => {
+                (host, port.parse().map_err(|_| format!("bad port in {url}"))?)
+            }
+            _ => (authority, if https { 443 } else { 80 }),
+        };
+        if host.is_empty() || host.starts_with(':') {
+            return Err(format!("no host in {url}"));
+        }
+        Ok(Self { https, host: host.to_string(), port, target })
+    }
+
+    /// `host` or `host:port` when the port is not the scheme's default: the `Host` header.
+    pub fn authority(&self) -> String {
+        if self.port == if self.https { 443 } else { 80 } {
+            self.host.clone()
+        } else {
+            format!("{}:{}", self.host, self.port)
+        }
+    }
+}
+
+/// A finished response.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Response {
+    pub status: u16,
+    /// Lower-cased names.
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+
+impl Response {
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.headers.iter().find(|(n, _)| n == name).map(|(_, v)| v.as_str())
+    }
+
+    pub fn is_success(&self) -> bool {
+        (200..300).contains(&self.status)
+    }
+
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.body).into_owned()
+    }
+}
+
+/// A TLS session over a host connection.
+struct Tls {
+    stream: rustls::StreamOwned<rustls::ClientConnection, Box<dyn Conn>>,
+}
+
+impl std::fmt::Debug for Tls {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Tls")
+    }
+}
+
+impl Read for Tls {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self.stream.read(buf) {
+            // a peer that closes without close_notify after a complete response is not an error here:
+            // HTTP framing (Content-Length / chunked) decides whether the body is complete
+            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => Ok(0),
+            other => other,
+        }
+    }
+}
+
+impl Write for Tls {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.stream.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.stream.flush()
+    }
+}
+
+impl Conn for Tls {
+    fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
+        self.stream.sock.set_timeout(timeout)
+    }
+}
+
+/// An HTTP client bound to a host.
+#[derive(Debug, Clone)]
+pub struct Client {
+    host: Arc<dyn Host>,
+    timeout: Duration,
+}
+
+impl Client {
+    pub fn new(host: Arc<dyn Host>) -> Self {
+        Self { host, timeout: Duration::from_secs(30) }
+    }
+
+    /// How long connecting and each read or write may take (default 30 s).
+    #[must_use]
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    fn tls_config(&self) -> io::Result<Arc<rustls::ClientConfig>> {
+        let mut roots = rustls::RootCertStore::empty();
+        for bundle in CA_BUNDLES {
+            if let Ok(pem) = self.host.read(Path::new(bundle)) {
+                let certs: Vec<CertificateDer<'static>> =
+                    CertificateDer::pem_slice_iter(&pem).filter_map(Result::ok).collect();
+                roots.add_parsable_certificates(certs);
+                if !roots.is_empty() {
+                    break;
+                }
+            }
+        }
+        if roots.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "no CA certificates found (looked for /etc/ssl/certs/ca-certificates.crt and the usual alternatives): install ca-certificates",
+            ));
+        }
+        let provider = Arc::new(rustls::crypto::ring::default_provider());
+        let config = rustls::ClientConfig::builder_with_provider(provider)
+            .with_safe_default_protocol_versions()
+            .map_err(|e| io::Error::other(e.to_string()))?
+            .with_root_certificates(roots)
+            .with_no_client_auth();
+        Ok(Arc::new(config))
+    }
+
+    /// Send one request and read the whole response. Redirects are not followed.
+    pub fn send(
+        &self,
+        method: &str,
+        url: &str,
+        headers: &[(String, String)],
+        body: Option<&[u8]>,
+    ) -> io::Result<Response> {
+        let url = Url::parse(url).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+        let mut conn = self.host.connect_tcp(&url.host, url.port, self.timeout)?;
+        conn.set_timeout(Some(self.timeout))?;
+        if url.https {
+            let name = ServerName::try_from(url.host.clone())
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))?;
+            let session =
+                rustls::ClientConnection::new(self.tls_config()?, name).map_err(|e| io::Error::other(e.to_string()))?;
+            conn = Box::new(Tls { stream: rustls::StreamOwned::new(session, conn) });
+        }
+        let authority = url.authority();
+        let request = http1::Request { method, target: &url.target, host: &authority, headers, body, upgrade: false };
+        let response = http1::request(conn, &request)?;
+        let (status, headers) = (response.status, response.headers.clone());
+        Ok(Response { status, headers, body: response.bytes()? })
+    }
+}
+
+/// Percent-encode a path segment or query value (everything but unreserved characters).
+pub fn encode(value: &str) -> String {
+    http1::encode(value)
+}

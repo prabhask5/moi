@@ -101,6 +101,24 @@ pub const MIGRATIONS: &[Migration] = &[
         ) WITHOUT ROWID;
     ",
     },
+    Migration {
+        version: 3,
+        name: "context shares and settings",
+        sql: "
+        -- copies of CONTEXT.md uploaded for sharing, so expired ones can be deleted and listed (03)
+        CREATE TABLE context_shares (
+            key        TEXT    PRIMARY KEY,               -- object key in the share bucket: ctx/<random>.md
+            created_at INTEGER NOT NULL,
+            expires_at INTEGER NOT NULL
+        ) WITHOUT ROWID;
+
+        -- small facts moi remembers about what it already did
+        CREATE TABLE settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        ) WITHOUT ROWID;
+    ",
+    },
 ];
 
 /// An open `moi.db` at the current schema.

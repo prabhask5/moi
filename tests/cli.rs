@@ -222,8 +222,14 @@ fn context_share_is_wired() {
     assert!(out.status.success());
     let help = String::from_utf8_lossy(&out.stdout);
     assert!(help.contains("--ttl") && help.contains("--revoke") && help.contains("--list"), "{help}");
-    let out = moi(&["context", "share", "--ttl", "1h"]);
-    assert_eq!(out.status.code(), Some(3));
+    // on a server without [context.share] it says how to set it up
+    let out = moi_on_fixture(&["context", "share", "--ttl", "1h"], &[]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(
+        text(&out.stderr).contains("context share: not configured: add a [context.share] section"),
+        "{}",
+        text(&out.stderr)
+    );
 }
 
 // ------------------------------------------------------------------ M2: snapshot

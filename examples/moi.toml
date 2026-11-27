@@ -198,6 +198,7 @@ default_ttl = "1h"
 enabled = false
 max_ttl = "1d"
 notify = true
+region = "auto"
 
 [data]
 fungible = []

@@ -1,7 +1,7 @@
-//! A minimal HTTP/1.1 client for the Docker Engine API: one request per connection over a stream the
-//! host provides. Sync on purpose — snapshot collectors and checks make a handful of local requests
-//! that each take microseconds, and the daemon (M6) reads the event stream on its own thread; an async
-//! HTTP stack would add a large dependency tree for no gain (docs/spec/14-security.md § Dependencies).
+//! A minimal HTTP/1.1 client: one request per connection over a stream the host provides (the Docker
+//! engine's unix socket, a TCP connection, a TLS session). Sync on purpose — moi makes a handful of
+//! short requests per run, and the daemon (M6) follows the Docker event stream on its own thread; an
+//! async HTTP stack would be most of the dependency tree for no gain (docs/spec/14-security.md).
 
 use std::io::{self, BufRead, BufReader, Read, Write};
 
@@ -10,6 +10,8 @@ use crate::host::Conn;
 /// A response whose body has not been read yet.
 pub(crate) struct Response {
     pub status: u16,
+    /// Lower-cased names.
+    pub headers: Vec<(String, String)>,
     body: Body,
 }
 
@@ -34,23 +36,34 @@ fn protocol(msg: impl Into<String>) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, msg.into())
 }
 
+/// What to send. `target` is the request target (`/path?query`), `host` the `Host` header.
+pub(crate) struct Request<'a> {
+    pub method: &'a str,
+    pub target: &'a str,
+    pub host: &'a str,
+    /// Extra headers (`Content-Length`, `Host`, `Connection` are set here).
+    pub headers: &'a [(String, String)],
+    pub body: Option<&'a [u8]>,
+    /// Ask for a protocol upgrade (Docker's raw exec stream).
+    pub upgrade: bool,
+}
+
 /// Send a request and read the response head.
-pub(crate) fn request(
-    mut conn: Box<dyn Conn>,
-    method: &str,
-    path: &str,
-    body: Option<&[u8]>,
-    upgrade: bool,
-) -> io::Result<Response> {
-    let mut head = format!("{method} {path} HTTP/1.1\r\nHost: docker\r\nUser-Agent: moi\r\nAccept: */*\r\n");
-    if upgrade {
+pub(crate) fn request(mut conn: Box<dyn Conn>, req: &Request<'_>) -> io::Result<Response> {
+    let (method, body) = (req.method, req.body);
+    let mut head =
+        format!("{method} {} HTTP/1.1\r\nHost: {}\r\nUser-Agent: moi\r\nAccept: */*\r\n", req.target, req.host);
+    if req.upgrade {
         head.push_str("Connection: Upgrade\r\nUpgrade: tcp\r\n");
     } else {
         head.push_str("Connection: close\r\n");
     }
+    for (name, value) in req.headers {
+        head.push_str(&format!("{name}: {value}\r\n"));
+    }
     if let Some(body) = body {
-        head.push_str(&format!("Content-Type: application/json\r\nContent-Length: {}\r\n", body.len()));
-    } else if method != "GET" {
+        head.push_str(&format!("Content-Length: {}\r\n", body.len()));
+    } else if method != "GET" && method != "HEAD" {
         head.push_str("Content-Length: 0\r\n");
     }
     head.push_str("\r\n");
@@ -94,7 +107,7 @@ pub(crate) fn request(
     } else {
         Framing::Eof
     };
-    Ok(Response { status, body: Body { reader, framing } })
+    Ok(Response { status, headers, body: Body { reader, framing } })
 }
 
 impl Response {

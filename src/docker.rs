@@ -7,8 +7,6 @@
 //!
 //! Sync (see `http`); every connection comes from `host::Host`, so tests replay fixture files.
 
-mod http;
-
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
@@ -19,6 +17,7 @@ use serde_json::{Value, json};
 use thiserror::Error;
 
 use crate::host::Host;
+use crate::net::http1 as http;
 
 /// Where the engine listens unless told otherwise.
 pub const DEFAULT_SOCKET: &str = "/var/run/docker.sock";
@@ -192,7 +191,16 @@ impl Docker {
             |e: std::io::Error| DockerError::Protocol { method, path: path.to_string(), message: e.to_string() };
         conn.set_timeout(Some(self.timeout)).map_err(protocol)?;
         let payload = body.map(|b| b.to_string().into_bytes());
-        let response = http::request(conn, method, path, payload.as_deref(), upgrade).map_err(protocol)?;
+        let json = [("Content-Type".to_string(), "application/json".to_string())];
+        let request = http::Request {
+            method,
+            target: path,
+            host: "docker",
+            headers: if payload.is_some() { &json } else { &[] },
+            body: payload.as_deref(),
+            upgrade,
+        };
+        let response = http::request(conn, &request).map_err(protocol)?;
         if response.status >= 400 {
             let status = response.status;
             let raw = response.bytes().unwrap_or_default();

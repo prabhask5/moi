@@ -25,7 +25,9 @@ use super::{Cmd, CmdOutput, Conn, Host, Metadata};
 /// 2026-01-01T00:00:00Z, used when the fixture has no `clock` file.
 const DEFAULT_CLOCK: u64 = 1_767_225_600;
 
-#[derive(Debug)]
+/// The fixture's whole network: gets `(host:port, raw HTTP request)` and returns the raw response.
+pub type HttpHandler = Arc<dyn Fn(&str, &[u8]) -> Vec<u8> + Send + Sync>;
+
 pub struct FixtureHost {
     dir: PathBuf,
     base: PathBuf,
@@ -36,6 +38,7 @@ pub struct FixtureHost {
     default_mtime: SystemTime,
     state: Mutex<State>,
     docker: Arc<Mutex<DockerState>>,
+    http: Mutex<Option<HttpHandler>>,
 }
 
 #[derive(Debug)]
@@ -49,6 +52,52 @@ struct State {
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
     chmodded: BTreeSet<PathBuf>,
+    /// How many random bytes were handed out (the fixture's "randomness" is a fixed sequence).
+    random_counter: u64,
+}
+
+impl std::fmt::Debug for FixtureHost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FixtureHost({})", self.dir.display())
+    }
+}
+
+/// A TCP connection answered by the test's [`HttpHandler`].
+struct HandlerConn {
+    authority: String,
+    handler: HttpHandler,
+    request: Vec<u8>,
+    response: Option<io::Cursor<Vec<u8>>>,
+}
+
+impl std::fmt::Debug for HandlerConn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HandlerConn({})", self.authority)
+    }
+}
+
+impl io::Write for HandlerConn {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.request.extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl io::Read for HandlerConn {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let (authority, handler, request) = (&self.authority, &self.handler, &self.request);
+        self.response.get_or_insert_with(|| io::Cursor::new(handler(authority, request))).read(buf)
+    }
+}
+
+impl Conn for HandlerConn {
+    fn set_timeout(&mut self, _timeout: Option<Duration>) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 fn bad_fixture(msg: String) -> io::Error {
@@ -121,7 +170,9 @@ impl FixtureHost {
                 journal: Vec::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
+                random_counter: 0,
             }),
+            http: Mutex::new(None),
             docker: Arc::default(),
         })
     }
@@ -171,6 +222,12 @@ impl FixtureHost {
     /// Journal entries sent so far, each a list of fields.
     pub fn journal_entries(&self) -> Vec<Vec<(String, String)>> {
         self.state().journal.clone()
+    }
+
+    /// Give the fixture a network: every TCP connection is answered by `handler`, which receives the
+    /// `host:port` connected to and the raw HTTP request. Without one, connecting is refused.
+    pub fn set_http(&self, handler: HttpHandler) {
+        *self.http.lock().unwrap_or_else(PoisonError::into_inner) = Some(handler);
     }
 
     /// Every request the fake Docker engine received, as `METHOD /path?query`.
@@ -424,6 +481,33 @@ impl Host for FixtureHost {
             }
             _ => Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display()))),
         }
+    }
+
+    fn connect_tcp(&self, host: &str, port: u16, _timeout: Duration) -> io::Result<Box<dyn Conn>> {
+        match self.http.lock().unwrap_or_else(PoisonError::into_inner).clone() {
+            Some(handler) => Ok(Box::new(HandlerConn {
+                authority: format!("{host}:{port}"),
+                handler,
+                request: Vec::new(),
+                response: None,
+            })),
+            None => Err(io::Error::new(
+                io::ErrorKind::ConnectionRefused,
+                format!("fixture host has no network: cannot connect to {host}:{port}"),
+            )),
+        }
+    }
+
+    fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>> {
+        // not random at all: tests need the same "random" keys every run
+        let mut state = self.state();
+        let mut out = Vec::with_capacity(count);
+        while out.len() < count {
+            state.random_counter += 1;
+            out.extend_from_slice(&Self::command_key(&format!("random {}", state.random_counter)).as_bytes()[..8]);
+        }
+        out.truncate(count);
+        Ok(out)
     }
 
     fn now(&self) -> SystemTime {

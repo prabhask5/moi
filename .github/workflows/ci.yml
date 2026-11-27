@@ -74,6 +74,16 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+      # S3-compatible server for `moi context share` (verifies SigV4, so presigned links are really tested).
+      # MinIO no longer publishes images; CloudServer starts without arguments, which a service needs.
+      s3:
+        image: zenko/cloudserver:latest
+        env:
+          S3BACKEND: mem
+          REMOTE_MANAGEMENT_DISABLE: "1"
+          SCALITY_ACCESS_KEY_ID: fakeaccesskey
+          SCALITY_SECRET_ACCESS_KEY: fakesecretkey123
+        ports: ["8000:8000"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -85,6 +95,9 @@ jobs:
           MOI_IT: "1"
           MOI_IT_KUMA_URL: http://localhost:3001
           MOI_IT_PG_URL: postgres://postgres:fake-password@localhost:5432/postgres
+          MOI_IT_S3_ENDPOINT: http://localhost:8000
+          MOI_IT_S3_ACCESS_KEY: fakeaccesskey
+          MOI_IT_S3_SECRET_KEY: fakesecretkey123
         run: cargo test --all-features -- --ignored
 
   build:

@@ -242,6 +242,8 @@ pub struct ContextShare {
     pub endpoint: Option<Secret>,
     /// Private bucket (no public access, no custom domain).
     pub bucket: String,
+    /// Signing region: `auto` for Cloudflare R2, the bucket's region elsewhere.
+    pub region: String,
     /// API token scoped to this bucket. Required when enabled.
     pub access_key_id: Option<Secret>,
     /// Required when enabled.
@@ -268,6 +270,7 @@ impl ContextShare {
             enabled,
             endpoint: t.secret(cx, "endpoint", false),
             bucket: t.string_or(cx, "bucket", "moi-share"),
+            region: t.string_or(cx, "region", "auto"),
             access_key_id: t.secret(cx, "access_key_id", false),
             secret_access_key: t.secret(cx, "secret_access_key", true),
             default_ttl: t.dur_or(cx, "default_ttl", Dur::from_secs(3600)),

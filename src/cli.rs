@@ -14,7 +14,7 @@ use std::sync::Arc;
 use clap::{Args, Parser, Subcommand};
 use serde_json::json;
 
-use crate::config::Paths;
+use crate::config::{Dur, Paths};
 use crate::error::Error;
 use crate::host::{Cmd, FixtureHost, Host, RealHost};
 use crate::log::{Level, Logger};
@@ -155,9 +155,9 @@ pub struct CheckArgs {
 pub enum ContextCommand {
     /// Upload CONTEXT.md to the private share bucket and print an expiring link
     Share {
-        /// Link lifetime (default from config, capped at context.share.max_ttl)
+        /// Link lifetime such as 30m or 2h (default from config, capped at context.share.max_ttl)
         #[arg(long)]
-        ttl: Option<String>,
+        ttl: Option<Dur>,
         /// Delete every shared copy now (links stop working immediately)
         #[arg(long, conflicts_with_all = ["ttl", "list"])]
         revoke: bool,
@@ -324,7 +324,9 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Notes => return notes(cli, host, out),
         Command::Audit => return audit(cli, host, out),
         Command::Context { action: None } => return context(cli, host, out),
-        Command::Context { action: Some(_) } => ("context share", "M3"),
+        Command::Context { action: Some(ContextCommand::Share { ttl, revoke, list }) } => {
+            return context_share(cli, *ttl, *revoke, *list, host, out);
+        }
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
@@ -646,6 +648,82 @@ fn context(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Er
         for copy in &written.copies {
             let _ = writeln!(out, "copy: {copy}");
         }
+    }
+    Ok(())
+}
+
+fn context_share(
+    cli: &Cli,
+    ttl: Option<Dur>,
+    revoke: bool,
+    list: bool,
+    host: Arc<dyn Host>,
+    out: &mut dyn Write,
+) -> Result<(), Error> {
+    use crate::context::share;
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let log = cli.logger(Arc::clone(&host)).with_masker(loaded.masker.clone());
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let config = Arc::new(loaded.config);
+    // say "not configured" before touching anything
+    share::Bucket::new(&host, &config.context.share)?;
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    if revoke {
+        let deleted = share::revoke(&host, &config, &db)?;
+        log.log(Level::Notice, "context shares revoked", &[("deleted", &deleted.to_string())]);
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "revoked": deleted }));
+        } else {
+            let _ = match deleted {
+                0 => writeln!(out, "nothing was shared"),
+                1 => writeln!(out, "1 shared copy deleted: its link no longer works"),
+                n => writeln!(out, "{n} shared copies deleted: their links no longer work"),
+            };
+        }
+        return Ok(());
+    }
+    if list {
+        let active = share::list(&host, &config, &db)?;
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "shares": active }));
+        } else if active.is_empty() {
+            let _ = writeln!(out, "no active shares");
+        } else {
+            for a in &active {
+                let _ = writeln!(out, "{}  expires {} UTC", a.key, history::display_time(&a.expires));
+            }
+        }
+        return Ok(());
+    }
+    if !host.exists(&state.snapshot()) {
+        crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
+    }
+    let shared = share::share(&host, &config, &state, &db, &loaded.masker, ttl)?;
+    // an unexpected share should be noticed: it is always in the journal
+    log.log(
+        Level::Notice,
+        &format!("context shared, expires {} UTC", history::display_time(&shared.expires)),
+        &[("key", &shared.key)],
+    );
+    if let Some(lifecycle) =
+        shared.lifecycle.as_deref().filter(|l| l.starts_with("not set") || l.starts_with("skipped"))
+    {
+        log.warn(
+            &format!("bucket lifecycle rule {lifecycle}; moi still deletes shared copies itself when they expire"),
+            &[],
+        );
+    }
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "share": shared }));
+    } else {
+        let _ = writeln!(
+            out,
+            "{}\nexpires {} UTC (in {}); `moi context share --revoke` ends it now",
+            shared.url,
+            history::display_time(&shared.expires),
+            shared.ttl
+        );
     }
     Ok(())
 }
