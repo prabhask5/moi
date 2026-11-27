@@ -9,6 +9,9 @@
 //! starts compose stacks when `boot.compose_up` does, a unit that loads firewall rules when moi
 //! manages the firewall. What cannot be recognized is named in `migrate.remove`.
 
+pub mod compare;
+pub mod shadow;
+
 use std::collections::BTreeSet;
 use std::path::Path;
 

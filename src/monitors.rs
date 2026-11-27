@@ -492,6 +492,13 @@ pub fn push(
     if config.monitors.mode == MonitorMode::Shadow {
         return Err("not pushed: monitors.mode is shadow".to_string());
     }
+    // during a migration the legacy script still reports to this monitor: two voices would alternate
+    let item = owner.strip_prefix("check:").unwrap_or(owner);
+    if crate::migrate::shadow::held(db, item) {
+        return Err(format!(
+            "not pushed: shadow — the legacy script still reports here (moi migrate switch --only {item})"
+        ));
+    }
     let base = if kuma.push_base.is_empty() { kuma.url.clone().unwrap_or_default() } else { kuma.push_base.clone() };
     if !kuma.enabled || base.is_empty() {
         return Err("not pushed: no [monitors.kuma] url".to_string());

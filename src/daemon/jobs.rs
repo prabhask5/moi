@@ -12,7 +12,16 @@ use crate::monitors;
 /// Run a job to its end. Never fails: a job that could not do its work says so in its outcome.
 pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
     let started = Instant::now();
+    // what the legacy setup still does during a migration, moi leaves alone
+    let held =
+        |item: &str| core.state.open_db(core.host.as_ref()).is_ok_and(|db| crate::migrate::shadow::held(&db, item));
+    let shadow = |item: &str| {
+        Ok(("ok".to_string(), format!("shadow: the legacy setup still does this (moi migrate switch --only {item})")))
+    };
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
+        Work::Backup if held("backup") => shadow("backup"),
+        Work::Firewall if held("firewall") => shadow("firewall"),
+        Work::Heal(rule, _) if held(&format!("heal:{}", rule.name)) => shadow(&format!("heal:{}", rule.name)),
         Work::Check(check) => self::check(core, check),
         Work::Daily => daily(core).map(|message| ("ok".to_string(), message)),
         Work::Snapshot => snapshot(core).map(|message| ("ok".to_string(), message)),
@@ -255,7 +264,12 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
     // 1. the host's own firewall must not wait for anything
     let (own, later): (Vec<String>, Vec<String>) =
         config.firewall.chains.iter().cloned().partition(|chain| crate::firewall::builtin(chain));
-    if config.firewall.manage && !own.is_empty() {
+    let held = |item: &str| core.state.open_db(host.as_ref()).is_ok_and(|db| crate::migrate::shadow::held(&db, item));
+    let (firewall_held, stacks_held) = (held("firewall"), held("boot"));
+    if firewall_held || stacks_held {
+        done.push("shadow: the legacy units still do part of this".to_string());
+    }
+    if config.firewall.manage && !own.is_empty() && !firewall_held {
         match firewall(core, &own) {
             Ok(message) => done.push(message),
             Err(e) => problems.push(format!("firewall not applied: {e}")),
@@ -273,10 +287,11 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
     }
     // 3. Docker, and the chains it has to exist for
     let docker = crate::docker::Docker::new(Arc::clone(host));
-    let needs_docker = !later.is_empty() && config.firewall.manage || !config.boot.compose_up.is_empty();
+    let stacks: &[String] = if stacks_held { &[] } else { &config.boot.compose_up };
+    let needs_docker = !later.is_empty() && config.firewall.manage && !firewall_held || !stacks.is_empty();
     if needs_docker {
         if wait(&|| docker.ping(), 120) {
-            if config.firewall.manage && !later.is_empty() {
+            if config.firewall.manage && !later.is_empty() && !firewall_held {
                 match firewall(core, &config.firewall.chains) {
                     Ok(message) => done.push(message),
                     Err(e) => problems.push(format!("firewall not applied: {e}")),
@@ -297,7 +312,7 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
                     act: true,
                 };
                 let mut started = 0;
-                for dir in config.boot.compose_up.iter().flat_map(|entry| compose_dirs(host.as_ref(), entry)) {
+                for dir in stacks.iter().flat_map(|entry| compose_dirs(host.as_ref(), entry)) {
                     if running.contains(&dir) {
                         continue;
                     }
@@ -306,8 +321,10 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
                         Err(e) => problems.push(e),
                     }
                 }
-                done.push(format!("{started} stacks started"));
-            } else if !config.boot.compose_up.is_empty() {
+                if !stacks_held {
+                    done.push(format!("{started} stacks started"));
+                }
+            } else if !stacks.is_empty() {
                 problems.push("stacks not started: their data is not mounted".to_string());
             }
         } else {
