@@ -360,7 +360,8 @@ fn moi_status_asks_the_running_daemon_and_says_when_there_is_none() {
     let asked = (0..200).find_map(|_| {
         std::thread::sleep(Duration::from_millis(25));
         daemon::ask(s.host.as_ref(), &serde_json::json!({ "cmd": "status" }))
-            .filter(|status| status["jobs"][2]["last"].is_object())
+            // jobs run on threads of their own: wait for all three checks, in whatever order they finish
+            .filter(|status| (0..3).all(|job| status["jobs"][job]["last"].is_object()))
     });
     let status = asked.expect("the daemon answers on its socket and has run its checks");
     assert_eq!(status["jobs"][0]["last"]["message"], "OK: RAM 38%, swap 2%, CPU 48C");

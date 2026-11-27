@@ -29,6 +29,14 @@ pub mod snapshot;
 pub mod state;
 pub mod systemd;
 
-/// Version string shown by `moi --version`: version, git sha, target.
-pub const VERSION_LONG: &str =
-    concat!(env!("CARGO_PKG_VERSION"), " (", env!("MOI_BUILD_SHA"), " ", env!("MOI_BUILD_TARGET"), ")");
+/// Version string shown by `moi --version`: version, git sha, build date, target.
+pub const VERSION_LONG: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    " (",
+    env!("MOI_BUILD_SHA"),
+    " ",
+    env!("MOI_BUILD_DATE"),
+    " ",
+    env!("MOI_BUILD_TARGET"),
+    ")"
+);

@@ -29,6 +29,10 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - Off-site backup with restic behind the legacy guards (one upload per interval, the R2 account's real usage checked first, repository size ceiling), weekly prune and integrity check; the state bundle with `moi push` / `moi pull`; `moi recovery-card`.
 - `moi backup --drill`: restores the latest dumps into throwaway database containers and compares a sample of archived files with the disk; optional schedule (`backup.drill`) and monitor (`checks.backup.drill_monitor`).
 - `moi verify`: a checklist of everything that ran at the last snapshot (containers, swarm services, ports, mounts, units, cron), the firewall, moi's checks, Kuma and the backup repository — with a fix hint per failure. The daemon runs it after every boot and reports to the journal, the login message and the boot monitor.
+- `moi restore --bundle DIR`: rebuilds a server in eighteen phases (packages, users, storage, Docker, data from the backup, databases first from their dumps, stacks, swarm services, moi itself, firewall, monitors, verification and the guided reboot), with `--dry-run`, `--only`, `--from`, `--skip`, `--yes`. Disks are formatted only after typing `FORMAT` and the device; overwritten files are kept as `*.pre-moi`.
+- `moi migrate plan|shadow|compare|switch|rollback|finish`: moves a server from legacy scripts, cron jobs and units to moi without changing a monitor or a token; every step but `finish` can be undone.
+- Distribution: `.deb` and `.rpm` packages, shell completions (`moi completions`), a man page, a Homebrew formula, an installer that verifies checksums; `moi --version` shows version, commit, build date and target.
 
 ### Changed
+- Exit code 3 ("not implemented yet") no longer exists: every command is implemented.
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

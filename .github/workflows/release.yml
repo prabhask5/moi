@@ -1,18 +1,30 @@
 name: Release
 
 # Tag vX.Y.Z on main -> static binaries, .deb/.rpm, checksums, attestations, GitHub Release,
-# crates.io (package `cestmoi`), Homebrew tap. Spec: docs/spec/12-distribution.md (milestone M10
-# finishes the packaging steps tagged for it below).
+# crates.io (package `cestmoi`), Homebrew tap. Spec: docs/spec/12-distribution.md.
+#
+# Run by hand (workflow_dispatch) or by a pull request that touches packaging, it is a dry run:
+# everything is built, packaged, installed in clean containers and checked — nothing is published.
 
 on:
   push:
     tags: ["v*.*.*"]
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "packaging/**"
+      - "install.sh"
+      - "tests/e2e/install-test.sh"
+      - "tests/e2e/package-test.sh"
+      - "Cargo.toml"
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -23,13 +35,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: The tag is the version in Cargo.toml
+        if: github.ref_type == 'tag'
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, Cargo.toml $v" >&2; exit 1; }
       - name: No scaffolding, TODOs or reference material in a release
+        if: github.ref_type == 'tag'
         run: scripts/check-hygiene.sh --release
 
   build:
     needs: hygiene
     name: build (${{ matrix.target }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       matrix:
         target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
@@ -38,6 +60,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
       - uses: mlugg/setup-zig@v2
       - uses: taiki-e/install-action@v2
         with:
@@ -45,30 +70,72 @@ jobs:
       - name: Build
         env:
           MOI_GIT_SHA: ${{ github.sha }}
-        run: cargo zigbuild --release --target ${{ matrix.target }}
+        run: cargo zigbuild --release --locked --target ${{ matrix.target }}
       - name: Package tarball
         run: |
-          v=${GITHUB_REF_NAME#v}
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
           d=moi-$v-${{ matrix.target }}
           mkdir -p dist/$d
-          cp target/${{ matrix.target }}/release/moi README.md LICENSE dist/$d/
+          cp target/${{ matrix.target }}/release/moi README.md LICENSE packaging/moi.1 packaging/moi.service dist/$d/
+          cp -r packaging/completions dist/$d/
           tar -C dist -czf dist/$d.tar.gz $d
           rm -rf dist/$d
-      # TODO(M10): cargo deb / cargo generate-rpm with the unit file, completions and man page
-      - uses: actions/attest-build-provenance@v2
+      - name: Package .deb and .rpm
+        run: |
+          cargo deb --no-build --no-strip --target ${{ matrix.target }} --output dist/
+          cargo generate-rpm --target ${{ matrix.target }} --output dist/
+          ls -l dist
+      - uses: actions/attest-build-provenance@v4
+        if: github.ref_type == 'tag'
         with:
           subject-path: dist/*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.target }}
           path: dist/*
 
-  release:
+  verify:
     needs: build
+    name: install what was built
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+      - name: The installer installs a release and refuses a tampered one
+        run: |
+          mkdir bin && tar -xzf dist/moi-*-x86_64-unknown-linux-musl.tar.gz -C bin --strip-components 1
+          bin/moi --version
+          tests/e2e/install-test.sh bin/moi
+      - name: The installer against these very artifacts
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          MOI_RELEASE_URL="file://$PWD/dist" sh install.sh --version "$v" --prefix "$PWD/prefix"
+          prefix/bin/moi --version
+      - name: The packages install on Ubuntu, Debian and Fedora
+        run: tests/e2e/package-test.sh dist
+      - name: The Homebrew formula is valid Ruby
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          packaging/homebrew-formula.sh "$v" dist/SHA256SUMS > moi.rb
+          ruby -c moi.rb
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The crate packages for crates.io
+        run: cargo package --locked --no-verify && cargo package --locked --list | grep -c . 
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -82,8 +149,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: checksums
+          path: dist/SHA256SUMS
 
   crates-io:
+    if: github.ref_type == 'tag'
     needs: release
     runs-on: ubuntu-latest
     env:
@@ -95,4 +167,25 @@ jobs:
         if: env.CARGO_REGISTRY_TOKEN != ''
         run: cargo publish --locked
 
-  # TODO(M10): homebrew tap update (prabhask5/homebrew-tap) using HOMEBREW_TAP_TOKEN
+  homebrew:
+    if: github.ref_type == 'tag'
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: checksums
+      - name: Update the formula in prabhask5/homebrew-tap (skipped until the HOMEBREW_TAP_TOKEN secret exists)
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/prabhask5/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          packaging/homebrew-formula.sh "$v" SHA256SUMS > tap/Formula/moi.rb
+          cd tap
+          git add Formula/moi.rb
+          git -c user.name="moi release" -c user.email="noreply@github.com" commit -m "moi $v"
+          git push

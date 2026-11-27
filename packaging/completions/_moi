@@ -1,0 +1,1626 @@
+#compdef moi
+
+autoload -U is-at-least
+
+_moi() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi_commands" \
+"*::: :->moi" \
+&& ret=0
+    case $state in
+    (moi)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-command-$line[1]:"
+        case $line[1] in
+            (init)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--non-interactive[Do not prompt; write defaults and secret\: references]' \
+'--observe[Only capture state (no service, no checks, no backups)]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(snapshot)
+_arguments "${_arguments_options[@]}" : \
+'--state=[Override the state directory]:STATE:_files' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--push[Push the state bundle afterwards (if changed)]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Number of entries]:COUNT:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--show-secrets[Show secret values instead of masking them (root only)]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::rev -- Revision (git syntax, e.g. HEAD~3):_default' \
+&& ret=0
+;;
+(context)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__context_commands" \
+"*::: :->context" \
+&& ret=0
+
+    case $state in
+    (context)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-context-command-$line[1]:"
+        case $line[1] in
+            (share)
+_arguments "${_arguments_options[@]}" : \
+'--ttl=[Link lifetime such as 30m or 2h (default from config, capped at context.share.max_ttl)]:TTL:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'(--ttl --list)--revoke[Delete every shared copy now (links stop working immediately)]' \
+'(--ttl)--list[List active shares and their expiry]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__context__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-context-help-command-$line[1]:"
+        case $line[1] in
+            (share)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(notes)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(audit)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(check)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--push[Push results to Uptime Kuma (manual runs never push otherwise)]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'::name -- Only this check (resources, storage, services, or a custom check name):_default' \
+&& ret=0
+;;
+(monitors)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__monitors_commands" \
+"*::: :->monitors" \
+&& ret=0
+
+    case $state in
+    (monitors)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-monitors-command-$line[1]:"
+        case $line[1] in
+            (sync)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--dry-run[Print the plan only (works with read-only access to kuma.db)]' \
+'--update[Apply drift (never changes push tokens)]' \
+'--prune[Delete orphaned monitors that moi created]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__monitors__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-monitors-help-command-$line[1]:"
+        case $line[1] in
+            (sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(backup)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--dry-run[Show what would be backed up (paths, dumps, sizes, why) and run every guard, without writing]' \
+'--drill[Restore-test the latest backup into throwaway containers]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(push)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--force[Push even if nothing changed]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(pull)
+_arguments "${_arguments_options[@]}" : \
+'--repository=[restic repository URL (default\: from config)]:REPOSITORY:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+'--bundle=[Extracted bundle directory (from \`moi pull\`)]:BUNDLE:_files' \
+'*--only=[Only these phases (comma separated)]:ONLY:_default' \
+'--from=[Start at this phase]:FROM:_default' \
+'*--skip=[Skip these phases (comma separated)]:SKIP:_default' \
+'--snapshot=[Restore the data from this restic snapshot instead of the latest one]:ID:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--dry-run[Print every action without changing anything]' \
+'--yes[Don'\''t ask before each phase (never skips disk-format or firewall confirmations)]' \
+'--list[List the phases]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(verify)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(recovery-card)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(firewall)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__firewall_commands" \
+"*::: :->firewall" \
+&& ret=0
+
+    case $state in
+    (firewall)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-firewall-command-$line[1]:"
+        case $line[1] in
+            (apply)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__firewall__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-firewall-help-command-$line[1]:"
+        case $line[1] in
+            (apply)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(migrate)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__migrate_commands" \
+"*::: :->migrate" \
+&& ret=0
+
+    case $state in
+    (migrate)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-migrate-command-$line[1]:"
+        case $line[1] in
+            (plan)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(shadow)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(compare)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+'*--only=[Only these items (comma separated)]:ONLY:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--force[Switch even if comparisons are not clean]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(rollback)
+_arguments "${_arguments_options[@]}" : \
+'*--only=[Only these items (comma separated)]:ONLY:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--now[Don'\''t wait for the 7-day stability window]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__migrate__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-migrate-help-command-$line[1]:"
+        case $line[1] in
+            (plan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(shadow)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(compare)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(rollback)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-config-command-$line[1]:"
+        case $line[1] in
+            (check)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(path)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__config__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-config-help-command-$line[1]:"
+        case $line[1] in
+            (check)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(path)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(daemon)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(uninstall)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--purge[Also delete state, history and archives]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':shell:(bash elvish fish powershell zsh)' \
+&& ret=0
+;;
+(man)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-command-$line[1]:"
+        case $line[1] in
+            (init)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(snapshot)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(context)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__context_commands" \
+"*::: :->context" \
+&& ret=0
+
+    case $state in
+    (context)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-context-command-$line[1]:"
+        case $line[1] in
+            (share)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(notes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(audit)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(check)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(monitors)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__monitors_commands" \
+"*::: :->monitors" \
+&& ret=0
+
+    case $state in
+    (monitors)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-monitors-command-$line[1]:"
+        case $line[1] in
+            (sync)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(backup)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(push)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(pull)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(verify)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(recovery-card)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(firewall)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__firewall_commands" \
+"*::: :->firewall" \
+&& ret=0
+
+    case $state in
+    (firewall)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-firewall-command-$line[1]:"
+        case $line[1] in
+            (apply)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(migrate)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__migrate_commands" \
+"*::: :->migrate" \
+&& ret=0
+
+    case $state in
+    (migrate)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-migrate-command-$line[1]:"
+        case $line[1] in
+            (plan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(shadow)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(compare)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(switch)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(rollback)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(finish)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-config-command-$line[1]:"
+        case $line[1] in
+            (check)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(path)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(daemon)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(uninstall)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(man)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_moi_commands] )) ||
+_moi_commands() {
+    local commands; commands=(
+'init:Discover the server, write config, install the service, take the first snapshot' \
+'snapshot:Capture the full server state into the versioned state dir' \
+'log:Show the change history of the server' \
+'diff:Show what changed in a snapshot (default\: the latest)' \
+'context:Regenerate CONTEXT.md for AI assistants, or share it with an expiring link' \
+'notes:Edit the owner'\''s notes merged into CONTEXT.md' \
+'audit:Find what is not backed up, not restorable, lost on reboot, or on the wrong disk' \
+'check:Run health checks' \
+'monitors:Uptime Kuma monitors' \
+'backup:Back up databases and identity data locally and off-site' \
+'push:Upload the encrypted state bundle off-site' \
+'pull:Download the latest state bundle (on a new machine)' \
+'restore:Rebuild this machine from a state bundle and the data backup' \
+'verify:Check that everything that should run, runs (also after every boot)' \
+'recovery-card:Print what you must keep outside the server to rebuild it' \
+'firewall:Host firewall rules managed by moi' \
+'migrate:Move a server from legacy scripts and cron jobs to moi' \
+'config:Configuration' \
+'status:Daemon status, last results and next scheduled jobs' \
+'daemon:Run the daemon (used by moi.service)' \
+'uninstall:Remove moi and restore anything it replaced' \
+'completions:Print a shell completion script (bash, zsh, fish)' \
+'man:Print the man page (roff)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__audit_commands] )) ||
+_moi__subcmd__audit_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi audit commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__backup_commands] )) ||
+_moi__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi backup commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__check_commands] )) ||
+_moi__subcmd__check_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi check commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__completions_commands] )) ||
+_moi__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi completions commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config_commands] )) ||
+_moi__subcmd__config_commands() {
+    local commands; commands=(
+'check:Validate config and secrets, print the effective config (secrets masked)' \
+'path:Print the path of the config and secrets files' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi config commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__check_commands] )) ||
+_moi__subcmd__config__subcmd__check_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi config check commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__help_commands] )) ||
+_moi__subcmd__config__subcmd__help_commands() {
+    local commands; commands=(
+'check:Validate config and secrets, print the effective config (secrets masked)' \
+'path:Print the path of the config and secrets files' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi config help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__help__subcmd__check_commands] )) ||
+_moi__subcmd__config__subcmd__help__subcmd__check_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi config help check commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__config__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi config help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__help__subcmd__path_commands] )) ||
+_moi__subcmd__config__subcmd__help__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi config help path commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__config__subcmd__path_commands] )) ||
+_moi__subcmd__config__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi config path commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__context_commands] )) ||
+_moi__subcmd__context_commands() {
+    local commands; commands=(
+'share:Upload CONTEXT.md to the private share bucket and print an expiring link' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi context commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__context__subcmd__help_commands] )) ||
+_moi__subcmd__context__subcmd__help_commands() {
+    local commands; commands=(
+'share:Upload CONTEXT.md to the private share bucket and print an expiring link' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi context help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__context__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__context__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi context help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__context__subcmd__help__subcmd__share_commands] )) ||
+_moi__subcmd__context__subcmd__help__subcmd__share_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi context help share commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__context__subcmd__share_commands] )) ||
+_moi__subcmd__context__subcmd__share_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi context share commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__daemon_commands] )) ||
+_moi__subcmd__daemon_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi daemon commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__diff_commands] )) ||
+_moi__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi diff commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall_commands] )) ||
+_moi__subcmd__firewall_commands() {
+    local commands; commands=(
+'apply:Apply the managed chains (auto-rollback when run over SSH)' \
+'diff:Show the difference between live and configured rules' \
+'status:Show which chains moi manages and their state' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi firewall commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__apply_commands] )) ||
+_moi__subcmd__firewall__subcmd__apply_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall apply commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__diff_commands] )) ||
+_moi__subcmd__firewall__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall diff commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__help_commands] )) ||
+_moi__subcmd__firewall__subcmd__help_commands() {
+    local commands; commands=(
+'apply:Apply the managed chains (auto-rollback when run over SSH)' \
+'diff:Show the difference between live and configured rules' \
+'status:Show which chains moi manages and their state' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi firewall help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__help__subcmd__apply_commands] )) ||
+_moi__subcmd__firewall__subcmd__help__subcmd__apply_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall help apply commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__help__subcmd__diff_commands] )) ||
+_moi__subcmd__firewall__subcmd__help__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall help diff commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__firewall__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__help__subcmd__status_commands] )) ||
+_moi__subcmd__firewall__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall help status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__firewall__subcmd__status_commands] )) ||
+_moi__subcmd__firewall__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi firewall status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help_commands] )) ||
+_moi__subcmd__help_commands() {
+    local commands; commands=(
+'init:Discover the server, write config, install the service, take the first snapshot' \
+'snapshot:Capture the full server state into the versioned state dir' \
+'log:Show the change history of the server' \
+'diff:Show what changed in a snapshot (default\: the latest)' \
+'context:Regenerate CONTEXT.md for AI assistants, or share it with an expiring link' \
+'notes:Edit the owner'\''s notes merged into CONTEXT.md' \
+'audit:Find what is not backed up, not restorable, lost on reboot, or on the wrong disk' \
+'check:Run health checks' \
+'monitors:Uptime Kuma monitors' \
+'backup:Back up databases and identity data locally and off-site' \
+'push:Upload the encrypted state bundle off-site' \
+'pull:Download the latest state bundle (on a new machine)' \
+'restore:Rebuild this machine from a state bundle and the data backup' \
+'verify:Check that everything that should run, runs (also after every boot)' \
+'recovery-card:Print what you must keep outside the server to rebuild it' \
+'firewall:Host firewall rules managed by moi' \
+'migrate:Move a server from legacy scripts and cron jobs to moi' \
+'config:Configuration' \
+'status:Daemon status, last results and next scheduled jobs' \
+'daemon:Run the daemon (used by moi.service)' \
+'uninstall:Remove moi and restore anything it replaced' \
+'completions:Print a shell completion script (bash, zsh, fish)' \
+'man:Print the man page (roff)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__audit_commands] )) ||
+_moi__subcmd__help__subcmd__audit_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help audit commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__backup_commands] )) ||
+_moi__subcmd__help__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help backup commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__check_commands] )) ||
+_moi__subcmd__help__subcmd__check_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help check commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__completions_commands] )) ||
+_moi__subcmd__help__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help completions commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__config_commands] )) ||
+_moi__subcmd__help__subcmd__config_commands() {
+    local commands; commands=(
+'check:Validate config and secrets, print the effective config (secrets masked)' \
+'path:Print the path of the config and secrets files' \
+    )
+    _describe -t commands 'moi help config commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__config__subcmd__check_commands] )) ||
+_moi__subcmd__help__subcmd__config__subcmd__check_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help config check commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__config__subcmd__path_commands] )) ||
+_moi__subcmd__help__subcmd__config__subcmd__path_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help config path commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__context_commands] )) ||
+_moi__subcmd__help__subcmd__context_commands() {
+    local commands; commands=(
+'share:Upload CONTEXT.md to the private share bucket and print an expiring link' \
+    )
+    _describe -t commands 'moi help context commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__context__subcmd__share_commands] )) ||
+_moi__subcmd__help__subcmd__context__subcmd__share_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help context share commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__daemon_commands] )) ||
+_moi__subcmd__help__subcmd__daemon_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help daemon commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__diff_commands] )) ||
+_moi__subcmd__help__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help diff commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__firewall_commands] )) ||
+_moi__subcmd__help__subcmd__firewall_commands() {
+    local commands; commands=(
+'apply:Apply the managed chains (auto-rollback when run over SSH)' \
+'diff:Show the difference between live and configured rules' \
+'status:Show which chains moi manages and their state' \
+    )
+    _describe -t commands 'moi help firewall commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__firewall__subcmd__apply_commands] )) ||
+_moi__subcmd__help__subcmd__firewall__subcmd__apply_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help firewall apply commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__firewall__subcmd__diff_commands] )) ||
+_moi__subcmd__help__subcmd__firewall__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help firewall diff commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__firewall__subcmd__status_commands] )) ||
+_moi__subcmd__help__subcmd__firewall__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help firewall status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__init_commands] )) ||
+_moi__subcmd__help__subcmd__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help init commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__log_commands] )) ||
+_moi__subcmd__help__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help log commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__man_commands] )) ||
+_moi__subcmd__help__subcmd__man_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help man commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate_commands] )) ||
+_moi__subcmd__help__subcmd__migrate_commands() {
+    local commands; commands=(
+'plan:Show what will be replaced by what (read-only)' \
+'shadow:Run moi checks without pushing while legacy keeps running' \
+'compare:Compare moi'\''s shadow messages with what Kuma received from legacy scripts' \
+'switch:Hand items over from legacy to moi (same monitors, same tokens)' \
+'rollback:Undo switched items from the archive' \
+'finish:Remove archived legacy files from disk and finish the migration' \
+    )
+    _describe -t commands 'moi help migrate commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__compare_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__compare_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate compare commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__finish_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate finish commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__plan_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__plan_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate plan commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__rollback_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__rollback_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate rollback commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__shadow_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__shadow_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate shadow commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__migrate__subcmd__switch_commands] )) ||
+_moi__subcmd__help__subcmd__migrate__subcmd__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help migrate switch commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__monitors_commands] )) ||
+_moi__subcmd__help__subcmd__monitors_commands() {
+    local commands; commands=(
+'sync:Adopt existing monitors and create missing ones' \
+'list:List monitors and which check owns each' \
+    )
+    _describe -t commands 'moi help monitors commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__monitors__subcmd__list_commands] )) ||
+_moi__subcmd__help__subcmd__monitors__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help monitors list commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__monitors__subcmd__sync_commands] )) ||
+_moi__subcmd__help__subcmd__monitors__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help monitors sync commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__notes_commands] )) ||
+_moi__subcmd__help__subcmd__notes_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help notes commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__pull_commands] )) ||
+_moi__subcmd__help__subcmd__pull_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help pull commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__push_commands] )) ||
+_moi__subcmd__help__subcmd__push_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help push commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__recovery-card_commands] )) ||
+_moi__subcmd__help__subcmd__recovery-card_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help recovery-card commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__restore_commands] )) ||
+_moi__subcmd__help__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help restore commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__snapshot_commands] )) ||
+_moi__subcmd__help__subcmd__snapshot_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help snapshot commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__status_commands] )) ||
+_moi__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__uninstall_commands] )) ||
+_moi__subcmd__help__subcmd__uninstall_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help uninstall commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__verify_commands] )) ||
+_moi__subcmd__help__subcmd__verify_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help verify commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__init_commands] )) ||
+_moi__subcmd__init_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi init commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__log_commands] )) ||
+_moi__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi log commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__man_commands] )) ||
+_moi__subcmd__man_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi man commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate_commands] )) ||
+_moi__subcmd__migrate_commands() {
+    local commands; commands=(
+'plan:Show what will be replaced by what (read-only)' \
+'shadow:Run moi checks without pushing while legacy keeps running' \
+'compare:Compare moi'\''s shadow messages with what Kuma received from legacy scripts' \
+'switch:Hand items over from legacy to moi (same monitors, same tokens)' \
+'rollback:Undo switched items from the archive' \
+'finish:Remove archived legacy files from disk and finish the migration' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi migrate commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__compare_commands] )) ||
+_moi__subcmd__migrate__subcmd__compare_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate compare commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__finish_commands] )) ||
+_moi__subcmd__migrate__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate finish commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help_commands] )) ||
+_moi__subcmd__migrate__subcmd__help_commands() {
+    local commands; commands=(
+'plan:Show what will be replaced by what (read-only)' \
+'shadow:Run moi checks without pushing while legacy keeps running' \
+'compare:Compare moi'\''s shadow messages with what Kuma received from legacy scripts' \
+'switch:Hand items over from legacy to moi (same monitors, same tokens)' \
+'rollback:Undo switched items from the archive' \
+'finish:Remove archived legacy files from disk and finish the migration' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi migrate help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__compare_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__compare_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help compare commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__finish_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__finish_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help finish commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__plan_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__plan_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help plan commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__rollback_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__rollback_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help rollback commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__shadow_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__shadow_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help shadow commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__help__subcmd__switch_commands] )) ||
+_moi__subcmd__migrate__subcmd__help__subcmd__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate help switch commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__plan_commands] )) ||
+_moi__subcmd__migrate__subcmd__plan_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate plan commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__rollback_commands] )) ||
+_moi__subcmd__migrate__subcmd__rollback_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate rollback commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__shadow_commands] )) ||
+_moi__subcmd__migrate__subcmd__shadow_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate shadow commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__migrate__subcmd__switch_commands] )) ||
+_moi__subcmd__migrate__subcmd__switch_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi migrate switch commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors_commands] )) ||
+_moi__subcmd__monitors_commands() {
+    local commands; commands=(
+'sync:Adopt existing monitors and create missing ones' \
+'list:List monitors and which check owns each' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi monitors commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__help_commands] )) ||
+_moi__subcmd__monitors__subcmd__help_commands() {
+    local commands; commands=(
+'sync:Adopt existing monitors and create missing ones' \
+'list:List monitors and which check owns each' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi monitors help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__monitors__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi monitors help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__help__subcmd__list_commands] )) ||
+_moi__subcmd__monitors__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi monitors help list commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__help__subcmd__sync_commands] )) ||
+_moi__subcmd__monitors__subcmd__help__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi monitors help sync commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__list_commands] )) ||
+_moi__subcmd__monitors__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi monitors list commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__monitors__subcmd__sync_commands] )) ||
+_moi__subcmd__monitors__subcmd__sync_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi monitors sync commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__notes_commands] )) ||
+_moi__subcmd__notes_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi notes commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__pull_commands] )) ||
+_moi__subcmd__pull_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi pull commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__push_commands] )) ||
+_moi__subcmd__push_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi push commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__recovery-card_commands] )) ||
+_moi__subcmd__recovery-card_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi recovery-card commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__restore_commands] )) ||
+_moi__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi restore commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__snapshot_commands] )) ||
+_moi__subcmd__snapshot_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi snapshot commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__status_commands] )) ||
+_moi__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__uninstall_commands] )) ||
+_moi__subcmd__uninstall_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi uninstall commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__verify_commands] )) ||
+_moi__subcmd__verify_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi verify commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_moi" ]; then
+    _moi "$@"
+else
+    compdef _moi moi
+fi

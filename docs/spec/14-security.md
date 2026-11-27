@@ -17,7 +17,8 @@ Each dependency and why (keep this list current when adding one):
 
 | Crate | Why |
 |---|---|
-| clap | CLI parsing, completions |
+| clap | CLI parsing |
+| clap_complete, clap_mangen | shell completion scripts and the man page, generated from the same command definitions (`moi completions`, `packaging/`); from the clap project, no further dependencies beyond `roff` |
 | serde, toml, serde_json | config, state files, Docker/Kuma payloads |
 | thiserror | library errors |
 | sha2 | SHA-256 of captured files (manifest, change detection) |

@@ -23,7 +23,7 @@ curl -fsSL https://raw.githubusercontent.com/prabhask5/moi/main/install.sh | sh
 sudo moi init
 ```
 
-Also planned: `.deb`/`.rpm` packages, `cargo install cestmoi`, Homebrew (`brew install prabhask5/tap/moi`). See [distribution](docs/spec/12-distribution.md).
+The installer downloads the static binary for your CPU from the GitHub release, checks it against the release's `SHA256SUMS`, and installs nothing if they disagree. Every release also has `.deb` and `.rpm` packages (binary in `/usr/bin`, the systemd unit — not enabled until `moi init` —, shell completions, man page), and the crate is `cestmoi` (`cargo install cestmoi`); a Homebrew formula is published to `prabhask5/tap` on release. `moi completions bash|zsh|fish` prints a completion script. See [distribution](docs/spec/12-distribution.md).
 
 ## Commands
 

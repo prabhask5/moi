@@ -119,6 +119,29 @@ pub enum Command {
         #[arg(long)]
         purge: bool,
     },
+    /// Print a shell completion script (bash, zsh, fish)
+    Completions { shell: clap_complete::Shell },
+    /// Print the man page (roff)
+    #[command(hide = true)]
+    Man,
+}
+
+/// The completion script for a shell, as packages install it.
+pub fn completions(shell: clap_complete::Shell) -> String {
+    use clap::CommandFactory;
+    let mut out = Vec::new();
+    clap_complete::generate(shell, &mut Cli::command(), "moi", &mut out);
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// `moi(1)`.
+pub fn man_page() -> String {
+    use clap::CommandFactory;
+    let mut out = Vec::new();
+    // the version line would change the page with every build
+    let command = Cli::command().version(env!("CARGO_PKG_VERSION")).long_version(None::<&str>);
+    let _ = clap_mangen::Man::new(command).render(&mut out);
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 #[derive(Debug, Args)]
@@ -355,6 +378,14 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             Ok(())
         }
         Command::Verify => verify(cli, host, out),
+        Command::Completions { shell } => {
+            let _ = write!(out, "{}", completions(*shell));
+            Ok(())
+        }
+        Command::Man => {
+            let _ = write!(out, "{}", man_page());
+            Ok(())
+        }
         Command::Restore(args) => restore(cli, args, host, out),
         Command::Migrate(MigrateCommand::Plan) => migrate_plan(cli, host, out),
         Command::Migrate(MigrateCommand::Shadow) => migrate_shadow(cli, host, out),
