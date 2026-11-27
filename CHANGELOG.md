@@ -14,6 +14,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 
 - Docker Engine API client over the unix socket (containers, networks, volumes, swarm services/nodes/secrets/configs, events, exec, logs) with no HTTP dependency.
 - `moi snapshot`: captures packages, `/etc`, users and dotfiles, storage, network, firewall, systemd units, cron, scripts, Docker (containers, networks, volumes, swarm services, compose projects, run scripts for standalone containers), Incus, Uptime Kuma's monitors and every push/healthcheck integration into the state directory, split into stable and volatile parts, incrementally (unchanged files are not read again).
+- Change history: every snapshot that changed something is a git commit in the state directory, with a subject and body that say what changed (containers and services in words). `moi log`, and `moi diff [rev]` with secrets masked unless `--show-secrets` is given by root.
 
 ### Changed
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

@@ -25,6 +25,13 @@ pub enum Error {
     #[error(transparent)]
     Docker(#[from] crate::docker::DockerError),
 
+    /// The command line asks for something that cannot be done as asked.
+    #[error("{0}")]
+    Usage(String),
+
+    #[error("history: {0}")]
+    History(String),
+
     #[error("state database: {0}")]
     Db(String),
 
@@ -46,7 +53,13 @@ impl Error {
         match self {
             Error::ProblemsFound => 1,
             Error::NotImplemented { .. } => 3,
-            Error::ConfigInvalid(_) | Error::Docker(_) | Error::Db(_) | Error::Host { .. } | Error::Io(_) => 2,
+            Error::ConfigInvalid(_)
+            | Error::Docker(_)
+            | Error::Db(_)
+            | Error::History(_)
+            | Error::Usage(_)
+            | Error::Host { .. }
+            | Error::Io(_) => 2,
         }
     }
 
@@ -56,8 +69,9 @@ impl Error {
             Error::NotImplemented { .. } => "not_implemented",
             Error::ProblemsFound => "problems_found",
             Error::ConfigInvalid(_) => "config",
-            Error::Db(_) => "state",
+            Error::Db(_) | Error::History(_) => "state",
             Error::Docker(_) => "docker",
+            Error::Usage(_) => "usage",
             Error::Host { .. } | Error::Io(_) => "io",
         }
     }

@@ -237,7 +237,7 @@ pub fn run_with(
 }
 
 /// Every file under a state subdirectory, relative to `state/` (`snapshot/meta/hostname`), sorted.
-pub(crate) fn list_tree(host: &dyn Host, state_root: &Path, top: &str) -> Vec<String> {
+pub fn list_tree(host: &dyn Host, state_root: &Path, top: &str) -> Vec<String> {
     let mut out = BTreeSet::new();
     let mut stack: Vec<PathBuf> = vec![PathBuf::from(top)];
     while let Some(rel) = stack.pop() {

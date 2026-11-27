@@ -53,10 +53,10 @@ fn version_has_build_info() {
 
 #[test]
 fn unimplemented_commands_exit_3_and_name_the_milestone() {
-    let out = moi(&["log"]);
+    let out = moi(&["audit"]);
     assert_eq!(out.status.code(), Some(3));
     let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("milestone M2"), "{err}");
+    assert!(err.contains("milestone M3"), "{err}");
 }
 
 #[test]
@@ -195,13 +195,13 @@ fn config_path_prints_both_files() {
 
 #[test]
 fn json_errors_cover_unimplemented_commands_too() {
-    let out = moi_on_fixture(&["log", "--json"], &[]);
+    let out = moi_on_fixture(&["audit", "--json"], &[]);
     assert_eq!(out.status.code(), Some(3));
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"]["kind"], "not_implemented");
     assert_eq!(v["error"]["exit_code"], 3);
-    assert!(text(&out.stderr).contains("milestone M2"));
+    assert!(text(&out.stderr).contains("milestone M3"));
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn snapshot_captures_a_fixture_host_into_the_overlay_and_reports_changes() {
     assert_eq!(first.status.code(), Some(0), "{}", text(&first.stderr));
     let line = text(&first.stdout);
     assert!(line.starts_with("snapshot saved to /var/lib/moi/state: "), "{line}");
-    assert!(line.trim_end().ends_with(" files changed"), "{line}");
+    assert!(line.contains(" files, recorded "), "{line}");
     assert!(overlay.join("var/lib/moi/state/snapshot/meta/hostname").exists());
 
     let second = run(&["snapshot", "--json"]);
@@ -263,4 +263,82 @@ fn snapshot_without_somewhere_to_write_fails_cleanly() {
     let out = moi_on_fixture(&["snapshot"], &[]);
     assert_eq!(out.status.code(), Some(2));
     assert!(text(&out.stderr).contains("cannot prepare state directory /var/lib/moi"), "{}", text(&out.stderr));
+}
+
+// ------------------------------------------------------------------ M2: history
+
+fn moi_with_overlay(overlay: &std::path::Path, args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_moi"))
+        .args(args)
+        .env_clear()
+        .env("MOI_ROOT", common::fixture_dir("cestmoi"))
+        .env("MOI_ROOT_OVERLAY", overlay)
+        .output()
+        .unwrap_or_else(|e| panic!("run moi: {e}"))
+}
+
+#[test]
+fn log_and_diff_before_the_first_snapshot_say_so() {
+    let overlay = common::scratch("cli-no-history");
+    let out = moi_with_overlay(&overlay, &["log"]);
+    assert_eq!((out.status.code(), text(&out.stdout).as_str()), (Some(0), "no history yet: run `moi snapshot`\n"));
+    let out = moi_with_overlay(&overlay, &["diff", "--json"]);
+    assert_eq!(out.status.code(), Some(0));
+    assert!(!overlay.join("var/lib/moi/state/.git").exists(), "looking at history must not create it");
+}
+
+#[test]
+fn snapshot_log_and_diff_tell_the_story_of_a_change() {
+    let overlay = common::scratch("cli-history");
+    let first = moi_with_overlay(&overlay, &["snapshot"]);
+    assert_eq!(first.status.code(), Some(0), "{}", text(&first.stderr));
+    assert!(text(&first.stdout).ends_with("\n  initial snapshot of cestmoi\n"), "{}", text(&first.stdout));
+    let again = moi_with_overlay(&overlay, &["snapshot"]);
+    assert!(text(&again.stdout).ends_with("no configuration changes\n"), "{}", text(&again.stdout));
+
+    // the owner changes a database password in a compose env file
+    let env = overlay.join("opt/services/outline/.env");
+    std::fs::create_dir_all(env.parent().unwrap_or(&overlay)).unwrap_or_else(|e| panic!("{e}"));
+    std::fs::write(
+        &env,
+        "SECRET_KEY=FAKEoutlinesecretkey00000000000000\nPOSTGRES_PASSWORD=FAKEnewpassword99\nLOG_LEVEL=debug\n",
+    )
+    .unwrap_or_else(|e| panic!("{e}"));
+    let third = moi_with_overlay(&overlay, &["snapshot", "--json"]);
+    let v: serde_json::Value = serde_json::from_slice(&third.stdout).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(v["commit"]["subject"], "changed: /opt/services/outline/.env");
+
+    let log = moi_with_overlay(&overlay, &["log"]);
+    assert_eq!(
+        text(&log.stdout),
+        "2026-11-26 17:00  changed: /opt/services/outline/.env\n2026-11-26 17:00  initial snapshot of cestmoi\n"
+    );
+    let log = moi_with_overlay(&overlay, &["log", "-n", "1", "--json"]);
+    let v: serde_json::Value = serde_json::from_slice(&log.stdout).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(v["commits"].as_array().map(Vec::len), Some(1));
+
+    // the diff shows what changed without showing the secrets
+    let diff = moi_with_overlay(&overlay, &["diff"]);
+    assert_eq!(diff.status.code(), Some(0), "{}", text(&diff.stderr));
+    let shown = text(&diff.stdout);
+    assert!(shown.contains("M\t/opt/services/outline/.env\n"), "{shown}");
+    assert!(shown.contains("--- /opt/services/outline/.env\n+++ /opt/services/outline/.env\n"), "{shown}");
+    assert!(shown.contains("+POSTGRES_PASSWORD=***\n") && shown.contains("+LOG_LEVEL=debug\n"), "{shown}");
+    assert!(!shown.contains("FAKE"), "{shown}");
+    assert!(!shown.contains("files.manifest.tsv"), "{shown}");
+    assert!(shown.ends_with("(secrets are masked; `sudo moi diff HEAD --show-secrets` shows them)\n"), "{shown}");
+
+    // --show-secrets is for root only
+    let refused = moi_with_overlay(&overlay, &["diff", "--show-secrets"]);
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(text(&refused.stderr).contains("--show-secrets needs root"), "{}", text(&refused.stderr));
+    std::fs::create_dir_all(overlay.join("proc/self")).unwrap_or_else(|e| panic!("{e}"));
+    std::fs::write(overlay.join("proc/self/status"), "Name:\tmoi\nUid:\t0\t0\t0\t0\n")
+        .unwrap_or_else(|e| panic!("{e}"));
+    let as_root = moi_with_overlay(&overlay, &["diff", "--show-secrets"]);
+    assert!(text(&as_root.stdout).contains("+POSTGRES_PASSWORD=FAKEnewpassword99\n"), "{}", text(&as_root.stdout));
+
+    let bad = moi_with_overlay(&overlay, &["diff", "HEAD~7"]);
+    assert_eq!(bad.status.code(), Some(2));
+    assert!(text(&bad.stderr).contains("no such revision: HEAD~7"), "{}", text(&bad.stderr));
 }

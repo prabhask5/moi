@@ -3,6 +3,8 @@
 //! Spec: docs/spec/02-snapshot.md § State layout, § moi.db; CLAUDE.md § Files on a server.
 
 pub mod db;
+pub mod diff;
+pub mod history;
 
 use std::path::{Path, PathBuf};
 
