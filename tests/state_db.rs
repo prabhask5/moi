@@ -65,6 +65,7 @@ fn a_new_database_gets_the_current_schema() {
             "monitor_bindings",
             "schedule_runs",
             "schema_history",
+            "snapshot_files",
             "sustained"
         ]
     );

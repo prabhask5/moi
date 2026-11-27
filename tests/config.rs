@@ -593,3 +593,20 @@ fn context_share_needs_its_bucket_credentials_as_secret_references() {
     );
     assert!(!literal.contains("plain"));
 }
+
+#[test]
+fn context_share_checks_its_endpoint_and_ttls() {
+    let secrets = "[secrets]\nep = \"r2.example.com\"\nkey = \"FAKEshare-secret\"\n";
+    let l = lines(load(
+        "cfg-share-values",
+        "[context.share]\nendpoint = \"secret:ep\"\naccess_key_id = \"id\"\nsecret_access_key = \"secret:key\"\ndefault_ttl = \"2d\"\n",
+        Some(secrets),
+    ));
+    assert_eq!(
+        l,
+        [
+            "/etc/moi/moi.toml:2:12: context.share.endpoint: must start with http:// or https://",
+            "/etc/moi/moi.toml:5:15: context.share.default_ttl: is longer than max_ttl (1d)",
+        ]
+    );
+}

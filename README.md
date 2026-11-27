@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check` and `moi config path`; every other command still exits with "not implemented yet".
+> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check`, `moi config path` and `moi snapshot` (system state; Docker, Incus and monitoring capture and the change history are landing next); every other command still exits with "not implemented yet".
 
 ## What it does
 

@@ -1,0 +1,5 @@
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+enp1s0           UP             aa:bb:cc:dd:ee:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+docker0          DOWN           02:42:00:00:00:01 <NO-CARRIER,BROADCAST,MULTICAST,UP>
+veth1a2b3c4@if2  UP             ce:00:00:00:00:02 <BROADCAST,MULTICAST,UP,LOWER_UP>
+incusbr0         UP             00:16:3e:00:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>

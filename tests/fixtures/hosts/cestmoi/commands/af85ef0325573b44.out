@@ -1,0 +1,13 @@
+{
+   "blockdevices": [
+      {"name":"sda", "path":"/dev/sda", "size":4000787030016, "type":"disk", "model":"TOSHIBA MQ04UBB400", "serial":"FAKESERIAL01", "rota":true, "tran":"usb",
+         "children": [{"name":"sda1", "path":"/dev/sda1", "size":4000785104896, "type":"part", "fstype":"ext4", "label":"storage", "uuid":"aaaaaaaa-0000-4000-8000-000000000001", "mountpoint":"/mnt/storage"}]},
+      {"name":"nvme0n1", "path":"/dev/nvme0n1", "size":256060514304, "type":"disk", "model":"SAMSUNG MZVLB256HBHQ", "serial":"FAKESERIAL02", "rota":false, "tran":"nvme",
+         "children": [
+            {"name":"nvme0n1p1", "path":"/dev/nvme0n1p1", "size":1127219200, "type":"part", "fstype":"vfat", "uuid":"1111-2222", "mountpoint":"/boot/efi"},
+            {"name":"nvme0n1p2", "path":"/dev/nvme0n1p2", "size":2147483648, "type":"part", "fstype":"ext4", "uuid":"aaaaaaaa-0000-4000-8000-000000000002", "mountpoint":"/boot"},
+            {"name":"nvme0n1p3", "path":"/dev/nvme0n1p3", "size":252783362048, "type":"part", "fstype":"LVM2_member", "uuid":"FAKE-LVM-UUID",
+               "children": [{"name":"ubuntu--vg-ubuntu--lv", "path":"/dev/mapper/ubuntu--vg-ubuntu--lv", "size":252780216320, "type":"lvm", "fstype":"ext4", "uuid":"aaaaaaaa-0000-4000-8000-000000000003", "mountpoint":"/"}]}
+         ]}
+   ]
+}

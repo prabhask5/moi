@@ -1,0 +1,4 @@
+#!/bin/bash
+# old copy kept by mistake
+PUSH_URL="http://uptime.home/api/push/FAKEoldBackupTok"
+curl -fsS "$PUSH_URL?status=up&msg=OK"

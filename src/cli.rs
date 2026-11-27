@@ -18,6 +18,7 @@ use crate::config::Paths;
 use crate::error::Error;
 use crate::host::{FixtureHost, Host, RealHost};
 use crate::log::{Level, Logger};
+use crate::state::StateDir;
 
 /// moi — run a Linux server from one binary.
 #[derive(Debug, Parser)]
@@ -301,7 +302,8 @@ fn select_host() -> Result<Arc<dyn Host>, Error> {
 fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
     let (what, milestone) = match &cli.command {
         Command::Config(cmd) => return config(cli, cmd, host, out),
-        Command::Snapshot(_) | Command::Log { .. } | Command::Diff { .. } => ("snapshot & history", "M2"),
+        Command::Snapshot(args) => return snapshot(cli, args, host, out),
+        Command::Log { .. } | Command::Diff { .. } => ("history", "M2"),
         Command::Context { .. } | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
@@ -397,6 +399,36 @@ fn config(cli: &Cli, cmd: &ConfigCommand, host: Arc<dyn Host>, out: &mut dyn Wri
             };
             log.info(&format!("{}: ok ({secrets})", paths.config.display()), &[]);
         }
+    }
+    Ok(())
+}
+
+fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let log = cli.logger(Arc::clone(&host)).with_masker(loaded.masker.clone());
+    let state_root = args.state.clone().unwrap_or_else(|| PathBuf::from(&loaded.config.state.dir));
+    let state = StateDir::new(state_root);
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let report = crate::snapshot::run(&host, &Arc::new(loaded.config), &state, &db)?;
+
+    for failed in report.failed() {
+        let error = failed.error.as_deref().unwrap_or_default();
+        log.warn(&format!("{}: {error} (previous capture kept)", failed.name), &[("collector", &failed.name)]);
+    }
+    if args.push {
+        log.warn("--push ignored: the state bundle arrives with milestone M7", &[]);
+    }
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "state": state.state(), "snapshot": report }));
+    } else {
+        let changes = match report.changed.len() {
+            0 => "no configuration changes".to_string(),
+            1 => "1 file changed".to_string(),
+            n => format!("{n} files changed"),
+        };
+        let _ =
+            writeln!(out, "snapshot saved to {}: {} files, {changes}", state.state().display(), report.stable_files);
     }
     Ok(())
 }

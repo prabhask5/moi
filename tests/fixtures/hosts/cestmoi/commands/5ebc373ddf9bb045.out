@@ -1,0 +1,3 @@
+server-backup.timer      enabled enabled
+homelab-selfcheck.timer  enabled enabled
+apt-daily.timer          enabled enabled

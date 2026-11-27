@@ -1,0 +1,12 @@
+[Unit]
+Description=YAMS media stack
+After=docker.service mnt-storage.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/yams
+ExecStart=/usr/bin/docker compose up -d
+
+[Install]
+WantedBy=multi-user.target

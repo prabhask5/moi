@@ -1,0 +1,65 @@
+Package: bash
+Status: install ok installed
+Architecture: amd64
+Version: 5.3-1
+Description: bash
+
+Package: docker.io
+Status: install ok installed
+Architecture: amd64
+Version: 29.1.3-0ubuntu1
+Description: docker.io
+
+Package: docker-compose-v2
+Status: install ok installed
+Architecture: amd64
+Version: 2.40.3-0ubuntu1
+Description: docker-compose-v2
+
+Package: libc6
+Status: install ok installed
+Architecture: amd64
+Version: 2.43-1
+Description: libc6
+
+Package: containerd
+Status: install ok installed
+Architecture: amd64
+Version: 2.2.0-0ubuntu1
+Description: containerd
+
+Package: restic
+Status: install ok installed
+Architecture: amd64
+Version: 0.18.0-1
+Description: restic
+
+Package: smartmontools
+Status: install ok installed
+Architecture: amd64
+Version: 7.5-1
+Description: smartmontools
+
+Package: linux-image-generic
+Status: hold ok installed
+Architecture: amd64
+Version: 7.0.0.14
+Description: linux-image-generic
+
+Package: nano
+Status: deinstall ok config-files
+Architecture: amd64
+Version: 8.4-1
+Description: nano
+
+Package: incus
+Status: install ok installed
+Architecture: amd64
+Version: 6.14-1
+Description: incus
+
+Package: chrony
+Status: install ok installed
+Architecture: amd64
+Version: 4.7-1
+Description: chrony

@@ -272,6 +272,14 @@ impl ContextShare {
             max_ttl: t.dur_or(cx, "max_ttl", Dur::from_secs(24 * 3600)),
             notify: t.bool_or(cx, "notify", true),
         };
+        // The endpoint is masked in output, so say what is wrong without quoting it.
+        if this.endpoint.as_ref().is_some_and(|e| http_url(e.expose()).is_err()) {
+            cx.err(&t.span_of("endpoint"), &t.key("endpoint"), "must start with http:// or https://");
+        }
+        if this.default_ttl > this.max_ttl {
+            let message = format!("is longer than max_ttl ({})", this.max_ttl);
+            cx.err(&t.span_of("default_ttl"), &t.key("default_ttl"), message);
+        }
         t.finish(cx);
         this
     }

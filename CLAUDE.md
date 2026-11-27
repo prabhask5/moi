@@ -65,7 +65,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
 - Async (tokio) only where it pays: daemon, outbound HTTP, Kuma. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
-- External tools moi shells out to on purpose: `restic` (backups), `smartctl --json`, `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`. Each is optional and feature-detected.
+- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.
 - Output that other systems consume (Kuma messages, `--json`) is covered by golden tests; changing it is a breaking change.

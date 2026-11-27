@@ -1,0 +1,1 @@
+*/5 * * * * root flock -n /run/service-check.lock /opt/scripts/service-check.sh 2>&1 | systemd-cat -t service-check

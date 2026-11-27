@@ -53,7 +53,7 @@ fn version_has_build_info() {
 
 #[test]
 fn unimplemented_commands_exit_3_and_name_the_milestone() {
-    let out = moi(&["snapshot"]);
+    let out = moi(&["log"]);
     assert_eq!(out.status.code(), Some(3));
     let err = String::from_utf8_lossy(&out.stderr);
     assert!(err.contains("milestone M2"), "{err}");
@@ -195,7 +195,7 @@ fn config_path_prints_both_files() {
 
 #[test]
 fn json_errors_cover_unimplemented_commands_too() {
-    let out = moi_on_fixture(&["snapshot", "--json"], &[]);
+    let out = moi_on_fixture(&["log", "--json"], &[]);
     assert_eq!(out.status.code(), Some(3));
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(v["ok"], false);
@@ -224,4 +224,43 @@ fn context_share_is_wired() {
     assert!(help.contains("--ttl") && help.contains("--revoke") && help.contains("--list"), "{help}");
     let out = moi(&["context", "share", "--ttl", "1h"]);
     assert_eq!(out.status.code(), Some(3));
+}
+
+// ------------------------------------------------------------------ M2: snapshot
+
+#[test]
+fn snapshot_captures_a_fixture_host_into_the_overlay_and_reports_changes() {
+    let overlay = common::scratch("cli-snapshot");
+    let run = |args: &[&str]| {
+        Command::new(env!("CARGO_BIN_EXE_moi"))
+            .args(args)
+            .env_clear()
+            .env("MOI_ROOT", common::fixture_dir("cestmoi"))
+            .env("MOI_ROOT_OVERLAY", &overlay)
+            .output()
+            .unwrap_or_else(|e| panic!("run moi: {e}"))
+    };
+    let first = run(&["snapshot"]);
+    assert_eq!(first.status.code(), Some(0), "{}", text(&first.stderr));
+    let line = text(&first.stdout);
+    assert!(line.starts_with("snapshot saved to /var/lib/moi/state: "), "{line}");
+    assert!(line.trim_end().ends_with(" files changed"), "{line}");
+    assert!(overlay.join("var/lib/moi/state/snapshot/meta/hostname").exists());
+
+    let second = run(&["snapshot", "--json"]);
+    assert_eq!(second.status.code(), Some(0), "{}", text(&second.stderr));
+    let v: serde_json::Value = serde_json::from_slice(&second.stdout).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(v["ok"], true);
+    assert_eq!(v["snapshot"]["changed"], serde_json::json!([]));
+    assert_eq!(v["snapshot"]["files_read"], 0);
+    assert!(v["snapshot"]["collectors"].as_array().is_some_and(|c| c.iter().all(|c| c["error"].is_null())));
+    // secrets from the fixture's secrets.toml never reach the output
+    assert!(!text(&second.stdout).contains("FAKE-"));
+}
+
+#[test]
+fn snapshot_without_somewhere_to_write_fails_cleanly() {
+    let out = moi_on_fixture(&["snapshot"], &[]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(text(&out.stderr).contains("cannot prepare state directory /var/lib/moi"), "{}", text(&out.stderr));
 }

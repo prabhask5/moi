@@ -1,0 +1,10 @@
+[Unit]
+Description=Re-attach traefik to the homelab network
+After=docker.service
+
+[Service]
+ExecStart=/opt/scripts/traefik-homelab.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+[Unit]
+Description=Post-boot self-check
+
+[Service]
+Type=oneshot
+ExecStart=/opt/scripts/service-check.sh

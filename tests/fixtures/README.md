@@ -35,10 +35,16 @@ A server with nothing on it: hostname `myserver.lan`, timezone link, an empty `/
 
 A small Docker host for the client tests: a compose stack (`web`, `db`), a stopped container sharing `web`'s network namespace (`container:<id>`), a swarm service `api` with its task container, bridge and overlay networks, a named and an anonymous volume, events, exec outputs and logs. All tokens are `FAKE…`.
 
-## `cestmoi` (to build in M2)
+- **Modes and owners**: git stores neither. Fixture files are 0644 (0755 when executable), directories 0755, everything `root:root`, unless `modes` says otherwise. A `.gitkeep` keeps an otherwise empty directory in git and is invisible to the host.
 
-Built from the prototype's real output on cestmoi (`reference/cestmoi/PROFILE.md`), **redacted**: every token, key,
-password and domain replaced (`FAKE…`, `example.com`). It must reproduce the situations the specs call out: Dokploy swarm
+## `cestmoi`
+
+The first real server, rebuilt from its non-secret profile (`reference/cestmoi/PROFILE.md`) and its redacted legacy
+scripts — **not** from a dump of the machine: every token, key, password and domain is fake (`FAKE…`, `example.com`).
+So far it has the filesystem (`/etc` with the custom units, cron jobs and firewall rule files, dpkg state, scripts
+incl. a stale `backup.sh.bak` holding a push token, a user's dotfiles, the `/mnt/storage` layout) and the canned
+outputs of the read-only tools snapshots run. Docker, Incus and Uptime Kuma are added with their collectors.
+It must reproduce the situations the specs call out: Dokploy swarm
 services and task containers, `container:<id>` network modes, socket-activated ssh, host-firewall.service with rules files,
 an Incus loop mount, read-only and log bind mounts, fungible media, a stale `backup.sh.bak` with a push token, a Kuma
 `kuma.db` with the 21 monitors (one with last message `[object Object]`), a modified `resolved.conf`.

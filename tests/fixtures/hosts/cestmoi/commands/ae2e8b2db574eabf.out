@@ -1,0 +1,5 @@
+Global: 127.0.0.1
+Link 2 (enp1s0): 192.168.1.1
+Link 3 (docker0):
+Link 7 (veth1a2b3c4): fe80::1
+Link 9 (incusbr0):

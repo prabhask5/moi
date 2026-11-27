@@ -1,0 +1,2 @@
+PV             VG        Fmt  Attr PSize    PFree
+/dev/nvme0n1p3 ubuntu-vg lvm2 a--  <235.43g    0 

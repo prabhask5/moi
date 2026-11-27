@@ -1,0 +1,11 @@
+Package: libc6
+Architecture: amd64
+Auto-Installed: 1
+
+Package: containerd
+Architecture: amd64
+Auto-Installed: 1
+
+Package: docker.io
+Architecture: amd64
+Auto-Installed: 0

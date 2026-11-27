@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch traefik.yml
+
+[Path]
+PathChanged=/etc/dokploy/traefik/traefik.yml
+
+[Install]
+WantedBy=multi-user.target

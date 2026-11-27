@@ -1,0 +1,7 @@
+#!/root/.local/share/pipx/venvs/yt-dlp/bin/python
+# -*- coding: utf-8 -*-
+import re
+import sys
+from yt_dlp import main
+if __name__ == '__main__':
+    sys.exit(main())

@@ -74,12 +74,6 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
-      minio:
-        image: minio/minio:edge-cicd
-        env:
-          MINIO_ROOT_USER: fakeaccess
-          MINIO_ROOT_PASSWORD: fakesecret123
-        ports: ["9000:9000"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -91,7 +85,6 @@ jobs:
           MOI_IT: "1"
           MOI_IT_KUMA_URL: http://localhost:3001
           MOI_IT_PG_URL: postgres://postgres:fake-password@localhost:5432/postgres
-          MOI_IT_S3_ENDPOINT: http://localhost:9000
         run: cargo test --all-features -- --ignored
 
   build:

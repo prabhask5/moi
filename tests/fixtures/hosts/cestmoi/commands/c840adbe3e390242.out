@@ -1,0 +1,7 @@
+docker.service                           enabled    enabled
+host-firewall.service                    enabled    enabled
+ssh.service                              disabled   enabled
+server-backup.service                    static     enabled
+homelab-services.service                 enabled    enabled
+yams.service                             enabled    enabled
+cron.service                             enabled    enabled

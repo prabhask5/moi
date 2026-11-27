@@ -1,0 +1,8 @@
+chrony.service               loaded active running chrony.service
+containerd.service           loaded active running containerd.service
+cron.service                 loaded active running cron.service
+docker.service               loaded active running docker.service
+incus.service                loaded active running incus.service
+ssh.service                  loaded active running ssh.service
+systemd-resolved.service     loaded active running systemd-resolved.service
+traefik-homelab.service      loaded active running traefik-homelab.service

@@ -1,0 +1,11 @@
+server-backup.timer                      enabled enabled
+homelab-selfcheck.timer                  enabled enabled
+docker.service                           enabled enabled
+host-firewall.service                    enabled enabled
+homelab-services.service                 enabled enabled
+yams.service                             enabled enabled
+traefik-homelab.service                  enabled enabled
+traefik-config-guard.path                enabled enabled
+ssh.socket                               enabled enabled
+cron.service                             enabled enabled
+chrony.service                           enabled enabled
