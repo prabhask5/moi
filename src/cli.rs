@@ -980,7 +980,9 @@ fn status(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Err
             down += 1;
         }
         let _ = writeln!(out, "  {name:<18} {state}");
-        let _ = writeln!(out, "  {:<18} next {} UTC", "", when(&job["next"]));
+        if job["next"].is_string() {
+            let _ = writeln!(out, "  {:<18} next {} UTC", "", when(&job["next"]));
+        }
     }
     if down > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
 }

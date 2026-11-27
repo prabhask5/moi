@@ -93,9 +93,13 @@ fn at(time: &str) -> i64 {
     unix_seconds(parse_rfc3339(time).unwrap())
 }
 
-/// (name, next) of every job.
+/// (name, next) of every job that has a time to run at.
 fn plan(daemon: &Daemon) -> Vec<(String, i64)> {
-    daemon.jobs().iter().map(|j| (j.name.clone(), j.next)).collect()
+    daemon.jobs().iter().filter(|j| j.next != i64::MAX).map(|j| (j.name.clone(), j.next)).collect()
+}
+
+fn next(daemon: &Daemon, job: &str) -> i64 {
+    daemon.jobs().iter().find(|j| j.name == job).unwrap_or_else(|| panic!("no job {job}")).next
 }
 
 fn names(ran: &[(String, Outcome)]) -> Vec<&str> {
@@ -311,7 +315,7 @@ fn status_says_what_ran_and_what_comes_next() {
     let status = daemon.status();
     assert_eq!(
         (status["running"].as_bool(), status["started"].as_str(), status["jobs"].as_array().unwrap().len()),
-        (Some(true), Some(START), 4)
+        (Some(true), Some(START), 7)
     );
     assert_eq!(
         status["jobs"][0],
@@ -354,7 +358,11 @@ fn moi_status_asks_the_running_daemon_and_says_when_there_is_none() {
     assert_eq!(status["jobs"][0]["last"]["message"], "OK: RAM 38%, swap 2%, CPU 48C");
     let told = s.fixture.notifications();
     assert_eq!(told[0], "READY=1");
-    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=4 jobs, "), "{told:?}");
+    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=7 jobs, "), "{told:?}");
+    assert!(
+        !told.iter().any(|t| t.contains("heal:")),
+        "jobs that wait to be asked for are not announced as next: {told:?}"
+    );
 
     let (code, out) = s.moi(&["status"]);
     assert_eq!(code, 0, "{out}");
@@ -387,4 +395,383 @@ fn moi_status_asks_the_running_daemon_and_says_when_there_is_none() {
             .is_some_and(|status| status["jobs"][3]["last"]["status"] == "ok")
     });
     assert!(ran, "a triggered job runs without waiting for its time");
+}
+
+// ------------------------------------------------------------------ watching: changes, debounce, heal triggers
+
+use cestmoi::daemon::watch::{self, Debounce};
+use cestmoi::docker::Event;
+use common::fake_kuma::FakeKuma;
+
+fn docker_event(kind: &str, action: &str, name: &str) -> Event {
+    Event {
+        kind: kind.into(),
+        action: action.into(),
+        id: "0123abcd".into(),
+        attributes: [("name".to_string(), name.to_string())].into(),
+        time: 0,
+    }
+}
+
+#[test]
+fn a_burst_of_changes_is_one_snapshot_and_endless_changes_do_not_postpone_it_forever() {
+    let mut debounce = Debounce::default();
+    assert_eq!(debounce.due_at(), None);
+    // fifty events within a second
+    for _ in 0..50 {
+        debounce.note(1000);
+    }
+    assert_eq!(debounce.due_at(), Some(1120), "two minutes of quiet");
+    debounce.note(1100);
+    assert_eq!(debounce.due_at(), Some(1220), "a later change waits again");
+    // changes that never stop: fifteen minutes after the first one, no later
+    for t in (1100..3000).step_by(60) {
+        debounce.note(t);
+    }
+    assert_eq!(debounce.due_at(), Some(1900));
+    assert!(debounce.take());
+    assert_eq!((debounce.due_at(), debounce.take()), (None, false));
+}
+
+#[test]
+fn the_daemon_snapshots_once_after_a_burst_and_keeps_up_with_continuous_change() {
+    let s = server("daemon-debounce");
+    let mut daemon = s.daemon();
+    daemon.tick().unwrap();
+    let start = at(START);
+    assert_eq!(next(&daemon, "snapshot"), i64::MAX, "nothing changed: no snapshot is planned");
+    // a deploy: fifty container events in ten seconds
+    for i in 0..50 {
+        if i % 5 == 0 {
+            s.fixture.advance(Duration::from_secs(1));
+        }
+        daemon.docker_event(&docker_event("container", "start", "jellyfin"));
+    }
+    assert_eq!(next(&daemon, "snapshot"), start + 10 + 120);
+    s.fixture.advance(Duration::from_secs(119));
+    assert!(!names(&daemon.tick().unwrap()).contains(&"snapshot"), "still within the quiet time");
+    s.fixture.advance(Duration::from_secs(1));
+    let ran = daemon.tick().unwrap();
+    let snapshot = &ran.iter().find(|(name, _)| name == "snapshot").expect("one snapshot").1;
+    assert_eq!(
+        (snapshot.status.as_str(), snapshot.message.as_str()),
+        ("ok", "151 files changed: initial snapshot of cestmoi")
+    );
+    assert_eq!(next(&daemon, "snapshot"), i64::MAX);
+    s.fixture.advance(Duration::from_secs(600));
+    assert!(!names(&daemon.tick().unwrap()).contains(&"snapshot"), "one burst, one snapshot");
+
+    // a machine that never rests: an event every minute. A snapshot every fifteen minutes, not never.
+    let began = unix_seconds(s.host.now());
+    let mut snapshots = Vec::new();
+    for minute in 0..40 {
+        daemon.file_changed(Path::new("/etc/hosts"));
+        s.fixture.advance(Duration::from_secs(60));
+        if names(&daemon.tick().unwrap()).contains(&"snapshot") {
+            snapshots.push(minute + 1);
+        }
+    }
+    assert_eq!(snapshots, [15, 30], "minutes after the first change (began at {began})");
+}
+
+#[test]
+fn only_changes_to_the_setup_count() {
+    // engine events: moi's own exec calls and health checks must not make it snapshot itself
+    for (kind, action, counts) in [
+        ("container", "start", true),
+        ("container", "die", true),
+        ("container", "create", true),
+        ("container", "destroy", true),
+        ("container", "exec_create: pg_isready -q", false),
+        ("container", "exec_start: pg_isready -q", false),
+        ("container", "health_status: healthy", false),
+        ("container", "attach", false),
+        ("network", "create", true),
+        ("network", "connect", false),
+        ("volume", "destroy", true),
+        ("service", "update", true),
+        ("image", "pull", false),
+    ] {
+        assert_eq!(watch::matters(&docker_event(kind, action, "x")), counts, "{kind} {action}");
+    }
+    // files: editors and package tools leave droppings
+    for (path, noise) in [
+        ("/etc/hosts", false),
+        ("/etc/systemd/system/moi.service", false),
+        ("/etc/cron.d/backup", false),
+        ("/etc/.hosts.swp", true),
+        ("/etc/hosts~", true),
+        ("/etc/4913", true),
+        ("/etc/ssh/sshd_config.dpkg-new", true),
+        ("/etc/ld.so.cache", true),
+        ("/etc/mtab", true),
+        ("/etc/moi/.moi.toml.moi-tmp.4242", true),
+        ("/etc/.pwd.lock", true),
+    ] {
+        assert_eq!(watch::noise(Path::new(path)), noise, "{path}");
+    }
+    let s = server("daemon-noise");
+    let mut daemon = s.daemon();
+    daemon.docker_event(&docker_event("container", "exec_start: redis-cli ping", "outline-redis"));
+    daemon.file_changed(Path::new("/etc/.hosts.swp"));
+    assert_eq!(next(&daemon, "snapshot"), i64::MAX);
+    daemon.file_changed(Path::new("/etc/hosts"));
+    assert_eq!(next(&daemon, "snapshot"), at(START) + 120);
+}
+
+#[test]
+fn the_right_directories_are_watched() {
+    let s = server("daemon-watch-dirs");
+    let config = config::load(s.host.as_ref(), &Paths::new("/etc/moi/moi.toml".into(), None)).unwrap().config;
+    let dirs = watch::dirs(s.host.as_ref(), &config, &cestmoi::docker::Docker::new(s.host.clone()));
+    let has = |dir: &str| dirs.iter().any(|d| d == Path::new(dir));
+    // /etc and everything below it, the scripts, compose projects, the file a heal rule waits for
+    for dir in [
+        "/etc",
+        "/etc/moi",
+        "/etc/cron.d",
+        "/etc/systemd/system",
+        "/etc/dokploy/traefik",
+        "/opt/scripts",
+        "/opt/yams",
+        "/opt/services/monitoring/uptime-kuma",
+    ] {
+        assert!(has(dir), "{dir} should be watched: {dirs:?}");
+    }
+    assert!(!has("/var/lib/moi") && !has("/var/lib/moi/state"), "never moi's own state");
+    assert!(
+        !has("/var/spool/cron/crontabs") || s.host.exists(Path::new("/var/spool/cron/crontabs")),
+        "directories that are not there are left out"
+    );
+    let mut sorted = dirs.clone();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(dirs, sorted, "sorted, each once");
+}
+
+/// dokploy-traefik without the homelab network.
+fn traefik_off_network(s: &Server) {
+    let list: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(common::fixture_dir("cestmoi").join("docker/containers/json.json")).unwrap(),
+    )
+    .unwrap();
+    let id = list.as_array().unwrap().iter().find(|c| c["Names"][0] == "/dokploy-traefik").unwrap()["Id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let mut traefik: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(common::fixture_dir("cestmoi").join(format!("docker/containers/{id}/json.json"))).unwrap(),
+    )
+    .unwrap();
+    traefik["NetworkSettings"]["Networks"].as_object_mut().unwrap().remove("homelab");
+    s.fixture.set_docker(&format!("/containers/{id}/json"), &traefik.to_string());
+    s.fixture.set_docker("/containers/dokploy-traefik/json", &traefik.to_string());
+}
+
+fn posts(s: &Server) -> Vec<String> {
+    s.fixture.docker_requests().into_iter().filter(|r| r.starts_with("POST") && !r.contains("/exec")).collect()
+}
+
+#[test]
+fn the_proxy_is_put_back_on_its_network_when_docker_restarts_it() {
+    let s = server("daemon-heal-event");
+    s.fixture.set_env("JOURNAL_STREAM", "8:1");
+    let mut daemon = s.daemon();
+    daemon.tick().unwrap();
+    // it restarts and is where it belongs: the rule looks and does nothing
+    daemon.docker_event(&docker_event("container", "start", "dokploy-traefik"));
+    let ran = daemon.tick().unwrap();
+    assert_eq!(ran.iter().find(|(name, _)| name == "heal:traefik-homelab").unwrap().1.message, "nothing to do");
+    assert_eq!(posts(&s), Vec::<String>::new());
+    // other containers and other actions do not fire it
+    daemon.docker_event(&docker_event("container", "start", "jellyfin"));
+    daemon.docker_event(&docker_event("container", "die", "dokploy-traefik"));
+    assert_eq!(next(&daemon, "heal:traefik-homelab"), i64::MAX);
+
+    // a Dokploy update recreates it without the network
+    traefik_off_network(&s);
+    daemon.docker_event(&docker_event("container", "start", "dokploy-traefik"));
+    let ran = daemon.tick().unwrap();
+    let healed = &ran.iter().find(|(name, _)| name == "heal:traefik-homelab").unwrap().1;
+    assert_eq!(healed.message, "[traefik had lost the homelab network: reconnected; next check confirms the fix]");
+    assert_eq!(posts(&s), ["POST /networks/homelab/connect"]);
+    let logged: Vec<String> = s.fixture.journal_entries().iter().map(|e| e[0].1.clone()).collect();
+    assert!(logged.iter().any(|m| m == "heal traefik-homelab: dokploy-traefik start"), "{logged:?}");
+
+    // the next services message says so, once (the fixture's traefik is still off the network, so the
+    // check also fires the rule itself: both reports appear)
+    let (_, manual) = s.moi(&["check", "services"]);
+    assert!(
+        manual.contains("[traefik had lost the homelab network: reconnected; next check confirms the fix] "),
+        "{manual}"
+    );
+    s.fixture.advance(Duration::from_secs(300));
+    let ran = daemon.tick().unwrap();
+    let services = &ran.iter().find(|(name, _)| name == "check:services").unwrap().1;
+    assert_eq!(
+        services
+            .message
+            .matches("[traefik had lost the homelab network: reconnected; next check confirms the fix] ")
+            .count(),
+        2,
+        "{}",
+        services.message
+    );
+    s.fixture.advance(Duration::from_secs(300));
+    let ran = daemon.tick().unwrap();
+    let services = &ran.iter().find(|(name, _)| name == "check:services").unwrap().1;
+    assert_eq!(
+        services.message.matches("[traefik had lost").count(),
+        1,
+        "the queued report was said once: {}",
+        services.message
+    );
+}
+
+#[test]
+fn a_changed_file_runs_its_rule_and_what_the_rule_says_joins_the_services_message() {
+    let s = server("daemon-heal-path");
+    let mut daemon = s.daemon();
+    daemon.tick().unwrap();
+    let guard = "/etc/moi/hooks/traefik-config-guard.py";
+    // the guard looks and finds nothing to fix: nothing is reported
+    s.fixture.add_command(guard, 0, "");
+    daemon.file_changed(Path::new("/etc/dokploy/traefik/traefik.yml"));
+    let ran = daemon.tick().unwrap();
+    assert_eq!(ran.iter().find(|(name, _)| name == "heal:traefik-config-guard").unwrap().1.message, "nothing to do");
+    assert!(s.fixture.commands_run().iter().any(|c| c == guard));
+    // another file in that directory is not the rule's business
+    daemon.file_changed(Path::new("/etc/dokploy/traefik/dynamic.yml"));
+    assert_eq!(next(&daemon, "heal:traefik-config-guard"), i64::MAX);
+
+    // Dokploy rewrote the file: the guard repairs it and says what it did
+    s.fixture.add_command(guard, 0, "restored the http and https entry points\n");
+    daemon.file_changed(Path::new("/etc/dokploy/traefik/traefik.yml"));
+    assert_ne!(next(&daemon, "snapshot"), i64::MAX, "a change under /etc also means a snapshot");
+    daemon.tick().unwrap();
+    s.fixture.advance(Duration::from_secs(300));
+    let ran = daemon.tick().unwrap();
+    // exactly what service-check.sh section 4f printed for the same guard output
+    assert_eq!(
+        ran.iter().find(|(name, _)| name == "check:services").unwrap().1.message,
+        "Failing: [restored the http and https entry points; next check confirms] "
+    );
+    s.fixture.advance(Duration::from_secs(300));
+    let ran = daemon.tick().unwrap();
+    assert!(ran.iter().find(|(name, _)| name == "check:services").unwrap().1.message.starts_with("All 35 containers"));
+}
+
+#[test]
+fn a_compose_up_rule_brings_its_stack_up() {
+    let s = server("daemon-heal-compose");
+    s.edit_config(|t| format!("{t}\n[[heal]]\nname = \"media\"\nwhen = {{ path_changed = \"/opt/yams/.env\" }}\naction = {{ compose_up = \"/opt/yams\" }}\n"));
+    let mut daemon = s.daemon();
+    daemon.tick().unwrap();
+    s.fixture.add_command("docker compose --project-directory /opt/yams up -d", 0, "");
+    daemon.file_changed(Path::new("/opt/yams/.env"));
+    let ran = daemon.tick().unwrap();
+    assert_eq!(
+        ran.iter().find(|(name, _)| name == "heal:media").unwrap().1.message,
+        "[media: healed; next check confirms]"
+    );
+    assert!(s.fixture.commands_run().iter().any(|c| c == "docker compose --project-directory /opt/yams up -d"));
+}
+
+#[test]
+fn a_changed_configuration_is_taken_at_once_and_a_broken_one_is_not() {
+    let s = server("daemon-reload");
+    s.fixture.set_env("JOURNAL_STREAM", "8:1");
+    let mut daemon = s.daemon();
+    daemon.tick().unwrap();
+    let start = at(START);
+    s.fixture.advance(Duration::from_secs(100));
+    // the owner switches the storage check off and adds a check of their own
+    s.edit_config(|t| {
+        format!(
+            "{}\n[[checks.custom]]\nname = \"certs\"\nrun = \"/usr/local/bin/check-certs\"\ninterval = \"1h\"\n",
+            t.replace("[checks.storage]\n", "[checks.storage]\nenabled = false\n")
+        )
+    });
+    daemon.file_changed(Path::new("/etc/moi/moi.toml"));
+    let jobs: Vec<&str> = daemon.jobs().iter().map(|j| j.name.as_str()).collect();
+    assert_eq!(
+        jobs,
+        [
+            "check:resources",
+            "check:services",
+            "check:certs",
+            "daily",
+            "snapshot",
+            "heal:traefik-homelab",
+            "heal:traefik-config-guard"
+        ]
+    );
+    // checks that stay keep their rhythm and their last result; the new one starts now
+    assert_eq!(next(&daemon, "check:resources"), start + 300);
+    assert!(daemon.jobs()[0].last.is_some());
+    assert_eq!(next(&daemon, "check:certs"), start);
+    // a configuration that does not load is refused, loudly, and the daemon goes on as it was
+    s.host.write(Path::new("/etc/moi/moi.toml"), b"[checks.resources\ninterval = 5", 0o644).unwrap();
+    daemon.file_changed(Path::new("/etc/moi/moi.toml"));
+    assert_eq!(daemon.jobs().len(), 7);
+    let logged: Vec<String> = s.fixture.journal_entries().iter().map(|e| e[0].1.clone()).collect();
+    assert!(logged.iter().any(|m| m == "configuration reloaded"), "{logged:?}");
+    assert!(logged.iter().any(|m| m.starts_with("configuration not reloaded, keeping the one in use: ")), "{logged:?}");
+    s.fixture.advance(Duration::from_secs(200));
+    s.fixture.add_command("/usr/local/bin/check-certs", 0, "all fine\n");
+    // (the changed configuration is itself a change to the server: a snapshot follows)
+    assert_eq!(names(&daemon.tick().unwrap()), ["check:resources", "check:services", "check:certs", "snapshot"]);
+}
+
+#[test]
+fn container_monitors_follow_the_containers_once_the_owner_has_synced() {
+    let overlay = common::scratch("daemon-container-monitors");
+    let fixture = Arc::new(FixtureHost::open(&common::fixture_dir("cestmoi")).unwrap().with_overlay(&overlay).unwrap());
+    let s = Server { host: fixture.clone(), fixture };
+    let kuma = FakeKuma::new("1.23.17", "FAKE-kuma_username-value", "FAKE-kuma_password-value");
+    kuma.seed(
+        &cestmoi::monitors::inventory::read(s.host.as_ref(), "/opt/services/monitoring/uptime-kuma/data/kuma.db")
+            .unwrap(),
+    );
+    kuma.serve(&s.fixture);
+    let without = |name: &str| {
+        let list: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(common::fixture_dir("cestmoi").join("docker/containers/json.json")).unwrap(),
+        )
+        .unwrap();
+        let kept: Vec<&serde_json::Value> =
+            list.as_array().unwrap().iter().filter(|c| c["Names"][0] != format!("/{name}").as_str()).collect();
+        serde_json::json!(kept).to_string()
+    };
+    let mut daemon = s.daemon();
+    let change = |daemon: &mut Daemon| {
+        daemon.docker_event(&docker_event("container", "destroy", "watchtower"));
+        s.fixture.advance(Duration::from_secs(120));
+        let ran = daemon.tick().unwrap();
+        ran.into_iter().find(|(name, _)| name == "snapshot").unwrap().1.message
+    };
+    // the owner has never synced: the daemon does not start creating monitors on its own
+    assert!(!change(&mut daemon).contains("monitors"));
+    assert_eq!(kuma.changes(), Vec::<String>::new());
+
+    // after a sync by hand without watchtower, watchtower appears: its monitor is created, nothing else
+    s.fixture.set_docker("/containers/json", &without("watchtower"));
+    assert_eq!(s.moi(&["monitors", "sync"]).0, 0);
+    assert!(kuma.monitor_named("cestmoi: watchtower").is_none());
+    let before = kuma.changes().len();
+    s.fixture.set_docker(
+        "/containers/json",
+        &serde_json::from_slice::<serde_json::Value>(
+            &std::fs::read(common::fixture_dir("cestmoi").join("docker/containers/json.json")).unwrap(),
+        )
+        .unwrap()
+        .to_string(),
+    );
+    assert!(change(&mut daemon).ends_with("; monitors: 1 created"));
+    assert_eq!(kuma.monitor_named("cestmoi: watchtower").unwrap()["docker_container"], "watchtower");
+    assert_eq!(kuma.changes().len(), before + 2, "one monitor added and tagged: {:?}", &kuma.changes()[before..]);
+    // it goes away again: paused, never deleted
+    s.fixture.set_docker("/containers/json", &without("watchtower"));
+    assert!(change(&mut daemon).ends_with("; monitors: 1 paused"));
+    assert_eq!(kuma.monitor_named("cestmoi: watchtower").unwrap()["active"], false);
 }

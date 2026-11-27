@@ -183,6 +183,11 @@ impl Host for RealHost {
         Ok(Box::new(UnixStream::connect(path)?))
     }
 
+    fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn super::Watch>> {
+        // like file access, watching works inside a confined root: paths are mapped in and back out
+        inotify::watch(self.root.clone(), dirs)
+    }
+
     fn listen_unix(&self, path: &Path, mode: u32) -> io::Result<Box<dyn super::Listener>> {
         if !self.is_system() {
             return Err(self.refuse(&format!("listen on {}", path.display())));
@@ -341,4 +346,76 @@ fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>> {
         let _ = pipe.read_to_end(&mut buf);
         buf
     })
+}
+
+#[cfg(target_os = "linux")]
+mod inotify {
+    use std::collections::BTreeMap;
+    use std::io;
+    use std::mem::MaybeUninit;
+    use std::os::fd::OwnedFd;
+    use std::path::{Path, PathBuf};
+
+    use rustix::fs::inotify::{self, CreateFlags, Reader, WatchFlags};
+
+    #[derive(Debug)]
+    struct Inotify {
+        fd: OwnedFd,
+        /// The host's root on this machine (`/` for the machine itself).
+        root: PathBuf,
+        /// Watch descriptor → the directory it watches, as the host names it.
+        dirs: BTreeMap<i32, PathBuf>,
+    }
+
+    fn changes() -> WatchFlags {
+        WatchFlags::CREATE
+            | WatchFlags::DELETE
+            | WatchFlags::CLOSE_WRITE
+            | WatchFlags::MOVED_FROM
+            | WatchFlags::MOVED_TO
+            | WatchFlags::ATTRIB
+            | WatchFlags::DELETE_SELF
+    }
+
+    impl crate::host::Watch for Inotify {
+        fn add(&mut self, dir: &Path) -> io::Result<()> {
+            let real = self.root.join(dir.strip_prefix("/").unwrap_or(dir));
+            let wd = inotify::add_watch(&self.fd, &real, changes() | WatchFlags::ONLYDIR)?;
+            self.dirs.insert(wd, dir.to_path_buf());
+            Ok(())
+        }
+
+        fn next(&mut self) -> io::Result<PathBuf> {
+            loop {
+                // one event at a time: the buffer holds the largest possible event (header + NAME_MAX + 1)
+                let mut buffer = [MaybeUninit::<u8>::uninit(); 16 + 256];
+                let mut reader = Reader::new(&self.fd, &mut buffer);
+                let event = reader.next()?;
+                let Some(dir) = self.dirs.get(&event.wd()) else { continue };
+                return Ok(match event.file_name() {
+                    Some(name) => dir.join(name.to_string_lossy().as_ref()),
+                    None => dir.clone(),
+                });
+            }
+        }
+    }
+
+    pub(super) fn watch(root: PathBuf, dirs: &[PathBuf]) -> io::Result<Box<dyn crate::host::Watch>> {
+        let mut watch = Inotify { fd: inotify::init(CreateFlags::CLOEXEC)?, root, dirs: BTreeMap::new() };
+        for dir in dirs {
+            // a directory that is not there (or not a directory) is simply not watched
+            let _ = crate::host::Watch::add(&mut watch, dir);
+        }
+        Ok(Box::new(watch))
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+mod inotify {
+    use std::io;
+    use std::path::PathBuf;
+
+    pub(super) fn watch(_root: PathBuf, _dirs: &[PathBuf]) -> io::Result<Box<dyn crate::host::Watch>> {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "watching files needs inotify (Linux)"))
+    }
 }

@@ -45,7 +45,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 |---|---|
 | `cli` | clap definitions, output formatting (human / `--json`), exit codes |
 | `config` | `moi.toml` + `secrets.toml` schema (serde), defaults, validation, `secret:NAME` references |
-| `host` | **All system access**: files under a root prefix, `/proc`, `/sys`, commands, time. `RealHost` and `FixtureHost` (tests). Nothing else touches the OS directly |
+| `host` | **All system access**: files under a root prefix, `/proc`, `/sys`, commands, time, sockets, DNS, inotify, sd_notify. `RealHost` and `FixtureHost` (tests). Nothing else touches the OS directly |
 | `docker` | Docker Engine API over the unix socket (containers, networks, volumes, services/swarm, events, exec, logs): a small blocking HTTP/1.1 client on a connection from `Host`, payloads as JSON values. No `docker` CLI, no HTTP crate |
 | `systemd` | Unit states, enable/start, timers, `TriggeredBy`, journal reads — via D-Bus (`zbus`); `systemctl` only as fallback |
 | `snapshot` | Collectors (one per area, run in parallel) → normalized files in the state dir; volatile vs stable split |
@@ -67,7 +67,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
 - No async runtime. The daemon is a loop sleeping on a channel with one thread per running job; outbound HTTP (`net`) is blocking, and so is Kuma's socket.io client, which uses the long-polling transport on top of it. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
-- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
+- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `docker compose up -d` (heal and boot: Compose has no API), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.
 - Output that other systems consume (Kuma messages, `--json`) is covered by golden tests; changing it is a breaking change.

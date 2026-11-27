@@ -60,8 +60,8 @@ Specs: 06
 
 ## M6 — Daemon
 Specs: 10
-- [ ] Scheduler (interval + persistent calendar), watcher (docker events + inotify) with debounce, IPC socket, sd_notify/watchdog
-- [ ] Heal rules (network_connect, restart sequence, run, compose_up), cooldowns, reports
+- [x] Scheduler (interval + persistent calendar), watcher (docker events + inotify) with debounce, IPC socket, sd_notify/watchdog
+- [x] Heal rules (network_connect, restart sequence, run, compose_up), cooldowns, reports
 - [ ] Boot tasks (mounts, firewall, compose_up, post-boot verify), firewall apply/diff with SSH rollback
 - [ ] `moi init` installs/enables `moi.service`; `moi uninstall`
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green

@@ -8,6 +8,7 @@
 
 pub mod calendar;
 mod jobs;
+pub mod watch;
 pub mod zone;
 
 use std::io::{BufRead, BufReader, Write};
@@ -20,7 +21,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::checks::Check;
-use crate::config::{Config, Loaded};
+use crate::config::{Config, HealRule, Loaded, Paths, When};
 use crate::error::Error;
 use crate::host::{self, Host};
 use crate::log::Logger;
@@ -46,6 +47,8 @@ pub enum Schedule {
     Every(Duration),
     /// At calendar times; a run missed while the daemon was down is caught up.
     At(Calendar),
+    /// When something asks for it: a change on the machine, a heal trigger.
+    OnDemand,
 }
 
 /// What a job does.
@@ -54,6 +57,10 @@ pub enum Work {
     Check(Arc<dyn Check>),
     /// Snapshot, audit, housekeeping, drift report.
     Daily,
+    /// A snapshot because something changed, and the container monitors that follow from it.
+    Snapshot,
+    /// A heal rule whose trigger fired, and what fired it.
+    Heal(Box<HealRule>, String),
 }
 
 impl std::fmt::Debug for Work {
@@ -61,6 +68,8 @@ impl std::fmt::Debug for Work {
         match self {
             Work::Check(check) => write!(f, "Check({})", check.name()),
             Work::Daily => f.write_str("Daily"),
+            Work::Snapshot => f.write_str("Snapshot"),
+            Work::Heal(rule, _) => write!(f, "Heal({})", rule.name),
         }
     }
 }
@@ -99,15 +108,21 @@ pub struct Core {
 #[derive(Debug)]
 pub struct Daemon {
     core: Arc<Core>,
+    /// Where the configuration came from, for reloading it.
+    paths: Paths,
     jobs: Vec<Job>,
     started: i64,
+    /// Changes seen and not yet snapshotted.
+    changes: watch::Debounce,
 }
 
 /// Something the loop wakes up for.
 enum Event {
-    Done(usize, Outcome),
+    Done(String, Outcome),
     /// The CLI asks for a job to run now.
     Trigger(String),
+    Docker(crate::docker::Event),
+    File(std::path::PathBuf),
 }
 
 fn db_err(e: rusqlite::Error) -> Error {
@@ -121,9 +136,39 @@ impl Daemon {
         let config = Arc::new(loaded.config);
         let core = Arc::new(Core { zone: Zone::load(host.as_ref()), host, config, masker: loaded.masker, state });
         let started = host::unix_seconds(core.host.now());
-        let mut daemon = Self { core, jobs: Vec::new(), started };
+        let mut daemon =
+            Self { core, paths: loaded.paths, jobs: Vec::new(), started, changes: watch::Debounce::default() };
         daemon.plan()?;
         Ok(daemon)
+    }
+
+    /// Read the configuration again (it changed on disk). A configuration that does not load is not
+    /// taken: the daemon keeps running with the one it has.
+    pub fn reload(&mut self) -> Result<(), Error> {
+        let host = Arc::clone(&self.core.host);
+        let loaded = crate::config::load(host.as_ref(), &self.paths)?;
+        let state = StateDir::new(loaded.config.state.dir.clone());
+        state.ensure(host.as_ref())?;
+        let previous = std::mem::take(&mut self.jobs);
+        self.core = Arc::new(Core {
+            zone: Zone::load(host.as_ref()),
+            host,
+            config: Arc::new(loaded.config),
+            masker: loaded.masker,
+            state,
+        });
+        self.plan()?;
+        // jobs that are still there keep their place in time and what they last did
+        for job in &mut self.jobs {
+            if let Some(old) = previous.iter().find(|old| old.name == job.name) {
+                job.last = old.last.clone();
+                job.running = old.running;
+                if !matches!(job.schedule, Schedule::At(_)) {
+                    job.next = old.next;
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Set up the jobs the configuration asks for.
@@ -163,7 +208,73 @@ impl Daemon {
             Ok(())
         };
         calendar("daily", DAILY_AT, Work::Daily)?;
+        // on demand: the snapshot after a change, and the heal rules that fire on events
+        let on_demand = |name: String, work: Work| Job {
+            name,
+            schedule: Schedule::OnDemand,
+            next: i64::MAX,
+            running: false,
+            last: None,
+            work,
+        };
+        self.jobs.push(on_demand("snapshot".to_string(), Work::Snapshot));
+        for rule in core.config.heal.iter().filter(|rule| !matches!(rule.when, When::Failing(_))) {
+            self.jobs.push(on_demand(format!("heal:{}", rule.name), Work::Heal(Box::new(rule.clone()), String::new())));
+        }
         Ok(())
+    }
+
+    /// Something on the machine changed: a snapshot follows once things are quiet.
+    pub fn changed(&mut self) {
+        let now = self.now();
+        self.changes.note(now);
+        let due = self.changes.due_at().unwrap_or(i64::MAX);
+        if let Some(job) = self.jobs.iter_mut().find(|j| j.name == "snapshot") {
+            job.next = due;
+        }
+    }
+
+    /// An event from the Docker engine.
+    pub fn docker_event(&mut self, event: &crate::docker::Event) {
+        if watch::matters(event) {
+            self.changed();
+        }
+        let now = self.now();
+        for job in &mut self.jobs {
+            if let Work::Heal(rule, why) = &mut job.work
+                && let When::DockerEvent { container, action } = &rule.when
+                && event.kind == "container"
+                && event.action == *action
+                && event.name() == Some(container.as_str())
+            {
+                *why = format!("{container} {action}");
+                job.next = now;
+            }
+        }
+    }
+
+    /// A watched file changed.
+    pub fn file_changed(&mut self, path: &Path) {
+        // moi's own configuration: take it at once
+        if path == self.paths.config || path == self.paths.secrets {
+            let log = Logger::new(Arc::clone(&self.core.host), "moi").with_masker(self.core.masker.clone());
+            match self.reload() {
+                Ok(()) => log.info("configuration reloaded", &[]),
+                Err(e) => log.warn(&format!("configuration not reloaded, keeping the one in use: {e}"), &[]),
+            }
+        }
+        let now = self.now();
+        for job in &mut self.jobs {
+            if let Work::Heal(rule, why) = &mut job.work
+                && matches!(&rule.when, When::PathChanged(watched) if Path::new(watched) == path)
+            {
+                *why = format!("{} changed", path.display());
+                job.next = now;
+            }
+        }
+        if !watch::noise(path) {
+            self.changed();
+        }
     }
 
     pub fn jobs(&self) -> &[Job] {
@@ -192,6 +303,11 @@ impl Daemon {
                 job.next += step * ((now - job.next).div_euclid(step) + 1);
             }
             Schedule::At(calendar) => job.next = calendar.next_after(now, &core.zone).unwrap_or(i64::MAX),
+            Schedule::OnDemand => job.next = i64::MAX,
+        }
+        // changes seen while the snapshot was being taken want another one
+        if job.name == "snapshot" {
+            job.next = self.changes.due_at().unwrap_or(i64::MAX);
         }
         let db = core.state.open_db(core.host.as_ref())?;
         db.conn()
@@ -210,12 +326,22 @@ impl Daemon {
     pub fn tick(&mut self) -> Result<Vec<(String, Outcome)>, Error> {
         let mut ran = Vec::new();
         for index in self.due(self.now()) {
-            self.jobs[index].running = true;
-            let outcome = jobs::run(&self.core, &self.jobs[index].work);
+            let work = self.start(index);
+            let outcome = jobs::run(&self.core, &work);
             self.finish(index, outcome.clone())?;
             ran.push((self.jobs[index].name.clone(), outcome));
         }
         Ok(ran)
+    }
+
+    /// Mark a job as running and hand out its work.
+    fn start(&mut self, index: usize) -> Work {
+        self.jobs[index].running = true;
+        if self.jobs[index].name == "snapshot" {
+            // what was seen so far is being acted on; later changes start a new wait
+            self.changes.take();
+        }
+        self.jobs[index].work.clone()
     }
 
     /// Make a job due now (`moi status` shows it running; the CLI's triggers end up here).
@@ -224,6 +350,9 @@ impl Daemon {
         match self.jobs.iter_mut().find(|j| j.name == name) {
             Some(job) => {
                 job.next = job.next.min(now);
+                if let Work::Heal(_, why) = &mut job.work {
+                    *why = "asked for by hand".to_string();
+                }
                 true
             }
             None => false,
@@ -242,7 +371,8 @@ impl Daemon {
                 json!({
                     "name": j.name,
                     "running": j.running,
-                    "next": time(j.next),
+                    // a job that waits to be asked for has no next time
+                    "next": (j.next != i64::MAX).then(|| time(j.next)),
                     "last": j.last.as_ref().map(|(at, o)| json!({ "at": time(*at), "status": o.status, "message": o.message, "duration_ms": o.duration_ms })),
                 })
             })
@@ -253,7 +383,7 @@ impl Daemon {
     /// The line systemd shows for the unit: what comes next.
     fn status_line(&self) -> String {
         let mut next: Vec<(&i64, &str)> =
-            self.jobs.iter().filter(|j| !j.running).map(|j| (&j.next, j.name.as_str())).collect();
+            self.jobs.iter().filter(|j| !j.running && j.next != i64::MAX).map(|j| (&j.next, j.name.as_str())).collect();
         next.sort();
         let running = self.jobs.iter().filter(|j| j.running).count();
         let upcoming: Vec<String> = next
@@ -293,6 +423,7 @@ impl Daemon {
                 })
                 .map_err(Error::Io)?;
         }
+        self.watchers(&events, &log);
         // systemd's watchdog: pinged at half the interval it allows, by this loop only — if the loop
         // hangs, the pings stop and systemd restarts the service
         let watchdog = host
@@ -304,11 +435,11 @@ impl Daemon {
         loop {
             let now = self.now();
             for index in self.due(now) {
-                self.jobs[index].running = true;
-                let (core, work, done) = (Arc::clone(&self.core), self.jobs[index].work.clone(), events.clone());
-                let spawned = thread::Builder::new().name(format!("moi-{}", self.jobs[index].name)).spawn(move || {
+                let work = self.start(index);
+                let (core, done, name) = (Arc::clone(&self.core), events.clone(), self.jobs[index].name.clone());
+                let spawned = thread::Builder::new().name(format!("moi-{name}")).spawn(move || {
                     let outcome = jobs::run(&core, &work);
-                    let _ = done.send(Event::Done(index, outcome));
+                    let _ = done.send(Event::Done(name, outcome));
                 });
                 if let Err(e) = spawned {
                     self.finish(
@@ -324,21 +455,70 @@ impl Daemon {
             let until_next = Duration::from_secs(u64::try_from(next.saturating_sub(now)).unwrap_or(0));
             let wait = until_next.min(watchdog.unwrap_or(MAX_SLEEP)).min(MAX_SLEEP);
             match inbox.recv_timeout(wait) {
-                Ok(Event::Done(index, outcome)) => {
+                Ok(Event::Done(name, outcome)) => {
                     if matches!(outcome.status.as_str(), "failed") {
-                        log.warn(
-                            &format!("{} failed: {}", self.jobs[index].name, outcome.message),
-                            &[("job", &self.jobs[index].name)],
-                        );
+                        log.warn(&format!("{name} failed: {}", outcome.message), &[("job", &name)]);
                     }
-                    self.finish(index, outcome)?;
+                    // by name: a reload may have reordered the jobs, or removed this one
+                    if let Some(index) = self.jobs.iter().position(|j| j.name == name) {
+                        self.finish(index, outcome)?;
+                    }
                 }
+                Ok(Event::Docker(event)) => self.docker_event(&event),
+                Ok(Event::File(path)) => self.file_changed(&path),
                 Ok(Event::Trigger(name)) => {
                     self.trigger(&name);
                 }
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
             }
+        }
+    }
+}
+
+impl Daemon {
+    /// Start the threads that watch the Docker engine and the file system.
+    fn watchers(&self, events: &mpsc::Sender<Event>, log: &Logger) {
+        let host = Arc::clone(&self.core.host);
+        let docker = crate::docker::Docker::new(Arc::clone(&host));
+        // the engine's event stream; when it ends (Docker restarted) it is picked up where it stopped
+        {
+            let (docker, events) = (docker.clone(), events.clone());
+            let _ = thread::Builder::new().name("moi-docker-events".into()).spawn(move || {
+                let mut since = None;
+                loop {
+                    let types = ["container", "network", "volume", "service"].map(str::to_string).to_vec();
+                    let filters = std::collections::BTreeMap::from([("type".to_string(), types)]);
+                    if let Ok(stream) = docker.events(&filters, since, None) {
+                        for event in stream.flatten() {
+                            since = Some(event.time + 1);
+                            if events.send(Event::Docker(event)).is_err() {
+                                return;
+                            }
+                        }
+                    }
+                    // real time on purpose: this paces reconnecting, it is not something to simulate
+                    thread::park_timeout(Duration::from_secs(5));
+                }
+            });
+        }
+        let dirs = watch::dirs(host.as_ref(), &self.core.config, &docker);
+        match host.watch(&dirs) {
+            Ok(mut watching) => {
+                let events = events.clone();
+                let _ = thread::Builder::new().name("moi-files".into()).spawn(move || {
+                    while let Ok(path) = watching.next() {
+                        // a directory that appeared below a watched one is watched from now on
+                        if host.symlink_metadata(&path).is_ok_and(|m| m.kind == host::FileKind::Dir) {
+                            let _ = watching.add(&path);
+                        }
+                        if events.send(Event::File(path)).is_err() {
+                            return;
+                        }
+                    }
+                });
+            }
+            Err(e) => log.info(&format!("not watching files ({e}): changes are picked up by the daily snapshot"), &[]),
         }
     }
 }
