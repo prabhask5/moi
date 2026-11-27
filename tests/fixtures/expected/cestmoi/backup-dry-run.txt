@@ -6,7 +6,7 @@ databases (dumped through docker exec, compressed):
 paths:
   /etc/docker                                               86 B       1 files  backup.paths
   /etc/dokploy                                             261 B       3 files  backup.paths
-  /etc/moi                                                8.6 KB       4 files  backup.paths
+  /etc/moi                                                8.8 KB       4 files  backup.paths
   /etc/ssh/sshd_config.d                                    26 B       1 files  backup.paths
   /etc/systemd/system                                     1.7 KB      14 files  backup.paths
   /mnt/storage/database/db-config                            0 B       0 files  backup.paths

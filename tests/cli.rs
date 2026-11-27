@@ -53,7 +53,7 @@ fn version_has_build_info() {
 
 #[test]
 fn unimplemented_commands_exit_3_and_name_the_milestone() {
-    let out = moi(&["migrate", "plan"]);
+    let out = moi(&["migrate", "shadow"]);
     assert_eq!(out.status.code(), Some(3));
     let err = String::from_utf8_lossy(&out.stderr);
     assert!(err.contains("milestone M9"), "{err}");
@@ -195,7 +195,7 @@ fn config_path_prints_both_files() {
 
 #[test]
 fn json_errors_cover_unimplemented_commands_too() {
-    let out = moi_on_fixture(&["migrate", "plan", "--json"], &[]);
+    let out = moi_on_fixture(&["migrate", "shadow", "--json"], &[]);
     assert_eq!(out.status.code(), Some(3));
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(v["ok"], false);

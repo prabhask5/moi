@@ -214,6 +214,9 @@ manage = false
 rules_v4 = "/etc/moi/firewall/rules4.txt"
 rules_v6 = "/etc/moi/firewall/rules6.txt"
 
+[migrate]
+remove = []
+
 [monitors]
 mode = "live"
 

@@ -35,6 +35,7 @@ pub struct Config {
     pub firewall: Firewall,
     pub backup: Backup,
     pub restore: Restore,
+    pub migrate: Migrate,
     pub monitors: Monitors,
 }
 
@@ -55,6 +56,7 @@ impl Config {
             firewall: Firewall::read(root.table(cx, "firewall"), cx),
             backup: Backup::read(root.table(cx, "backup"), cx),
             restore: Restore::read(root.table(cx, "restore"), cx),
+            migrate: Migrate::read(root.table(cx, "migrate"), cx),
             monitors,
         };
         used.report(cx);
@@ -1067,6 +1069,21 @@ impl Restore {
             etc_paths: t.paths_or(cx, "etc_paths", &[]),
             restore_modified_conffiles: t.bool_or(cx, "restore_modified_conffiles", true),
         };
+        t.finish(cx);
+        this
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Migrate {
+    /// Legacy files moi replaces that it cannot recognize by itself (a script nothing calls any more):
+    /// archived and removed with the rest by `moi migrate finish`.
+    pub remove: Vec<String>,
+}
+
+impl Migrate {
+    fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Self {
+        let this = Self { remove: t.paths_or(cx, "remove", &[]) };
         t.finish(cx);
         this
     }

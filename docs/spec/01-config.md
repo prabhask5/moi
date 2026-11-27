@@ -245,6 +245,10 @@ max_storage = "8GB"
 etc_paths = ["/etc/ssh", "/etc/sysctl.d", "/etc/modules-load.d", "/etc/sudoers.d", "/etc/docker", "/etc/dokploy"]  # added to the built-in list
 restore_modified_conffiles = true   # put back package config files the owner changed (diff shown)
 
+# ---------------------------------------------------------------- migration (11)
+[migrate]
+remove = []                      # legacy files moi replaces but cannot recognize (a script nothing calls): archived and removed by `moi migrate finish`
+
 # ---------------------------------------------------------------- monitors (06)
 [monitors]
 mode = "live"                    # "shadow" = run checks, push nothing (migration, 11)

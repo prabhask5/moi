@@ -30,6 +30,18 @@ moi migrate finish      # remove archived legacy files from disk (copies stay in
 
 Items moi does not replace are listed as *untouched* (apps' own containers such as cloudflare-ddns pushing to its own Kuma monitor, Watchtower, etc.).
 
+### Decisions (M9, plan)
+
+- **Nothing in the plan is written for cestmoi.** An item is recognized by what the legacy piece does, read from the last snapshot and the files themselves:
+  - a **check** or the **backup**: the script that pushes to the monitor the check reports to (the migration map of 06), the cron files and units that call it (a unit with its `.timer`/`.path` siblings), scripts in the same directory that only it calls, and what it remembers — `NAME=/path` assignments pointing into `/var/lib/<its own directory>`, `/var/tmp` or `/root`. Logs stay where they are.
+  - a **heal rule**: units named like the rule, with the script they start.
+  - **boot**: units that run `compose up` themselves or through their script, when `boot.compose_up` is set.
+  - **firewall**: units that *load* rules (`iptables-restore`, `iptables -A/-I`, `nft -f`) themselves or through their script, with the rules files they are given, when `firewall.manage` is on. A script that only lists chains is not one.
+  - **stale**: script copies that push to Kuma but that nothing calls, plus the paths in `migrate.remove` — the one thing the owner has to name (cestmoi: `disk-audit.sh`, replaced by `moi audit`, called by nothing).
+  - **serverstate**: its state directory, configuration, library and command, and units named `serverstate-*`.
+- **Differences from the table above on the fixture**: the post-boot self-check unit runs `service-check.sh`, so it is part of the `services` item (moi's post-boot verify takes its place); `services` counts only the heal rules the check itself fires (`when = { failing = … }`), the other two being items of their own; the firewall item lists the legacy rules files by name.
+- **Output**: one block per item — `name → what replaces it`, then `cron|unit|file|state path` lines and `keeps` lines (the push token by its last four characters, the journal tag, log files, the repository) — and an `untouched` list: custom units and cron jobs moi has no replacement for, scripts something still calls, containers that push to monitors of their own. `--json`: `{ items: [{name, by, legacy: [{kind, path}], keeps}], untouched }`. The plan needs a snapshot and changes nothing.
+
 ## Steps
 
 1. **Import** (part of `plan`/`shadow`): serverstate history → `/var/lib/moi/state` (history rewritten under the new layout, commit dates kept), NOTES.md, secrets from scripts/env files into `secrets.toml`, legacy state values into `moi.db`.
@@ -41,7 +53,7 @@ Items moi does not replace are listed as *untouched* (apps' own containers such 
 
 ## Acceptance
 
-- [ ] `plan` on the cestmoi fixture equals the table above.
+- [x] `plan` on the cestmoi fixture equals the table above (golden `migrate-plan.txt`; see Decisions for the three differences).
 - [ ] After `switch` + `rollback` the fixture host is byte-identical to before (files, units, cron).
 - [ ] No step ever creates a Kuma monitor for a check that has a legacy monitor; the token in use never changes.
 - [ ] `finish` leaves no duplicate scripts/cron/units and frees the legacy files' space; archive contains everything removed.
