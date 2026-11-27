@@ -32,4 +32,5 @@ Each dependency and why (keep this list current when adding one):
 | *(none)* for file watching | Decided in M6: inotify through `rustix` (`fs::inotify`, already a dependency, no `unsafe`), one watch per directory, instead of the `notify` crate and its cross-platform backends moi has no use for |
 | *(none)* for Uptime Kuma's API | Decided in M5: a socket.io v4 client over Engine.IO long-polling on moi's own HTTP client (`monitors::socket`) |
 | flate2 (pure-Rust `miniz_oxide` backend) | gzip for database dumps and the local archive. No zstd: it would bring a C library into the build for the local copy only (07) |
+| devbox-core (crates.io, `0.<minor>` until devbox 1.0) | `moi devbox`: devbox's setup/status/doctor engine, run through moi's `Host` (15). Blocking, no async runtime or HTTP crate, MSRV ≤ moi's — guaranteed by devbox's `compat` CI job against this repo's `deny.toml`. Brings `argon2` (password hashes) and `getrandom` |
 | tar (no default features) | writing (and, for restore, reading) the local archive, entry by entry from data read through `Host` — the crate never touches the file system itself |

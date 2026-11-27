@@ -73,7 +73,7 @@ prune_dirs = ["node_modules", ".git", "cache", "logs", "data", "db", "postgres",
 # Never backed up, never reported as a gap. Re-downloadable or rebuildable.
 fungible = ["/mnt/storage/media", "/var/lib/incus"]
 # Why (shown in CONTEXT.md / audit next to each path)
-fungible_reason = { "/mnt/storage/media" = "media library, re-downloadable", "/var/lib/incus" = "devbox VM, rebuilt from github.com/prabhask5/dotfiles" }
+fungible_reason = { "/mnt/storage/media" = "media library, re-downloadable", "/var/lib/incus" = "devbox VM, rebuilt by `moi devbox up`" }
 
 # ---------------------------------------------------------------- context (03)
 [context]

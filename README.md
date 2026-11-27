@@ -37,6 +37,7 @@ Also planned: `.deb`/`.rpm` packages, `cargo install cestmoi`, Homebrew (`brew i
 | `moi backup [--dry-run]` · `moi push` · `moi pull` | backups and the state bundle |
 | `moi restore` · `moi verify` | rebuild and prove it |
 | `moi migrate plan\|shadow\|compare\|switch\|rollback\|finish` | move off legacy scripts without breaking monitors |
+| `moi devbox up\|down\|status\|doctor` | set up and run a [devbox](https://github.com/prabhask5/devbox) VM (sleeps when idle, agents from your phone) |
 | `moi config check` · `moi config path` | validate `moi.toml` + `secrets.toml`, print the effective config with secrets masked |
 
 Global flags: `--config` (`MOI_CONFIG`), `--secrets` (`MOI_SECRETS`, default `secrets.toml` next to the config), `--json`, `--quiet`.

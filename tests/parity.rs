@@ -240,7 +240,7 @@ fn expected_files_are_never_empty_and_name_a_status() {
 fn the_legacy_resource_script_prints_what_the_expected_files_say() {
     let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/cestmoi/scripts/resource-check.sh");
     let Ok(source) = std::fs::read_to_string(&script) else {
-        eprintln!("reference/ is gone (after M12): the expected files stand on their own");
+        eprintln!("reference/ is gone (after M13): the expected files stand on their own");
         return;
     };
     if std::process::Command::new("bash").arg("--version").output().is_err() {
@@ -376,7 +376,7 @@ fn the_legacy_resource_script_prints_what_the_expected_files_say() {
 fn the_legacy_service_script_prints_what_the_expected_files_say() {
     let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/cestmoi/scripts/service-check.sh");
     let Ok(source) = std::fs::read_to_string(&script) else {
-        eprintln!("reference/ is gone (after M12): the expected files stand on their own");
+        eprintln!("reference/ is gone (after M13): the expected files stand on their own");
         return;
     };
     let have = |tool: &str| std::process::Command::new(tool).arg("--version").output().is_ok();

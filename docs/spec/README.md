@@ -18,5 +18,6 @@ Read [CLAUDE.md](../../CLAUDE.md) first. Each file states behaviour and ends wit
 | 12 | [Distribution](12-distribution.md) | releases, installer, deb/rpm, crates.io, Homebrew |
 | 13 | [Performance](13-performance.md) | budgets enforced in CI |
 | 14 | [Security](14-security.md) | secrets, egress, destructive ops, dependencies |
+| 15 | [devbox](15-devbox.md) | `moi devbox` over devbox's Rust library; snapshot, context, backup, monitor, restore integration |
 
 The working prototype these specs were derived from is in [`reference/serverstate/`](../../reference/serverstate/); the legacy scripts that define check semantics are in [`reference/cestmoi/scripts/`](../../reference/cestmoi/scripts/).
