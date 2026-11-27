@@ -4,7 +4,6 @@
 //! - 0 success
 //! - 1 a check/verify/audit found problems (the command itself worked)
 //! - 2 usage, config or runtime error
-//! - 3 not implemented yet
 
 use thiserror::Error;
 
@@ -12,9 +11,6 @@ use crate::config::Diagnostic;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("{what} is not implemented yet (milestone {milestone}, see docs/milestones.md)")]
-    NotImplemented { what: &'static str, milestone: &'static str },
-
     #[error("problems found")]
     ProblemsFound,
 
@@ -59,7 +55,6 @@ impl Error {
     pub fn exit_code(&self) -> u8 {
         match self {
             Error::ProblemsFound => 1,
-            Error::NotImplemented { .. } => 3,
             Error::ConfigInvalid(_)
             | Error::Docker(_)
             | Error::Db(_)
@@ -75,7 +70,6 @@ impl Error {
     /// Stable machine-readable name, used in `--json` error output.
     pub fn kind(&self) -> &'static str {
         match self {
-            Error::NotImplemented { .. } => "not_implemented",
             Error::ProblemsFound => "problems_found",
             Error::ConfigInvalid(_) => "config",
             Error::Db(_) | Error::History(_) => "state",

@@ -11,6 +11,7 @@
 
 pub mod compare;
 pub mod shadow;
+pub mod switch;
 
 use std::collections::BTreeSet;
 use std::path::Path;

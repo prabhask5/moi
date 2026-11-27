@@ -92,7 +92,9 @@ impl History {
         let dir = state.state();
         let real =
             host.real_path(&dir).map_err(|e| Error::host(format!("cannot open history in {}", dir.display()), e))?;
-        let options = gix::open::Options::isolated();
+        // isolated from the machine's git configuration; the identity is for reflog lines only
+        let options =
+            gix::open::Options::isolated().config_overrides(["committer.name=moi", "committer.email=moi@localhost"]);
         let repo = if real.join(".git").is_dir() {
             gix::ThreadSafeRepository::open_opts(&real, options).map_err(git)?
         } else {
@@ -186,6 +188,88 @@ impl History {
         Ok(out)
     }
 
+    /// Put the history of another state repository (the serverstate prototype's) *before* this one's:
+    /// its commits come first, with their dates, authors and messages, and this repository's own
+    /// commits follow on top of them. Only `snapshot/` and `NOTES.md` of each old commit are kept — the
+    /// layout the two share. Returns how many commits were imported.
+    pub fn import_before(&self, source: &Path) -> Result<usize, Error> {
+        let options = gix::open::Options::isolated();
+        let other = gix::ThreadSafeRepository::open_opts(source, options).map_err(git)?.to_thread_local();
+        let Ok(tip) = other.head_commit() else { return Ok(0) };
+        let mut old: Vec<gix::ObjectId> = Vec::new();
+        for info in other.rev_walk([tip.id]).first_parent_only().all().map_err(git)? {
+            old.push(info.map_err(git)?.id);
+        }
+        old.reverse();
+        let mut own: Vec<gix::ObjectId> = Vec::new();
+        if let Some(head) = self.head() {
+            for info in self.repo.rev_walk([head.id]).first_parent_only().all().map_err(git)? {
+                own.push(info.map_err(git)?.id);
+            }
+        }
+        own.reverse();
+
+        // every file content is copied once, however many commits have it
+        let mut copied: BTreeMap<gix::ObjectId, gix::ObjectId> = BTreeMap::new();
+        let mut parent: Option<gix::ObjectId> = None;
+        let write = |repo: &gix::Repository,
+                     from: &gix::Commit<'_>,
+                     tree: gix::ObjectId,
+                     parent: Option<gix::ObjectId>|
+         -> Result<gix::ObjectId, Error> {
+            let decoded = from.decode().map_err(git)?;
+            let commit = gix::objs::Commit {
+                tree,
+                parents: parent.into_iter().collect(),
+                author: decoded.author().map_err(git)?.to_owned().map_err(git)?,
+                committer: decoded.committer().map_err(git)?.to_owned().map_err(git)?,
+                encoding: None,
+                message: decoded.message.to_owned(),
+                extra_headers: Vec::new(),
+            };
+            Ok(repo.write_object(&commit).map_err(git)?.detach())
+        };
+        for id in &old {
+            let commit = other.find_commit(*id).map_err(git)?;
+            let mut files = Files::new();
+            files_of(&other, commit.tree_id().map_err(git)?.detach(), "", &mut files)?;
+            let mut editor = self.repo.edit_tree(gix::ObjectId::empty_tree(self.repo.object_hash())).map_err(git)?;
+            for (path, (kind, blob)) in
+                files.iter().filter(|(path, _)| path.starts_with("snapshot/") || *path == "NOTES.md")
+            {
+                let here = match copied.get(blob) {
+                    Some(here) => *here,
+                    None => {
+                        let data = other.find_blob(*blob).map_err(git)?.data.clone();
+                        let here = self.repo.write_blob(&data).map_err(git)?.detach();
+                        copied.insert(*blob, here);
+                        here
+                    }
+                };
+                editor.upsert(path.as_str(), *kind, here).map_err(git)?;
+            }
+            let tree = editor.write().map_err(git)?.detach();
+            parent = Some(write(&self.repo, &commit, tree, parent)?);
+        }
+        // this repository's own commits, unchanged but for where they stand
+        for id in &own {
+            let commit = self.repo.find_commit(*id).map_err(git)?;
+            let tree = commit.tree_id().map_err(git)?.detach();
+            parent = Some(write(&self.repo, &commit, tree, parent)?);
+        }
+        if let Some(tip) = parent {
+            self.repo
+                .reference(
+                    BRANCH,
+                    tip,
+                    gix::refs::transaction::PreviousValue::Any,
+                    "moi: history of the previous tool imported",
+                )
+                .map_err(git)?;
+        }
+        Ok(old.len())
+    }
+
     /// A commit and what it changed. `rev` is git revision syntax (`HEAD`, `HEAD~3`, an id prefix).
     pub fn show(&self, rev: &str) -> Result<(Entry, Vec<Change>), Error> {
         let id = self
@@ -214,18 +298,7 @@ impl History {
     }
 
     fn files(&self, tree: gix::ObjectId, prefix: &str, out: &mut Files) -> Result<(), Error> {
-        let tree = self.repo.find_tree(tree).map_err(git)?;
-        for entry in tree.iter() {
-            let entry = entry.map_err(git)?;
-            let path = format!("{prefix}{}", entry.filename().to_str_lossy());
-            match entry.kind() {
-                EntryKind::Tree => self.files(entry.object_id(), &format!("{path}/"), out)?,
-                kind => {
-                    out.insert(path, (kind, entry.object_id()));
-                }
-            }
-        }
-        Ok(())
+        files_of(&self.repo, tree, prefix, out)
     }
 
     fn changes_between(&self, old: Option<gix::ObjectId>, new: gix::ObjectId) -> Result<Vec<Change>, Error> {
@@ -257,6 +330,22 @@ impl History {
         out.sort_by(|a, b| a.path.cmp(&b.path));
         Ok(out)
     }
+}
+
+/// Every file of a tree, by path.
+fn files_of(repo: &gix::Repository, tree: gix::ObjectId, prefix: &str, out: &mut Files) -> Result<(), Error> {
+    let tree = repo.find_tree(tree).map_err(git)?;
+    for entry in tree.iter() {
+        let entry = entry.map_err(git)?;
+        let path = format!("{prefix}{}", entry.filename().to_str_lossy());
+        match entry.kind() {
+            EntryKind::Tree => files_of(repo, entry.object_id(), &format!("{path}/"), out)?,
+            kind => {
+                out.insert(path, (kind, entry.object_id()));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// `2026-11-26T17:00:00Z` → `2026-11-26 17:00` (UTC).

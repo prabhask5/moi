@@ -49,6 +49,17 @@ Items moi does not replace are listed as *untouched* (apps' own containers such 
 - **Legacy state** is imported on every `shadow` run (and again by `switch`, so that the values are fresh at the moment of the hand-over), in the formats of the reference scripts, from the state paths the plan names: `cpu` ("total idle"), `restarts` ("name count" lines) and `hot-<condition>` markers of the resources script; the heal stamp of the services script into the cooldown of every `failing` rule that has one; `last-upload` of the off-site script. A legacy value replaces moi's only where it is newer or moi has none; the CPU counters and restart counts always, since the legacy script wrote them last.
 - **Compare** takes the last 12 recorded runs of each check that has a legacy feeder and, for each, the result the feeder's monitor received closest in time (no further away than one check interval), read from `kuma.db` by push token. `status: message` strings are compared raw (identical), then with every `\d+(\.\d+)?` replaced by `N` (same shape), else different — shown as a `- legacy` / `+ moi` pair. A check is *ready to switch* with 12 pairs and none different. Exit 1 when anything differs.
 
+### Decisions (M9, switch, rollback, finish)
+
+- **The archive is a directory, not a git repository**: `<state root>/archive/legacy/<absolute path>` holds a copy of every legacy piece with its mode and owner, made by `switch` before anything is touched; `<state root>/archive/migration.log` gets a line per step. It is part of the backup (the state root is).
+- **Switch touches only triggers.** A cron file is removed (its copy is in the archive), a unit that is enabled or running is `systemctl disable --now`. Scripts, unit files and legacy state stay in place until `finish`, so a rollback is: cron file back from the archive, `systemctl enable --now` for what was enabled and running (or `enable` / `start` alone, as it was). If stopping a trigger fails, what was already stopped is started again and the item stays with the legacy setup.
+- **Taking over**: legacy state is imported once more at the moment of the switch; a check (and the backup's monitor) is bound to the monitor that has the feeder's push token — found in `kuma.db`, never created, `created_by_moi = 0` — unless it is bound already; the firewall item applies moi's rules at once (with the SSH safeguard); `serverstate` imports the history and the notes (below). `switch` exits 1 when an item was refused.
+- **Checks need a clean comparison** (12 pairs, none different) unless `--force`. Other items have nothing to compare and switch when asked.
+- **Rollback** gives the item back *first* (moi stops pushing and acting), then restores the triggers; a monitor binding is removed only if the switch made it. Items are rolled back in the reverse order of the plan.
+- **The backup is not proven by the switch itself** (running a full backup inside `switch` would hold it for as long as an upload takes). Instead `finish` refuses while moi has no successful backup run since the switch.
+- **Finish** needs every item switched, the last switch at least 7 days old (or `--now`), and that backup. It removes every legacy piece from its place — archiving first whatever has no copy yet, keeping what cannot be archived — runs `serverstate uninstall --purge --yes` when the prototype's command is there, reloads systemd, ends the migration (nothing is held any more), takes a snapshot and reports whether `monitors sync` would create anything.
+- **serverstate history**: its commits (first-parent line) are written into moi's repository *before* moi's own, with their authors, dates and messages; of each old tree only `snapshot/` and `NOTES.md` are kept — the two tools share that layout, so nothing is renamed. moi's own commits are re-parented on top and keep everything but their ids. Done once (`migrate.history_imported`). `NOTES.md`: taken as it is when moi has none, otherwise appended under `## Notes from serverstate`.
+
 ## Steps
 
 1. **Import** (part of `plan`/`shadow`): serverstate history → `/var/lib/moi/state` (history rewritten under the new layout, commit dates kept), NOTES.md, secrets from scripts/env files into `secrets.toml`, legacy state values into `moi.db`.
@@ -61,6 +72,6 @@ Items moi does not replace are listed as *untouched* (apps' own containers such 
 ## Acceptance
 
 - [x] `plan` on the cestmoi fixture equals the table above (golden `migrate-plan.txt`; see Decisions for the three differences).
-- [ ] After `switch` + `rollback` the fixture host is byte-identical to before (files, units, cron).
-- [ ] No step ever creates a Kuma monitor for a check that has a legacy monitor; the token in use never changes.
-- [ ] `finish` leaves no duplicate scripts/cron/units and frees the legacy files' space; archive contains everything removed.
+- [x] After `switch` + `rollback` the fixture host is byte-identical to before (files, units, cron).
+- [x] No step ever creates a Kuma monitor for a check that has a legacy monitor; the token in use never changes.
+- [x] `finish` leaves no duplicate scripts/cron/units and frees the legacy files' space; archive contains everything removed.

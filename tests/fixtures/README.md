@@ -54,6 +54,7 @@ a case or need saying explicitly:
 
 - `statvfs` — `/mount blocks free available inodes inodes-free` per filesystem (what `statvfs` reports). In a case,
   `/mount -` takes the filesystem away and `/mount error` makes asking about it fail.
+- A file a test removes after writing it stays gone even though the fixture below still has it (until the test writes it again). The fixture's own files cannot be removed without that first write.
 - `absent` — host paths that do not exist in this case (a disk that dropped off the bus). A test can create them again in its overlay; what the fixture had below them stays gone.
 - `unwritable` — paths below which writes fail.
 - `commands/<key>.missing` — the tool is not installed; `commands/<key>.timeout` — it never finishes.
