@@ -522,11 +522,10 @@ fn against_a_real_kuma(test: &str, url: &str) {
     assert_eq!(login().inventory().unwrap().monitors.len(), live.monitors.len());
 
     // ---- pushes arrive: on the adopted monitor and on a created one
-    let (code, out) = s.moi(&["check", "storage", "resources", "--push", "--json"]);
-    let _ = code;
-    let v: Value = serde_json::from_str(&out).unwrap_or_default();
-    for check in v["checks"].as_array().into_iter().flatten() {
-        assert_eq!(check["pushed"], "ok", "{check}");
+    for check in ["storage", "resources"] {
+        let (_, out) = s.moi(&["check", check, "--push", "--json"]);
+        let v: Value = serde_json::from_str(&out).unwrap_or_else(|e| panic!("{e}: {out}"));
+        assert_eq!(v["checks"][0]["pushed"], "ok", "{out}");
     }
 
     // ---- drift: the human's 300 s interval is reported, changed only with --update, and nothing else changes
