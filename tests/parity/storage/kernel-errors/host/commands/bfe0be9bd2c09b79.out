@@ -1,0 +1,3 @@
+kernel: blk_update_request: I/O error, dev sda, sector 12345 op 0x0:(READ)
+kernel: usb 2-1: reset SuperSpeed USB device number 2 using xhci_hcd
+kernel: EXT4-fs (sda1): mounted filesystem with ordered data mode

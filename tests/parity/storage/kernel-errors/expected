@@ -1,0 +1,2 @@
+down
+Problem: kernel log (2 disk/USB errors in last 6 min, see: journalctl -k --since -10min) 

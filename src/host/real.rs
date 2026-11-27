@@ -13,7 +13,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
 use super::rooted;
-use super::{Cmd, CmdOutput, Conn, Host, Metadata};
+use super::{Cmd, CmdOutput, Conn, FsUsage, Host, Metadata};
 
 const JOURNAL_SOCKET: &str = "/run/systemd/journal/socket";
 
@@ -181,6 +181,17 @@ impl Host for RealHost {
             return Err(self.refuse(&format!("connect to {}", path.display())));
         }
         Ok(Box::new(UnixStream::connect(path)?))
+    }
+
+    fn statvfs(&self, path: &Path) -> io::Result<FsUsage> {
+        let stat = rustix::fs::statvfs(self.real(path, true)?)?;
+        Ok(FsUsage {
+            blocks: stat.f_blocks,
+            blocks_free: stat.f_bfree,
+            blocks_available: stat.f_bavail,
+            inodes: stat.f_files,
+            inodes_free: stat.f_ffree,
+        })
     }
 
     fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>> {

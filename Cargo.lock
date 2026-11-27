@@ -135,6 +135,7 @@ dependencies = [
  "gix",
  "md-5",
  "rusqlite",
+ "rustix",
  "rustls",
  "serde",
  "serde_json",

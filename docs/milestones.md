@@ -44,7 +44,7 @@ Specs: 03, 04
 
 ## M4 — Checks with exact legacy parity
 Specs: 05
-- [ ] Check engine (intervals, timeouts, sustained state, deltas, history)
+- [x] Check engine (intervals, timeouts, sustained state, deltas, history)
 - [ ] `resources`, `storage`, `services` + `edge` + staged probe, `custom`
 - [ ] Parity suites for every branch of resource/storage/service-check.sh
 - [ ] `moi check [name] [--push] [--json]`

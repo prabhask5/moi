@@ -1,0 +1,5 @@
+Nov 26 11:58:01 cestmoi kernel: Out of memory: Killed process 4242 (node) total-vm:1234kB
+Nov 26 11:58:01 cestmoi kernel: oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null)
+Nov 26 11:58:02 cestmoi kernel: oom_reaper: reaped process 4242 (node)
+Nov 26 11:59:10 cestmoi kernel: Memory cgroup out of memory: Killed process 99 (python)
+Nov 26 11:59:30 cestmoi kernel: usb 2-1: new SuperSpeed USB device

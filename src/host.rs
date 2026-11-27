@@ -47,6 +47,18 @@ pub struct Metadata {
     pub dev: u64,
 }
 
+/// Space and inode usage of a filesystem, in the filesystem's own block units (`statvfs`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FsUsage {
+    pub blocks: u64,
+    /// Free blocks, including those reserved for root.
+    pub blocks_free: u64,
+    /// Free blocks an unprivileged process may use.
+    pub blocks_available: u64,
+    pub inodes: u64,
+    pub inodes_free: u64,
+}
+
 /// An external command to run. Built with the chained setters; never goes through a shell.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cmd {
@@ -200,6 +212,10 @@ pub trait Host: fmt::Debug + Send + Sync {
 
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
+
+    /// Usage of the filesystem `path` is on (`statvfs`). May block on a hung mount: callers that probe
+    /// removable or network storage run it with a timeout.
+    fn statvfs(&self, path: &Path) -> io::Result<FsUsage>;
 
     /// Connect to a TCP port (outbound HTTP: Uptime Kuma, the share bucket, probes). `timeout` bounds
     /// the connection attempt.

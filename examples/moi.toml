@@ -163,7 +163,7 @@ oom_window = "6m"
 sustain_runs = 2
 swap_limit = 80
 temp_limit = 85
-timeout = "1m"
+timeout = "150s"
 
 [checks.services]
 enabled = false
@@ -172,7 +172,7 @@ http = []
 ignore = []
 interval = "5m"
 journal_tag = "moi-check-services"
-timeout = "1m"
+timeout = "150s"
 
 [checks.storage]
 allowed_bad_sectors = 0
@@ -185,7 +185,7 @@ journal_tag = "moi-check-storage"
 kernel_error_window = "6m"
 mounts = ["/"]
 nvme_wear_limit = 90
-timeout = "1m"
+timeout = "150s"
 writable = []
 
 [context]

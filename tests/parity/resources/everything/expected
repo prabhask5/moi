@@ -1,0 +1,2 @@
+down
+Problem: swap 90% used (memory pressure) CPU 95% for 10+ min RAM 93% for 10+ min CPU 91C for 10+ min kernel killed processes for lack of memory (1 events; journalctl -k --since -10min) crashed and restarted: sonarr(+1) | CPU 95%, RAM 93%, swap 90%, CPU 91C

@@ -23,15 +23,26 @@ pub(crate) struct DockerState {
 
 #[derive(Debug)]
 pub(crate) struct FakeConn {
-    dir: PathBuf,
+    /// `docker/` directories, most specific first (a parity case, then the fixture host).
+    dirs: Vec<PathBuf>,
     state: Arc<Mutex<DockerState>>,
     request: Vec<u8>,
     response: Option<io::Cursor<Vec<u8>>>,
 }
 
 impl FakeConn {
-    pub fn new(dir: PathBuf, state: Arc<Mutex<DockerState>>) -> Self {
-        Self { dir, state, request: Vec::new(), response: None }
+    pub fn new(dirs: Vec<PathBuf>, state: Arc<Mutex<DockerState>>) -> Self {
+        Self { dirs, state, request: Vec::new(), response: None }
+    }
+
+    /// Where a fixture file is: in the first directory that has it (else where the last would have it).
+    fn file(&self, relative: impl AsRef<Path>) -> PathBuf {
+        let relative = relative.as_ref();
+        self.dirs
+            .iter()
+            .map(|d| d.join(relative))
+            .find(|p| p.exists())
+            .unwrap_or_else(|| self.dirs.last().map(|d| d.join(relative)).unwrap_or_default())
     }
 }
 
@@ -121,11 +132,12 @@ impl FakeConn {
             }
             ("GET", ["containers", container, "logs"]) => {
                 let dir = self.container_dir(container);
-                let stdout = fs::read(self.dir.join("containers").join(&dir).join("logs.txt")).unwrap_or_default();
+                let stdout =
+                    fs::read(self.file(Path::new("containers").join(&dir).join("logs.txt"))).unwrap_or_default();
                 let mut out = frame(1, &stdout);
                 out.extend(frame(
                     2,
-                    &fs::read(self.dir.join("containers").join(&dir).join("logs.err")).unwrap_or_default(),
+                    &fs::read(self.file(Path::new("containers").join(&dir).join("logs.err"))).unwrap_or_default(),
                 ));
                 respond("200 OK", "application/vnd.docker.multiplexed-stream", &out)
             }
@@ -137,7 +149,7 @@ impl FakeConn {
                 if let ["containers", container, ..] = segments.as_slice() {
                     relative[1] = self.container_dir(container);
                 }
-                let file = self.dir.join(format!("{}.json", relative.join("/")));
+                let file = self.file(format!("{}.json", relative.join("/")));
                 match fs::read(&file) {
                     Ok(body) => json(&body),
                     Err(_) => not_found(&format!("no fixture for {path}: add {}", file.display())),
@@ -150,10 +162,10 @@ impl FakeConn {
 
     /// The directory under `docker/containers/` for a container given by id, id prefix or name.
     fn container_dir(&self, reference: &str) -> String {
-        if self.dir.join("containers").join(reference).is_dir() {
+        if self.file(Path::new("containers").join(reference)).is_dir() {
             return reference.to_string();
         }
-        let list = fs::read(self.dir.join("containers/json.json")).unwrap_or_default();
+        let list = fs::read(self.file("containers/json.json")).unwrap_or_default();
         let list: serde_json::Value = serde_json::from_slice(&list).unwrap_or_default();
         let wanted = format!("/{reference}");
         list.as_array()
@@ -171,7 +183,7 @@ impl FakeConn {
     /// A container's name (exec fixtures are filed by name), given its name, id or id prefix.
     fn container_name(&self, reference: &str) -> String {
         let id = self.container_dir(reference);
-        let list = fs::read(self.dir.join("containers/json.json")).unwrap_or_default();
+        let list = fs::read(self.file("containers/json.json")).unwrap_or_default();
         let list: serde_json::Value = serde_json::from_slice(&list).unwrap_or_default();
         list.as_array()
             .into_iter()
@@ -182,7 +194,7 @@ impl FakeConn {
     }
 
     fn events(&self) -> Vec<u8> {
-        let lines = fs::read_to_string(self.dir.join("events.jsonl")).unwrap_or_default();
+        let lines = fs::read_to_string(self.file("events.jsonl")).unwrap_or_default();
         let mut out =
             b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n".to_vec();
         for line in lines.lines().filter(|l| !l.trim().is_empty()) {
@@ -195,7 +207,7 @@ impl FakeConn {
     /// Exec ids are `<command key>-<container>`, so the three exec calls need no shared state.
     fn exec_file(&self, id: &str, ext: &str) -> PathBuf {
         let (key, container) = id.split_once('-').unwrap_or((id, ""));
-        self.dir.join("exec").join(container).join(format!("{key}.{ext}"))
+        self.file(Path::new("exec").join(container).join(format!("{key}.{ext}")))
     }
 
     fn exec_create(&self, container: &str, body: &str) -> Vec<u8> {
@@ -222,10 +234,4 @@ impl FakeConn {
         }
         out
     }
-}
-
-/// The fixture's `docker/` directory, if it has an engine at all.
-pub(crate) fn engine_dir(fixture: &Path) -> Option<PathBuf> {
-    let dir = fixture.join("docker");
-    dir.is_dir().then_some(dir)
 }

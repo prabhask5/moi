@@ -157,7 +157,7 @@
         "sustain_runs": 2,
         "swap_limit": 80,
         "temp_limit": 85,
-        "timeout": "1m"
+        "timeout": "150s"
       },
       "services": {
         "enabled": true,
@@ -175,7 +175,7 @@
         "interval": "5m",
         "journal_tag": "moi-check-services",
         "monitor": "Server Internal Services",
-        "timeout": "1m"
+        "timeout": "150s"
       },
       "storage": {
         "allowed_bad_sectors": 0,
@@ -190,7 +190,7 @@
           "/"
         ],
         "nvme_wear_limit": 90,
-        "timeout": "1m",
+        "timeout": "150s",
         "writable": []
       }
     },

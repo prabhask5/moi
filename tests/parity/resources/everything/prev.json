@@ -1,0 +1,11 @@
+{
+ "values": {
+  "cpu": "9332000 8048500",
+  "restarts": "{\"sonarr\": 0}"
+ },
+ "sustained": {
+  "cpu": 1,
+  "mem": 1,
+  "temp": 1
+ }
+}
