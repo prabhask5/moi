@@ -1,0 +1,15 @@
+architecture: x86_64
+config:
+  image.description: Ubuntu resolute amd64
+  limits.cpu: "4"
+  limits.memory: 6GiB
+devices:
+  root:
+    path: /
+    pool: default
+    size: 40GiB
+    type: disk
+ephemeral: false
+profiles:
+- default
+stateful: false

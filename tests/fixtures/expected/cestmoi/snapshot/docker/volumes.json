@@ -1,0 +1,22 @@
+[
+  {
+    "driver": "local",
+    "mountpoint": "/var/lib/docker/volumes/dokploy-docker-config/_data",
+    "name": "dokploy-docker-config"
+  },
+  {
+    "driver": "local",
+    "mountpoint": "/var/lib/docker/volumes/dokploy-postgres-database/_data",
+    "name": "dokploy-postgres-database"
+  },
+  {
+    "driver": "local",
+    "mountpoint": "/var/lib/docker/volumes/shortless-redis-m3n4-data/_data",
+    "name": "shortless-redis-m3n4-data"
+  },
+  {
+    "driver": "local",
+    "mountpoint": "/var/lib/docker/volumes/stellar-data/_data",
+    "name": "stellar-data"
+  }
+]

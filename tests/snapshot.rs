@@ -984,3 +984,43 @@ fn kuma_monitors_are_read_without_touching_kumas_database() {
     assert!(last.get("devbox").is_none());
     assert!(!s.read("snapshot/monitoring/kuma-monitors.json").contains("object Object"));
 }
+
+// ------------------------------------------------------------------ golden
+
+/// The whole stable tree of the `cestmoi` fixture, except the verbatim copies under `files/` (the
+/// manifest pins those by hash). Regenerate with `MOI_UPDATE_GOLDEN=1 cargo test --test snapshot golden`
+/// and review the diff.
+#[test]
+fn golden_snapshot_of_the_cestmoi_fixture() {
+    let s = server("snap-golden");
+    let report = s.snapshot();
+    assert_eq!(report.failed().count(), 0, "{:?}", report.collectors);
+    let expected_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/expected/cestmoi/snapshot");
+    let actual: Vec<String> = snapshot::list_tree(s.host.as_ref(), &s.state.state(), "snapshot")
+        .into_iter()
+        .filter_map(|p| p.strip_prefix("snapshot/").map(str::to_string))
+        .filter(|p| !p.starts_with("files/"))
+        .collect();
+
+    if std::env::var_os("MOI_UPDATE_GOLDEN").is_some() {
+        let _ = std::fs::remove_dir_all(&expected_dir);
+    }
+    for rel in &actual {
+        common::assert_golden(&expected_dir.join(rel), &s.read(&format!("snapshot/{rel}")));
+    }
+    // …and nothing in the golden tree that the snapshot no longer produces
+    let mut golden = Vec::new();
+    let mut stack = vec![expected_dir.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in std::fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                golden.push(path.strip_prefix(&expected_dir).unwrap().to_string_lossy().into_owned());
+            }
+        }
+    }
+    golden.sort();
+    assert_eq!(golden, actual, "the set of snapshot files differs from the golden tree");
+}

@@ -1,0 +1,189 @@
+[
+  {
+    "image": "compiler-ui-a5b6:latest",
+    "image_digest": "sha256:4bfb009b5b42ae524c236f2775536f67a83278f37c455bc924518706fce23a44",
+    "labels": {
+      "traefik.enable": "true"
+    },
+    "name": "compiler-ui-a5b6",
+    "networks": [
+      {
+        "aliases": [
+          "compiler-ui-a5b6"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "constraints": [
+      "node.role==manager"
+    ],
+    "env": [
+      "DATABASE_URL=postgres://dokploy:FAKEdokploydbpass@dokploy-postgres:5432/dokploy"
+    ],
+    "image": "dokploy/dokploy:v0.31.0",
+    "image_digest": "sha256:edf0aae700c2480b4bbf2106c12b45d7c79ff581caf2a0bf6e8fc5d07e50b69a",
+    "mounts": [
+      {
+        "destination": "/var/run/docker.sock",
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      },
+      {
+        "destination": "/etc/dokploy",
+        "source": "/etc/dokploy",
+        "type": "bind"
+      },
+      {
+        "destination": "/root/.docker",
+        "source": "dokploy-docker-config",
+        "type": "volume"
+      }
+    ],
+    "name": "dokploy",
+    "networks": [
+      {
+        "aliases": [
+          "dokploy"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "ports": [
+      {
+        "mode": "host",
+        "protocol": "tcp",
+        "published": 3000,
+        "target": 3000
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "env": [
+      "BRIDGE_TOKEN=FAKEbridgetoken000000"
+    ],
+    "image": "dokploy-bridge-c7d8:latest",
+    "image_digest": "sha256:76d0aff47412e8cea30d5ad19014c5c51a063c810d71928395117b27bf0222b7",
+    "labels": {
+      "traefik.enable": "true"
+    },
+    "name": "dokploy-bridge-c7d8",
+    "networks": [
+      {
+        "aliases": [
+          "dokploy-bridge-c7d8"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "env": [
+      "POSTGRES_DB=dokploy",
+      "POSTGRES_PASSWORD=FAKEdokploydbpass",
+      "POSTGRES_USER=dokploy"
+    ],
+    "image": "postgres:16",
+    "image_digest": "sha256:7622c7b1bceca291357b7a88086fe495ef294b8132228d1c88ab429a4b69b8af",
+    "mounts": [
+      {
+        "destination": "/var/lib/postgresql/data",
+        "source": "dokploy-postgres-database",
+        "type": "volume"
+      }
+    ],
+    "name": "dokploy-postgres",
+    "networks": [
+      {
+        "aliases": [
+          "dokploy-postgres"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "env": [
+      "REDIS_URL=redis://shortless-redis-m3n4:6379"
+    ],
+    "image": "shortless-app-p9q1:latest",
+    "image_digest": "sha256:66abf1bb2581aa371a1cf6999cd12a6ea16a4d7996aa160353a677ebca207cf8",
+    "labels": {
+      "traefik.enable": "true"
+    },
+    "name": "shortless-app-p9q1",
+    "networks": [
+      {
+        "aliases": [
+          "shortless-app-p9q1"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "image": "redis:8",
+    "image_digest": "sha256:8b6a95272cca60bcfecdf6ec1e3982c2e8bbf013e6668322dfd187eb4ddb7419",
+    "labels": {
+      "traefik.enable": "true"
+    },
+    "mounts": [
+      {
+        "destination": "/data",
+        "source": "shortless-redis-m3n4-data",
+        "type": "volume"
+      }
+    ],
+    "name": "shortless-redis-m3n4",
+    "networks": [
+      {
+        "aliases": [
+          "shortless-redis-m3n4"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  },
+  {
+    "env": [
+      "NODE_ENV=production",
+      "SESSION_SECRET=FAKEstellarsession000000"
+    ],
+    "image": "stellar-planner-x7k2:latest",
+    "image_digest": "sha256:cf7aa89e9deb8727e43f2d4575976899f35060ba323ca2f201285658ce6b899c",
+    "labels": {
+      "traefik.enable": "true"
+    },
+    "mounts": [
+      {
+        "destination": "/app/data",
+        "source": "stellar-data",
+        "type": "volume"
+      }
+    ],
+    "name": "stellar-planner-x7k2",
+    "networks": [
+      {
+        "aliases": [
+          "stellar-planner-x7k2"
+        ],
+        "name": "dokploy-network"
+      }
+    ],
+    "replicas": 1,
+    "restart": "any"
+  }
+]

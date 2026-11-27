@@ -1,0 +1,3 @@
+== /var/lib/incus/storage-pools/default
+ID 256 gen 900 top level 5 path virtual-machines/devbox
+ID 257 gen 880 top level 5 path virtual-machines-snapshots/devbox/snap0

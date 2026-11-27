@@ -1,0 +1,1798 @@
+[
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "host",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "adguard/adguardhome:v0.107.71",
+    "image_id": "sha256:8844a9fda782267a3f967c83524e52bb896cb0f990357b8c2a188ff7ebad992b",
+    "labels": {
+      "com.docker.compose.project": "adguard",
+      "com.docker.compose.project.config_files": "/opt/services/adguard/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/adguard",
+      "com.docker.compose.service": "adguard",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/opt/adguardhome/conf",
+        "source": "/opt/services/adguard/conf",
+        "type": "bind"
+      },
+      {
+        "destination": "/opt/adguardhome/work",
+        "source": "/opt/services/adguard/work",
+        "type": "bind"
+      }
+    ],
+    "name": "adguard",
+    "networks": {
+      "host": {}
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/bazarr:1.5.3",
+    "image_id": "sha256:48aab4399ee4b4b72be41e3c033fba52711e7d1cf1ac1beac1ab8f6d9af4512e",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "bazarr",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/bazarr",
+        "type": "bind"
+      },
+      {
+        "destination": "/data",
+        "source": "/mnt/storage/media",
+        "type": "bind"
+      }
+    ],
+    "name": "bazarr",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "bazarr"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DATABASE_URL=postgres://bookorbit:FAKEbookorbitdbpass@bookorbit-db/bookorbit",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "ghcr.io/bookorbit/bookorbit:0.9.2",
+    "image_id": "sha256:0b45f061d7f4f9911d6c007c20110c5797024fe19194eb84ea31f09661916241",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "bookorbit",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/books",
+        "source": "/mnt/storage/media/books",
+        "type": "bind"
+      }
+    ],
+    "name": "bookorbit",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "bookorbit"
+        ]
+      },
+      "yams_default": {
+        "aliases": [
+          "bookorbit"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "POSTGRES_PASSWORD=FAKEbookorbitdbpass",
+      "POSTGRES_USER=bookorbit"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "yams_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "pgvector/pgvector:pg18",
+    "image_id": "sha256:ae7e9011a87f1cd0de8a9dceacb2d92d2d171a19afa5a989f6e92f6dd0d98bc7",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "bookorbit-db",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/lib/postgresql",
+        "source": "/opt/yams/config/bookorbit-db",
+        "type": "bind"
+      }
+    ],
+    "name": "bookorbit-db",
+    "networks": {
+      "yams_default": {
+        "aliases": [
+          "bookorbit-db"
+        ]
+      }
+    }
+  },
+  {
+    "cmd": [
+      "tunnel",
+      "--no-autoupdate",
+      "run"
+    ],
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "TUNNEL_TOKEN=FAKEtunneltoken0000000000000000"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "cloudflare/cloudflared:2026.10.0",
+    "image_id": "sha256:4ea457beabf938f91aefff2acaa7f70c29d6bd0ef502f5697c68302c023c4c67",
+    "labels": {
+      "com.docker.compose.project": "cloudflared",
+      "com.docker.compose.project.config_files": "/opt/services/cloudflared/docker-compose.yml",
+      "com.docker.compose.project.environment_file": "/opt/services/cloudflared/.env",
+      "com.docker.compose.project.working_dir": "/opt/services/cloudflared",
+      "com.docker.compose.service": "cloudflared",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "cloudflared",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "cloudflared"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "CLOUDFLARE_API_TOKEN=FAKEcfddnstoken00000000",
+      "DOMAINS=home.example.com",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "TZ=America/New_York",
+      "UPTIMEKUMA=http://uptime-kuma:3001/api/push/FAKEddnsPush01"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "favonia/cloudflare-ddns:1.15.1",
+    "image_id": "sha256:3c5f28f96f3a3e603180bf8ea7a3e3e401a636f834ebc8fc3dda45ec2759fa95",
+    "labels": {
+      "com.docker.compose.project": "ddns",
+      "com.docker.compose.project.config_files": "/opt/services/ddns/docker-compose.yml",
+      "com.docker.compose.project.environment_file": "/opt/services/ddns/.env",
+      "com.docker.compose.project.working_dir": "/opt/services/ddns",
+      "com.docker.compose.service": "ddns",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "ddns",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "ddns"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "CF_DNS_API_TOKEN=FAKEcftraefikdnstoken0000",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "exposed_ports": [
+      "443/tcp",
+      "80/tcp"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "dokploy-network",
+      "PortBindings": {
+        "443/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "443"
+          }
+        ],
+        "80/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "80"
+          }
+        ]
+      },
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "always"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "traefik:v3.6.1",
+    "image_id": "sha256:76d08e84df7f0b5a7c6051c8cebe4ee29aa2c7e4409db487a86a87fd7cf8a44e",
+    "labels": {
+      "org.opencontainers.image.title": "Traefik"
+    },
+    "mounts": [
+      {
+        "destination": "/etc/dokploy/traefik/dynamic",
+        "source": "/etc/dokploy/traefik/dynamic",
+        "type": "bind"
+      },
+      {
+        "destination": "/etc/traefik/traefik.yml",
+        "source": "/etc/dokploy/traefik/traefik.yml",
+        "type": "bind"
+      },
+      {
+        "destination": "/var/run/docker.sock",
+        "ro": true,
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "dokploy-traefik",
+    "networks": {
+      "dokploy-network": {
+        "aliases": [
+          "dokploy-traefik"
+        ]
+      },
+      "homelab": {
+        "aliases": [
+          "dokploy-traefik"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "amir20/dozzle:v8.13.0",
+    "image_id": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+    "labels": {
+      "com.docker.compose.project": "dozzle",
+      "com.docker.compose.project.config_files": "/opt/services/dozzle/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/dozzle",
+      "com.docker.compose.service": "dozzle",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/run/docker.sock",
+        "ro": true,
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "dozzle",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "dozzle"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "PidMode": "host",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "nicolargo/glances:4.4.1",
+    "image_id": "sha256:71a80bff819ab2ab50cd564204d415a8424386865cf0a266ffa765bb9f00abfd",
+    "labels": {
+      "com.docker.compose.project": "glances",
+      "com.docker.compose.project.config_files": "/opt/services/monitoring/glances/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/monitoring/glances",
+      "com.docker.compose.service": "glances",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/run/docker.sock",
+        "ro": true,
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "glances",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "glances"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "VPN_PORT_FORWARDING=on",
+      "VPN_SERVICE_PROVIDER=protonvpn",
+      "WIREGUARD_PRIVATE_KEY=FAKEwireguardprivatekey000000000000000000000="
+    ],
+    "exposed_ports": [
+      "8080/tcp",
+      "8081/tcp"
+    ],
+    "healthcheck": {
+      "Interval": 30000000000,
+      "Retries": 3,
+      "Test": [
+        "CMD-SHELL",
+        "/gluetun-entrypoint healthcheck"
+      ],
+      "Timeout": 5000000000
+    },
+    "host_config": {
+      "CapAdd": [
+        "NET_ADMIN"
+      ],
+      "Devices": [
+        {
+          "CgroupPermissions": "rwm",
+          "PathInContainer": "/dev/net/tun",
+          "PathOnHost": "/dev/net/tun"
+        }
+      ],
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "PortBindings": {
+        "8080/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "8080"
+          }
+        ],
+        "8081/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "8081"
+          }
+        ]
+      },
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "qmcgaw/gluetun:v3.40.3",
+    "image_id": "sha256:9ba87916e5d731108d99ec4b7b660d190f0df1745ba3a566f357261cf347aad6",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.environment_file": "/opt/yams/.env",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "gluetun",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/gluetun",
+        "source": "/opt/yams/config/gluetun",
+        "type": "bind"
+      }
+    ],
+    "name": "gluetun",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "gluetun"
+        ]
+      },
+      "yams_default": {
+        "aliases": [
+          "gluetun"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "HOMEPAGE_ALLOWED_HOSTS=home",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "ghcr.io/gethomepage/homepage:v1.5.0",
+    "image_id": "sha256:7840d6fd080c4aca120cb58cf675a6f0e4cee3bf79cee9cf3d4a6890449c16a1",
+    "labels": {
+      "com.docker.compose.project": "homepage",
+      "com.docker.compose.project.config_files": "/opt/services/homepage/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/homepage",
+      "com.docker.compose.service": "homepage",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/app/config",
+        "source": "/opt/services/homepage/config",
+        "type": "bind"
+      },
+      {
+        "destination": "/var/run/docker.sock",
+        "ro": true,
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "homepage",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "homepage"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "amir20/dozzle:v8.13.0",
+    "image_id": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+    "labels": {
+      "com.docker.compose.project": "host-logs",
+      "com.docker.compose.project.config_files": "/opt/services/host-logs/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/host-logs",
+      "com.docker.compose.service": "host-logs",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/logs/server-backup.log",
+        "ro": true,
+        "source": "/var/log/server-backup.log",
+        "type": "bind"
+      },
+      {
+        "destination": "/logs/service-check-public.log",
+        "ro": true,
+        "source": "/var/log/service-check-public.log",
+        "type": "bind"
+      }
+    ],
+    "name": "host-logs",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "host-logs"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "Devices": [
+        {
+          "CgroupPermissions": "rwm",
+          "PathInContainer": "/dev/dri",
+          "PathOnHost": "/dev/dri"
+        }
+      ],
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/jellyfin:10.11.3",
+    "image_id": "sha256:9437a571336af9b5b3e391ee5465847913844eefcdb152330910270ec4b5444d",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "jellyfin",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/jellyfin",
+        "type": "bind"
+      },
+      {
+        "destination": "/data",
+        "ro": true,
+        "source": "/mnt/storage/media",
+        "type": "bind"
+      }
+    ],
+    "name": "jellyfin",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "jellyfin"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DATABASE_URL=postgres://outline:FAKEoutlinedbpass@outline-postgres:5432/outline",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "REDIS_URL=redis://outline-redis:6379",
+      "SECRET_KEY=FAKEoutlinesecretkey00000000000000",
+      "URL=https://notes.example.com",
+      "UTILS_SECRET=FAKEoutlineutils0000000000000000"
+    ],
+    "healthcheck": {
+      "Interval": 30000000000,
+      "Retries": 3,
+      "Test": [
+        "CMD-SHELL",
+        "wget -qO- http://localhost:3000/_health"
+      ],
+      "Timeout": 5000000000
+    },
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "outlinewiki/outline:1.1.0",
+    "image_id": "sha256:19f2a49eb782b5ae3138ff2092e8c70975c7d9eeb2d3aefa68f03cd18cb31391",
+    "labels": {
+      "com.docker.compose.project": "outline",
+      "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+      "com.docker.compose.project.environment_file": "/opt/services/outline/.env",
+      "com.docker.compose.project.working_dir": "/opt/services/outline",
+      "com.docker.compose.service": "outline",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/lib/outline/data",
+        "source": "/mnt/storage/outline/data",
+        "type": "bind"
+      }
+    ],
+    "name": "outline",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "outline"
+        ]
+      },
+      "outline_default": {
+        "aliases": [
+          "outline"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "POSTGRES_DB=outline",
+      "POSTGRES_PASSWORD=FAKEoutlinedbpass",
+      "POSTGRES_USER=outline"
+    ],
+    "healthcheck": {
+      "Interval": 30000000000,
+      "Retries": 3,
+      "Test": [
+        "CMD-SHELL",
+        "pg_isready -U outline"
+      ],
+      "Timeout": 5000000000
+    },
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "outline_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "postgres:18",
+    "image_id": "sha256:ca106b21aca5236e874960c47af9b6cfcb981962aeb379542cdf2cd17825467c",
+    "labels": {
+      "com.docker.compose.project": "outline",
+      "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/outline",
+      "com.docker.compose.service": "postgres",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/lib/postgresql",
+        "source": "/opt/services/outline/pgdata",
+        "type": "bind"
+      }
+    ],
+    "name": "outline-postgres",
+    "networks": {
+      "outline_default": {
+        "aliases": [
+          "outline-postgres",
+          "postgres"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "outline_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "redis:8-alpine",
+    "image_id": "sha256:e0c42b7387b52519fee99b365e6202acc2a109d1e054b4d664b9e9471611ca05",
+    "labels": {
+      "com.docker.compose.project": "outline",
+      "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/outline",
+      "com.docker.compose.service": "redis",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "anonymous": true,
+        "destination": "/data",
+        "type": "volume"
+      }
+    ],
+    "name": "outline-redis",
+    "networks": {
+      "outline_default": {
+        "aliases": [
+          "outline-redis",
+          "redis"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "portainer/portainer-ce:2.33.4",
+    "image_id": "sha256:ff2134dda14979366fa44ba2a58e93920208c14f6cb6f8dc94e071d7a17f6ba0",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "portainer",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/data",
+        "source": "/opt/yams/config/portainer",
+        "type": "bind"
+      },
+      {
+        "destination": "/var/run/docker.sock",
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "portainer",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "portainer"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/prowlarr:2.3.0",
+    "image_id": "sha256:69f316460879c57151c3623c143cd4867ceda66b43233b9e64c2807fd5353782",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "prowlarr",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/prowlarr",
+        "type": "bind"
+      },
+      {
+        "destination": "/data",
+        "source": "/mnt/storage/media",
+        "type": "bind"
+      }
+    ],
+    "name": "prowlarr",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "prowlarr"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "container:gluetun",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/qbittorrent:5.1.4",
+    "image_id": "sha256:54cbeb5dcb699c8f587bdc2d0f50a6229de8ff4eb46f906b95502d04944d7014",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "qbittorrent",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/qbittorrent",
+        "type": "bind"
+      },
+      {
+        "destination": "/downloads",
+        "source": "/mnt/storage/media/downloads",
+        "type": "bind"
+      }
+    ],
+    "name": "qbittorrent"
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/radarr:6.0.4",
+    "image_id": "sha256:59af99cdecf8c87ce44e6e585a167967cb2735eaa19563305b2753ed854247a4",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "radarr",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/radarr",
+        "type": "bind"
+      },
+      {
+        "destination": "/data",
+        "source": "/mnt/storage/media",
+        "type": "bind"
+      }
+    ],
+    "name": "radarr",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "radarr"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "container:gluetun",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/sabnzbd:4.5.5",
+    "image_id": "sha256:85dcbb8f7375cc3602a44ae9a98445e265497303aa7402686e1d7cea2b998c14",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "sabnzbd",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/sabnzbd",
+        "type": "bind"
+      },
+      {
+        "destination": "/downloads",
+        "source": "/mnt/storage/media/downloads",
+        "type": "bind"
+      }
+    ],
+    "name": "sabnzbd"
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "CapAdd": [
+        "SYS_RAWIO",
+        "SYS_ADMIN"
+      ],
+      "Devices": [
+        {
+          "CgroupPermissions": "rwm",
+          "PathInContainer": "/dev/sda",
+          "PathOnHost": "/dev/sda"
+        },
+        {
+          "CgroupPermissions": "rwm",
+          "PathInContainer": "/dev/nvme0",
+          "PathOnHost": "/dev/nvme0"
+        }
+      ],
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "ghcr.io/analogj/scrutiny:v0.8.1-omnibus",
+    "image_id": "sha256:ac98300bf5c38d6bcf293aab05e07087003b664f35ef37acde8bbb6221ba9ebc",
+    "labels": {
+      "com.docker.compose.project": "scrutiny",
+      "com.docker.compose.project.config_files": "/opt/services/monitoring/scrutiny/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/monitoring/scrutiny",
+      "com.docker.compose.service": "scrutiny",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/opt/scrutiny/config",
+        "source": "/opt/services/monitoring/scrutiny/config",
+        "type": "bind"
+      },
+      {
+        "destination": "/run/udev",
+        "ro": true,
+        "source": "/run/udev",
+        "type": "bind"
+      }
+    ],
+    "name": "scrutiny",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "scrutiny"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "ghcr.io/seerr-team/seerr:v3.0.1",
+    "image_id": "sha256:89ed3e5226c9f64f7d8fa787cda1fb03151074efe77d1bd1fad1dd8a770ef136",
+    "labels": {
+      "com.docker.compose.project": "seerr",
+      "com.docker.compose.project.config_files": "/opt/services/seerr/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/seerr",
+      "com.docker.compose.service": "seerr",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/app/config",
+        "source": "/opt/services/seerr/config",
+        "type": "bind"
+      }
+    ],
+    "name": "seerr",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "seerr"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PGID=1000",
+      "PUID=1000",
+      "TZ=America/New_York"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "lscr.io/linuxserver/sonarr:4.0.16",
+    "image_id": "sha256:c27f1245f24770b50489272cb9807bfd01036a8592fd30d413d8ab0e1c6f4d9e",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "sonarr",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/config",
+        "source": "/opt/yams/config/sonarr",
+        "type": "bind"
+      },
+      {
+        "destination": "/data",
+        "source": "/mnt/storage/media",
+        "type": "bind"
+      }
+    ],
+    "name": "sonarr",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "sonarr"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DB_PASSWORD=FAKEsupabasedbpass00",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/gotrue:v2.182.1",
+    "image_id": "sha256:723e8d4c193a6e305e901ca00ab4e8eb899b6c69c5037c7608c3639831e4194b",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "auth",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-auth",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "auth",
+          "supabase-auth"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "JWT_SECRET=FAKEsupabasejwtsecret00000000000000000000",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "POSTGRES_PASSWORD=FAKEsupabasedbpass00"
+    ],
+    "healthcheck": {
+      "Interval": 30000000000,
+      "Retries": 3,
+      "Test": [
+        "CMD-SHELL",
+        "pg_isready -U postgres -h localhost"
+      ],
+      "Timeout": 5000000000
+    },
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/postgres:17.6.1.054",
+    "image_id": "sha256:96e5d97de01bc17ea2584791ef46e42630ff53865681cf98aaa83273ecd33aac",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.environment_file": "/opt/services/database/.env",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "db",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/etc/postgresql-custom",
+        "source": "/mnt/storage/database/db-config",
+        "type": "bind"
+      },
+      {
+        "destination": "/var/lib/postgresql/data",
+        "source": "/mnt/storage/database/db-data",
+        "type": "bind"
+      }
+    ],
+    "name": "supabase-db",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "db",
+          "supabase-db"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "envoyproxy/envoy:v1.36.2",
+    "image_id": "sha256:d8a7fe5352718948fab5995efc66cc82ecea0eef090ed746b0536c5fa42a26de",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "envoy",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/etc/envoy/envoy.yaml",
+        "ro": true,
+        "source": "/opt/services/database/volumes/api/envoy.yaml",
+        "type": "bind"
+      }
+    ],
+    "name": "supabase-envoy",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "envoy",
+          "supabase-envoy"
+        ]
+      },
+      "homelab": {
+        "aliases": [
+          "envoy",
+          "supabase-envoy"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DB_PASSWORD=FAKEsupabasedbpass00",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/postgres-meta:v0.93.1",
+    "image_id": "sha256:698468c65dd00cdd81fec5d2ef57c459b09b4e8c7dc091cf37d500a01999f44c",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "meta",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-meta",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "meta",
+          "supabase-meta"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DB_PASSWORD=FAKEsupabasedbpass00",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/realtime:v2.63.0",
+    "image_id": "sha256:b298a81b41f711820057078091e9a7d3c37f8835c0695b8098d8f2b5ce97a580",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "realtime",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-realtime",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "realtime",
+          "supabase-realtime"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DB_PASSWORD=FAKEsupabasedbpass00",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "postgrest/postgrest:v14.1",
+    "image_id": "sha256:7367bd88f5b8e77ac61f989988f86a7e1f7f33a1b68759e16f02bc1a38c7b83a",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "rest",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-rest",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "rest",
+          "supabase-rest"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "DB_PASSWORD=FAKEsupabasedbpass00",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/storage-api:v1.32.0",
+    "image_id": "sha256:0570ab0aa170779cb1d441ae86c91832f830ca48de8602f02a7dd8909b2a802d",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "storage",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/lib/storage",
+        "source": "/mnt/storage/database/storage",
+        "type": "bind"
+      }
+    ],
+    "name": "supabase-storage",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "storage",
+          "supabase-storage"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "database_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "supabase/studio:2026.11.03",
+    "image_id": "sha256:6eddafde90dfd1ba32f3b139b9e2dd2ce258add2c56dbaad365af0df86f4261e",
+    "labels": {
+      "com.docker.compose.project": "database",
+      "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/database",
+      "com.docker.compose.service": "studio",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "name": "supabase-studio",
+    "networks": {
+      "database_default": {
+        "aliases": [
+          "studio",
+          "supabase-studio"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "healthcheck": {
+      "Interval": 30000000000,
+      "Retries": 3,
+      "Test": [
+        "CMD-SHELL",
+        "extra/healthcheck"
+      ],
+      "Timeout": 5000000000
+    },
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "homelab",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "louislam/uptime-kuma:1.23.17",
+    "image_id": "sha256:fcb89daf7bd03ff707c40403b1ab7ea8546195b9a74c0ba68814aea6d108a77a",
+    "labels": {
+      "com.docker.compose.project": "uptime-kuma",
+      "com.docker.compose.project.config_files": "/opt/services/monitoring/uptime-kuma/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/services/monitoring/uptime-kuma",
+      "com.docker.compose.service": "uptime-kuma",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/app/data",
+        "source": "/opt/services/monitoring/uptime-kuma/data",
+        "type": "bind"
+      },
+      {
+        "destination": "/var/run/docker.sock",
+        "ro": true,
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "uptime-kuma",
+    "networks": {
+      "homelab": {
+        "aliases": [
+          "uptime-kuma"
+        ]
+      }
+    }
+  },
+  {
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "WATCHTOWER_CLEANUP=true",
+      "WATCHTOWER_SCHEDULE=0 0 5 * * *"
+    ],
+    "host_config": {
+      "IpcMode": "private",
+      "LogConfig": {
+        "Config": {
+          "max-file": "3",
+          "max-size": "10m"
+        },
+        "Type": "json-file"
+      },
+      "NetworkMode": "yams_default",
+      "RestartPolicy": {
+        "MaximumRetryCount": 0,
+        "Name": "unless-stopped"
+      },
+      "Runtime": "runc",
+      "ShmSize": 67108864
+    },
+    "image": "containrrr/watchtower:1.7.1",
+    "image_id": "sha256:8c1db9fedd90a8ab92e9a33287369995a3843e68ef04bb430991c36089adc978",
+    "labels": {
+      "com.docker.compose.project": "yams",
+      "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+      "com.docker.compose.project.working_dir": "/opt/yams",
+      "com.docker.compose.service": "watchtower",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "mounts": [
+      {
+        "destination": "/var/run/docker.sock",
+        "source": "/var/run/docker.sock",
+        "type": "bind"
+      }
+    ],
+    "name": "watchtower",
+    "networks": {
+      "yams_default": {
+        "aliases": [
+          "watchtower"
+        ]
+      }
+    }
+  }
+]

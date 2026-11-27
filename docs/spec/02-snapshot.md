@@ -138,9 +138,9 @@ Incremental: keep a cache of `(path, size, mtime, inode) → sha256` in `moi.db`
 
 ## Acceptance
 
-- [ ] Fixture host `cestmoi` → snapshot layout identical (modulo ordering) to `tests/fixtures/expected/cestmoi/snapshot/` (generated from the prototype's real output, redacted).
-- [ ] Two snapshots with no change → one commit total.
-- [ ] Changing a container's env, adding a cron line, editing a file in /etc, creating a swarm service → one commit each, subject/body as specified.
-- [ ] Swarm task containers never appear in containers.json; `container:<id>` network modes are rewritten to names.
-- [ ] A collector that times out does not delete its previous files and is reported.
-- [ ] Running `pipx`/`npm`/etc. is never needed (no side effects on the host: assert no files written outside the state dir).
+- [x] Fixture host `cestmoi` → snapshot identical to `tests/fixtures/expected/cestmoi/snapshot/` (every generated file byte for byte; the verbatim copies under `files/` are pinned by the manifest's hashes). The fixture and its golden tree are built from the redacted profile and scripts in `reference/cestmoi/`, not from a dump of the machine: the first run on the real cestmoi should be diffed against the prototype's output there.
+- [x] Two snapshots with no change → one commit total.
+- [x] Changing a container's env, adding a cron line, editing a file in /etc, creating a swarm service → one commit each, subject/body as specified.
+- [x] Swarm task containers never appear in containers.json; `container:<id>` network modes are rewritten to names.
+- [x] A collector that times out does not delete its previous files and is reported.
+- [x] Running `pipx`/`npm`/etc. is never needed (no side effects on the host: assert no files written outside the state dir).

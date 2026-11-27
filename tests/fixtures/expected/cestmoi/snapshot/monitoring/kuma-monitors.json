@@ -1,0 +1,284 @@
+{
+  "db": "/opt/services/monitoring/uptime-kuma/data/kuma.db",
+  "monitors": [
+    {
+      "active": 1,
+      "id": 1,
+      "interval": 360,
+      "method": "GET",
+      "name": "Server Resources",
+      "notifications": [
+        "Email"
+      ],
+      "push_token": "FAKEresourcesTok01",
+      "type": "push"
+    },
+    {
+      "active": 1,
+      "id": 2,
+      "interval": 360,
+      "method": "GET",
+      "name": "Server Internal Services",
+      "notifications": [
+        "Email"
+      ],
+      "push_token": "FAKEservicesTok002",
+      "type": "push"
+    },
+    {
+      "active": 1,
+      "id": 3,
+      "interval": 360,
+      "method": "GET",
+      "name": "Server Storage",
+      "notifications": [
+        "Email"
+      ],
+      "push_token": "FAKEstorageTok0003",
+      "type": "push"
+    },
+    {
+      "active": 1,
+      "id": 4,
+      "interval": 90000,
+      "method": "GET",
+      "name": "Server Backup",
+      "notifications": [
+        "Email"
+      ],
+      "push_token": "FAKEbackupTok00004",
+      "type": "push"
+    },
+    {
+      "active": 1,
+      "id": 5,
+      "interval": 600,
+      "method": "GET",
+      "name": "Cloudflare DDNS",
+      "notifications": [
+        "Email"
+      ],
+      "push_token": "FAKEddnsPush01",
+      "type": "push"
+    },
+    {
+      "active": 1,
+      "id": 6,
+      "interval": 60,
+      "method": "GET",
+      "name": "Notes",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "http",
+      "url": "https://notes.example.com/"
+    },
+    {
+      "active": 1,
+      "id": 7,
+      "interval": 60,
+      "method": "GET",
+      "name": "Books",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "http",
+      "url": "https://books.example.com/"
+    },
+    {
+      "active": 1,
+      "id": 8,
+      "interval": 60,
+      "method": "GET",
+      "name": "Media",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "http",
+      "url": "https://media.example.com/"
+    },
+    {
+      "active": 1,
+      "id": 9,
+      "interval": 60,
+      "method": "GET",
+      "name": "Status",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "http",
+      "url": "https://status.example.com/"
+    },
+    {
+      "active": 1,
+      "id": 10,
+      "interval": 60,
+      "keyword": "GoTrue",
+      "method": "GET",
+      "name": "Database",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "keyword",
+      "url": "https://database.example.com/auth/v1/health"
+    },
+    {
+      "active": 1,
+      "id": 11,
+      "interval": 60,
+      "keyword": "ok",
+      "method": "GET",
+      "name": "Shortless",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "keyword",
+      "url": "https://shortless.example.com/api/health"
+    },
+    {
+      "active": 1,
+      "id": 12,
+      "interval": 60,
+      "method": "GET",
+      "name": "Compiler",
+      "notifications": [
+        "Email"
+      ],
+      "tags": [
+        "public"
+      ],
+      "type": "http",
+      "url": "https://compiler.example.com/healthz"
+    },
+    {
+      "active": 1,
+      "id": 13,
+      "interval": 300,
+      "keyword": "public_ip",
+      "method": "GET",
+      "name": "Gluetun leak check",
+      "notifications": [
+        "Email"
+      ],
+      "type": "keyword",
+      "url": "http://gluetun:8000/v1/publicip/ip"
+    },
+    {
+      "active": 1,
+      "hostname": "example.com",
+      "id": 14,
+      "interval": 60,
+      "method": "GET",
+      "name": "AdGuard DNS",
+      "notifications": [
+        "Email"
+      ],
+      "port": 53,
+      "type": "dns"
+    },
+    {
+      "active": 1,
+      "id": 15,
+      "interval": 60,
+      "method": "GET",
+      "name": "cloudflared ready",
+      "notifications": [
+        "Email"
+      ],
+      "type": "http",
+      "url": "http://cloudflared:2000/ready"
+    },
+    {
+      "active": 0,
+      "description": "paused: VM is rebuilt on demand",
+      "hostname": "10.143.9.20",
+      "id": 16,
+      "interval": 60,
+      "method": "GET",
+      "name": "devbox",
+      "notifications": [
+        "Email"
+      ],
+      "type": "ping"
+    },
+    {
+      "active": 1,
+      "id": 17,
+      "interval": 60,
+      "method": "GET",
+      "name": "healthchecks.io watchdog",
+      "notifications": [
+        "Email"
+      ],
+      "type": "http",
+      "url": "https://hc-ping.com/FAKEpingkey0000000000/cestmoi-watchdog"
+    },
+    {
+      "active": 1,
+      "id": 18,
+      "interval": 60,
+      "method": "GET",
+      "name": "Jellyfin (LAN)",
+      "notifications": [
+        "Email"
+      ],
+      "type": "http",
+      "url": "http://jellyfin.home/health"
+    },
+    {
+      "active": 1,
+      "id": 19,
+      "interval": 60,
+      "method": "GET",
+      "name": "Dokploy",
+      "notifications": [
+        "Email"
+      ],
+      "type": "http",
+      "url": "http://dokploy.home/"
+    },
+    {
+      "active": 1,
+      "id": 20,
+      "interval": 60,
+      "method": "GET",
+      "name": "Homepage",
+      "notifications": [
+        "Email"
+      ],
+      "type": "http",
+      "url": "http://home/"
+    },
+    {
+      "active": 1,
+      "id": 21,
+      "interval": 60,
+      "keyword": "OK",
+      "method": "GET",
+      "name": "Outline",
+      "notifications": [
+        "Email"
+      ],
+      "type": "keyword",
+      "url": "http://outline:3000/_health"
+    }
+  ]
+}

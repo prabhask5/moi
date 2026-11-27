@@ -1,0 +1,1 @@
+BOOT_IMAGE=/vmlinuz-7.0.0-14-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro quiet

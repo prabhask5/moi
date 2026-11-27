@@ -52,4 +52,6 @@ services and task containers, `container:<id>` network modes, socket-activated s
 an Incus loop mount, read-only and log bind mounts, fungible media, a stale `backup.sh.bak` with a push token, a Kuma
 `kuma.db` with the 21 monitors (one with last message `[object Object]`), a modified `resolved.conf`.
 
+`expected/cestmoi/snapshot/` is the golden stable tree of a snapshot of this host (without `files/`, which the manifest pins by hash).
+
 Golden files are regenerated with `MOI_UPDATE_GOLDEN=1 cargo test` and reviewed in the PR diff.
