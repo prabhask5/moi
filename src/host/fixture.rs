@@ -417,10 +417,15 @@ impl FixtureHost {
         self.overlay.iter().cloned().chain(self.fixture_roots()).collect()
     }
 
-    fn resolve(&self, path: &Path, follow_last: bool) -> io::Result<Resolved> {
+    /// Where a path is, whether or not the case declares it absent (for creating it again).
+    fn locate(&self, path: &Path, follow_last: bool) -> io::Result<Resolved> {
         let layers = self.layers();
         let layers: Vec<&Path> = layers.iter().map(PathBuf::as_path).collect();
-        let resolved = rooted::resolve(&layers, path, follow_last)?;
+        rooted::resolve(&layers, path, follow_last)
+    }
+
+    fn resolve(&self, path: &Path, follow_last: bool) -> io::Result<Resolved> {
+        let resolved = self.locate(path, follow_last)?;
         // a path the case declares absent is gone unless the test created it again in the overlay
         let in_overlay = self.overlay.is_some() && resolved.layer == Some(0);
         if !in_overlay && self.absent.iter().any(|gone| resolved.logical.starts_with(gone)) {
@@ -480,7 +485,8 @@ impl FixtureHost {
     /// mirrored into the overlay if it only exists in the fixture.
     fn writable(&self, path: &Path) -> io::Result<PathBuf> {
         let overlay = self.overlay.as_deref().ok_or_else(|| self.read_only(path))?;
-        let r = self.resolve(path, true)?;
+        // something absent in this case can be created again
+        let r = self.locate(path, true)?;
         if self.unwritable.iter().any(|denied| r.logical.starts_with(denied)) {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
@@ -542,9 +548,11 @@ impl Host for FixtureHost {
         let relative = logical.strip_prefix("/").unwrap_or(&logical);
         let mut names = BTreeSet::new();
         let mut found = false;
+        // what the case declares absent is only there as far as the overlay has it again
+        let gone = self.absent.iter().any(|gone| logical.starts_with(gone));
         for layer in self.layers() {
             let real = layer.join(relative);
-            if real.is_dir() {
+            if real.is_dir() && (!gone || Some(&layer) == self.overlay.as_ref()) {
                 found = true;
                 // `.gitkeep` only exists so git stores an otherwise empty fixture directory
                 let placeholder = |name: &String| Some(&layer) != self.overlay.as_ref() && name == ".gitkeep";
@@ -564,7 +572,7 @@ impl Host for FixtureHost {
 
     fn create_dir_all(&self, path: &Path, mode: u32) -> io::Result<()> {
         let overlay = self.overlay.as_deref().ok_or_else(|| self.read_only(path))?;
-        let logical = self.resolve(path, true)?.logical;
+        let logical = self.locate(path, true)?.logical;
         let relative = logical.strip_prefix("/").unwrap_or(&logical);
         // Parents that only exist in the fixture are mirrored with ordinary permissions; `mode` is for
         // the directories this call really adds to the host.

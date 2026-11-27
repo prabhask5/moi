@@ -1,0 +1,58 @@
+# moi.toml — written by `moi init` from what it found on this server.
+# Every section is optional: delete what you do not want, `moi config check` validates the rest.
+# All keys with their defaults: examples/moi.toml in the moi repository.
+
+[server]
+name = "cestmoi"
+
+[capture]
+data_roots = ["/home", "/mnt/storage", "/opt"]
+
+# These look like media or downloads. Declared replaceable, they are never backed up and never
+# reported as unprotected. Remove any that you could not get back.
+[data]
+fungible = ["/mnt/storage/media"]
+
+# ------------------------------------------------------------------ checks
+[checks.resources]
+
+[checks.storage]
+mounts = ["/", "/mnt/storage"]
+writable = ["/mnt/storage"]        # removable disks: must be mounted and writable
+disks = [
+  { device = "/dev/nvme0n1", type = "nvme" },
+  { device = "/dev/sda", type = "sat" },
+]
+
+# Containers and swarm services are checked as they are. What "healthy" means for an app is yours to
+# say: these examples come from what runs here — uncomment and adjust the ones you want.
+[checks.services]
+http = [
+  # { name = "gluetun", target = "gluetun", path = "8080/" },
+  # { name = "dokploy-traefik", target = "dokploy-traefik", path = "80/" },
+]
+exec = [
+  # { name = "outline-postgres", container = "outline-postgres", cmd = "pg_isready -q" },
+  # { name = "outline-redis", container = "outline-redis", cmd = "redis-cli ping", expect = "PONG" },
+  # { name = "supabase-db", container = "supabase-db", cmd = "pg_isready -q" },
+  # { name = "bookorbit-db", container = "bookorbit-db", cmd = "pg_isready -q" },
+]
+
+# ------------------------------------------------------------------ monitors
+# `moi monitors sync --dry-run` shows what would be adopted or created; nothing changes until you sync.
+[monitors.kuma]
+url = "http://172.19.0.33:3001"
+# username = "secret:kuma_username"     # a login is only needed to create monitors;
+# password = "secret:kuma_password"     # put the values into secrets.toml
+
+# ------------------------------------------------------------------ backup
+# A proposal from the compose stacks and the directories containers keep their data in. Remove the
+# leading `# ` to switch backups on; `moi audit` shows what is and is not covered either way.
+# [backup]
+# local_dir = "/mnt/storage/backups"        # where the nightly archive is kept
+# paths = [
+#   "/mnt/storage/database/db-config",
+#   "/mnt/storage/outline/data",
+#   "/opt/services",
+#   "/opt/yams",
+# ]
