@@ -337,9 +337,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Firewall(command) => return firewall(cli, command, host, out),
         Command::Init(args) => return init(cli, args, host, out),
         Command::Uninstall { purge } => return uninstall(cli, *purge, host, out),
-        Command::Backup(_) | Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => {
-            ("backup & state bundle", "M7")
-        }
+        Command::Backup(args) => return backup(cli, args, host, out),
+        Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => ("the state bundle", "M7"),
         Command::Restore(_) | Command::Verify => ("restore & verify", "M8"),
         Command::Migrate(_) => ("migration", "M9"),
     };
@@ -1293,4 +1292,92 @@ fn uninstall(cli: &Cli, purge: bool, host: Arc<dyn Host>, out: &mut dyn Write) -
         );
     }
     Ok(())
+}
+
+fn backup(cli: &Cli, args: &BackupArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::backup::{plan::Plan, run};
+    if args.drill {
+        return Err(Error::NotImplemented { what: "the restore drill", milestone: "M7" });
+    }
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let config = Arc::new(loaded.config);
+    if !args.dry_run {
+        let json = cli.json;
+        let report = run::run(&host, &config, &state, &db, &loaded.masker, &mut |line| {
+            if !json {
+                let _ = writeln!(out, "{line}");
+            }
+        })?;
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "backup": report }));
+        }
+        return if report.ok { Ok(()) } else { Err(Error::ProblemsFound) };
+    }
+    // ---- dry run: the plan and the guards, nothing written to the backup directory
+    if !host.exists(&state.snapshot()) {
+        crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
+    }
+    let docker = crate::docker::Docker::new(Arc::clone(&host));
+    let view = crate::snapshot::View::new(host.as_ref(), &state);
+    let (plan, _) = Plan::make(host.as_ref(), &config, &docker, &view);
+    let backup = &config.backup;
+    let mut guards: Vec<(bool, String)> = Vec::new();
+    if !backup.enabled {
+        guards.push((false, "backups are not switched on: there is no [backup] section in moi.toml".to_string()));
+    }
+    if let Some(mount) = &backup.require_mount {
+        let mounted = crate::snapshot::mounts(host.as_ref()).iter().any(|m| m.target == *mount);
+        guards.push((mounted, format!("{mount} is {}mounted", if mounted { "" } else { "not " })));
+    }
+    if let Some(dir) = &backup.local_dir {
+        let total = run::tree_size(host.as_ref(), Path::new(dir));
+        let limit = backup.max_local.bytes();
+        guards.push((
+            total <= limit,
+            format!("local backups use {} of {} allowed", crate::audit::human(total), crate::audit::human(limit)),
+        ));
+    }
+    for dump in plan.dumps.iter().filter(|d| d.container.is_none()) {
+        guards.push((false, format!("{} is not running: it cannot be dumped", dump.name)));
+    }
+    let failing = guards.iter().filter(|(ok, _)| !ok).count();
+    if cli.json {
+        let guards: Vec<_> = guards.iter().map(|(ok, text)| json!({ "ok": ok, "guard": text })).collect();
+        print_json(out, &json!({ "ok": true, "dry_run": true, "plan": plan, "guards": guards }));
+    } else {
+        let _ = writeln!(out, "databases (dumped through docker exec, compressed):");
+        for dump in &plan.dumps {
+            let state = if dump.container.is_some() { String::new() } else { "  NOT RUNNING".to_string() };
+            let _ = writeln!(out, "  {:<28} {:<9} user {}{state}", dump.name, dump.engine, dump.user);
+        }
+        let _ = writeln!(out, "paths:");
+        for root in &plan.roots {
+            let _ = writeln!(
+                out,
+                "  {:<52} {:>9}  {:>6} files  {}",
+                root.path,
+                crate::audit::human(root.bytes),
+                root.files,
+                root.why
+            );
+        }
+        if !plan.missing.is_empty() {
+            let _ = writeln!(out, "not on this machine (skipped):");
+            for path in &plan.missing {
+                let _ = writeln!(out, "  {path}");
+            }
+        }
+        let _ = writeln!(out, "left out:");
+        for (path, why) in &plan.excluded {
+            let _ = writeln!(out, "  {path:<52} {why}");
+        }
+        let _ = writeln!(out, "guards:");
+        for (ok, text) in &guards {
+            let _ = writeln!(out, "  {} {text}", if *ok { "ok  " } else { "FAIL" });
+        }
+    }
+    if failing > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
 }

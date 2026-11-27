@@ -1,7 +1,11 @@
-//! Backups. So far: the *identity set* — what a backup covers and why — which the audit and the context
-//! file need to say what is and is not protected. Dumps, archives and restic arrive in M7.
+//! Backups: the *identity set* — what a backup covers and why — here; the plan for a run, the local
+//! archive and the run itself in the submodules.
 //!
 //! Spec: docs/spec/07-backup.md § What is backed up.
+
+pub mod archive;
+pub mod plan;
+pub mod run;
 
 use std::collections::BTreeSet;
 

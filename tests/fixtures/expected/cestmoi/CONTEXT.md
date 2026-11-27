@@ -103,7 +103,7 @@ ID 257 gen 880 top level 5 path virtual-machines-snapshots/devbox/snap0
 - outline/
   - data/
 
-`/opt` — 29 directories recorded
+`/opt` — 31 directories recorded
 - scripts/
   - lib/
 - services/

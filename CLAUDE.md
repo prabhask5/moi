@@ -85,6 +85,7 @@ Rules:
 | `/var/lib/moi/moi.db` | SQLite: check state, sustained counters, monitor bindings (check → Kuma id + push token), heal cooldowns, schedule last-runs |
 | `/var/lib/moi/archive/` | everything moi replaced or removed (legacy scripts, cron files, units) for rollback |
 | `/run/moi.sock` | daemon IPC |
+| `/run/moi-backup.lock` | held while a backup runs |
 | `/etc/systemd/system/moi.service` | the only unit moi installs |
 
 ## 4. Development

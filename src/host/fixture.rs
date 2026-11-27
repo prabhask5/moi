@@ -65,6 +65,8 @@ struct State {
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
     chmodded: BTreeSet<PathBuf>,
+    /// Locks held (`Host::lock`): gone when their guard is.
+    locks: Vec<std::sync::Weak<PathBuf>>,
     /// What whoever is "at the terminal" will type, in order, and what they were asked.
     answers: Vec<String>,
     asked: Vec<String>,
@@ -187,6 +189,7 @@ impl FixtureHost {
                 journal: Vec::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
+                locks: Vec::new(),
                 answers: Vec::new(),
                 asked: Vec::new(),
                 inputs: Vec::new(),
@@ -529,6 +532,37 @@ impl FixtureHost {
 impl Host for FixtureHost {
     fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
         fs::read(self.resolve(path, true)?.real)
+    }
+
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read + Send>> {
+        Ok(Box::new(fs::File::open(self.resolve(path, true)?.real)?))
+    }
+
+    fn create(&self, path: &Path, mode: u32) -> io::Result<Box<dyn io::Write + Send>> {
+        use std::os::unix::fs::OpenOptionsExt;
+        Ok(Box::new(
+            fs::OpenOptions::new().write(true).create(true).truncate(true).mode(mode).open(self.writable(path)?)?,
+        ))
+    }
+
+    fn append(&self, path: &Path, data: &[u8], mode: u32) -> io::Result<()> {
+        // what the fixture has is copied to the overlay first, then added to
+        let mut all = self.read(path).unwrap_or_default();
+        all.extend_from_slice(data);
+        let mode = self.stat(path, true).map_or(mode, |m| m.mode);
+        self.write(path, &all, mode)
+    }
+
+    fn lock(&self, path: &Path) -> io::Result<Option<Box<dyn std::any::Any + Send>>> {
+        // held in memory: two "processes" in one test are two users of the same fixture
+        let mut state = self.state();
+        if state.locks.iter().any(|held| held.upgrade().is_some_and(|p| *p == path)) {
+            return Ok(None);
+        }
+        let guard = Arc::new(path.to_path_buf());
+        state.locks.retain(|held| held.strong_count() > 0);
+        state.locks.push(Arc::downgrade(&guard));
+        Ok(Some(Box::new(guard)))
     }
 
     fn metadata(&self, path: &Path) -> io::Result<Metadata> {

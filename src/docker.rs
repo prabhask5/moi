@@ -407,6 +407,72 @@ impl Docker {
         Ok(ExecOutput { exit_code: state["ExitCode"].as_i64().unwrap_or(-1), stdout, stderr })
     }
 
+    /// Run a command inside a container and stream its standard output into `sink` as it comes (a
+    /// database dump is far too big to hold). Returns the exit code and what it wrote to standard error
+    /// (the last 64 KiB).
+    pub fn exec_to(
+        &self,
+        container: &str,
+        cmd: &[&str],
+        options: &ExecOptions,
+        sink: &mut dyn std::io::Write,
+    ) -> Result<(i64, Vec<u8>)> {
+        let create_path = format!("/containers/{}/exec", http::encode(container));
+        let mut spec = json!({ "AttachStdout": true, "AttachStderr": true, "Tty": false, "Cmd": cmd });
+        if let Some(user) = &options.user {
+            spec["User"] = json!(user);
+        }
+        if !options.env.is_empty() {
+            spec["Env"] = json!(options.env);
+        }
+        let protocol = |method: &'static str, path: &str, message: String| DockerError::Protocol {
+            method,
+            path: path.to_string(),
+            message,
+        };
+        let raw = self
+            .send("POST", &create_path, Some(&spec), false)?
+            .bytes()
+            .map_err(|e| protocol("POST", &create_path, e.to_string()))?;
+        let created: Value = serde_json::from_slice(&raw).unwrap_or(Value::Null);
+        let id = created["Id"]
+            .as_str()
+            .ok_or_else(|| protocol("POST", &create_path, "no exec id in the answer".into()))?
+            .to_string();
+        let start_path = format!("/exec/{id}/start");
+        let mut stream =
+            self.send("POST", &start_path, Some(&json!({ "Detach": false, "Tty": false })), true)?.into_body();
+        // a dump may be silent for a long time while the database works
+        stream.set_timeout(None).map_err(|e| protocol("POST", &start_path, e.to_string()))?;
+        let mut stderr: Vec<u8> = Vec::new();
+        let mut header = [0u8; 8];
+        let mut chunk = vec![0u8; 64 * 1024];
+        let failed = |e: std::io::Error| protocol("POST", &start_path, e.to_string());
+        loop {
+            // frames: stream id, three zero bytes, big-endian length, payload
+            match stream.read_exact(&mut header) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(e) => return Err(failed(e)),
+            }
+            let mut left = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
+            while left > 0 {
+                let want = left.min(chunk.len());
+                stream.read_exact(&mut chunk[..want]).map_err(failed)?;
+                if header[0] == 2 {
+                    stderr.extend_from_slice(&chunk[..want]);
+                    let excess = stderr.len().saturating_sub(64 * 1024);
+                    stderr.drain(..excess);
+                } else {
+                    sink.write_all(&chunk[..want]).map_err(failed)?;
+                }
+                left -= want;
+            }
+        }
+        let state = self.get(&format!("/exec/{id}/json"))?;
+        Ok((state["ExitCode"].as_i64().unwrap_or(-1), stderr))
+    }
+
     /// A container's log output so far, as (stdout, stderr). TTY containers have everything in stdout.
     pub fn logs(&self, container: &str, options: &LogOptions) -> Result<(Vec<u8>, Vec<u8>)> {
         let mut path = format!("/containers/{}/logs?stdout=true&stderr=true", http::encode(container));

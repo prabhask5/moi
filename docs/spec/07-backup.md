@@ -25,6 +25,24 @@ The identity set is computed fresh each run and shown by `moi backup --dry-run` 
 
 Log line format (kept from backup.sh): `[%F %T] message`, off-site lines prefixed `offsite: `, errors start with `ERROR:`; the failure push message is the last `ERROR` line, max 180 chars.
 
+### Decisions (M7, local run)
+
+- **`configs.tar.gz`, not `.tar.zst`.** The legacy script wrote `configs.tar.gz`; moi keeps the name and the format (gzip from a pure-Rust encoder, the same one the dumps use). zstd would have meant a C library in the build for an archive that is the *local* copy — restic deduplicates and compresses what goes off-site.
+- **The identity set of a run** is `Identity` (04) on a snapshot taken at the start of the run, then made concrete against the machine: nested paths collapse into the outermost, paths that do not exist are skipped (and listed by `--dry-run`), sizes come from the walk a run would do.
+- **Never in the archive**: `data.fungible`; raw data directories of dumped databases; `backup.exclude` (an entry with `*` is a pattern over the whole path, `*` matching any run of characters; one without is a path and everything below it); `backup.local_dir` itself; moi's staging directory; directories holding a valid `CACHEDIR.TAG`; sockets, devices and pipes. Symlinks are stored as symlinks and never followed.
+- **Dumps** run through the Docker API (exec), streamed into a gzip writer on the host: nothing is written inside the container and nothing is held in memory. The password travels in the exec's environment (`PGPASSWORD` / `MYSQL_PWD`), never in a command line. A dump that exits non-zero, or produces nothing, or whose container is not running, is `ERROR: dump failed for {name} ({why})` — the script's line with the reason added. A swarm service is dumped from one of its running tasks into `<service>.sql.gz`. MariaDB's `mariadb-dump` is used where the image has it, `mysqldump` otherwise. Which containers are databases is decided as the audit decides it (environment or image name), not by probing for `pg_dumpall`.
+- **SQLite**: every regular file in the set that starts with SQLite's header is copied with the online backup API (source opened read-only; immutable as a second try) into `<state>/staging/sqlite/`, and that copy goes into the archive under the file's own name; `-wal`, `-shm` and `-journal` files of such a database are left out. If the online backup fails the file is archived as it lies, with a warning line. Staging is emptied before and after.
+- **Redis** (`redis`, `valkey`, `keydb` images with something mounted at `/data`): `BGSAVE`, then wait up to 30 s for `LASTSAVE` to move. A store that cannot be asked (a password) is read as it lies, with a line in the log.
+- **Tar semantics**: a file that vanished or changed size while being read is a `warning:` line (the first 20 are logged), not an error; an error writing the archive is `ERROR: tar failed (…)`.
+- **Run directory** `local_dir/<YYYY-MM-DD_HHMM>` in the server's local time, mode 0700; dumps and the archive 0600; `raw-db-dirs` lists the raw database directories as the script did.
+- **Retention** goes by the time in a run directory's name, not by mtime: directories named like a run and older than `keep_local` are removed; anything else in `local_dir` is never touched.
+- **Size guard**: more than `max_local` bytes under `local_dir` → `ERROR: backups exceed 20 GB` (whole gigabytes as the script printed them; a limit that is not whole gigabytes in its own unit).
+- **Lock**: `flock` on `/run/moi-backup.lock`; a second run exits 2 with `another backup is running`.
+- **Log lines** are the script's: `[%F %T] message` in local time (and `Backup size: <du -h style>\t<dir>` without a timestamp), written to the journal (`MOI_JOB=backup`), appended to `backup.log_file`, and printed by `moi backup`.
+- **After every run**, also a failed one: one push to the backup monitor (`up`/`OK`, or `down` with the last `ERROR` line cut to 180 characters), a row in `moi.db` (`backup_runs`), audit and context refreshed. `moi backup` exits 1 when the run failed.
+- **`moi backup --dry-run`** prints the dumps (with the user each is taken as), the paths (size, files, why), what is not on this machine, what is left out and why, and the guards (`ok` / `FAIL`: backups switched on, `require_mount`, the size limit, databases not running). It writes nothing under `local_dir`, runs no dump, and exits 1 if a guard fails. `--json`: `{ plan: {dumps, roots, excluded, missing}, guards }` — never a password.
+- The daemon runs the `backup` job at `backup.schedule` (local time, caught up after downtime like every calendar job).
+
 ## Adoption (existing restic repository)
 
 `moi init`/`moi migrate` detects an existing restic env file (cestmoi: `/root/.config/restic/r2.env` with `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE`, `AWS_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`) and moves the values into `secrets.toml`, keeping the **same repository, password and tag** so snapshot history and dedupe continue. moi never initializes a new repository over an existing one.
@@ -35,7 +53,7 @@ Optional, scheduled weekly: restore the latest dumps into throwaway database con
 
 ## Acceptance
 
-- [ ] On the cestmoi fixture, `--dry-run` lists: dumps for outline-postgres, bookorbit-db, supabase-db (user supabase_admin), dokploy-postgres (swarm); volumes stellar-data, shortless redis, dokploy; paths from config; excludes media and incus; raw DB dirs excluded.
+- [x] On the cestmoi fixture, `--dry-run` lists: dumps for outline-postgres, bookorbit-db, supabase-db (user supabase_admin), dokploy-postgres (swarm); volumes stellar-data, shortless redis, dokploy; paths from config; excludes media and incus; raw DB dirs excluded.
 - [ ] Each guard has a test: mount missing, size limit, rate limit skip, R2 usage over limit, R2 usage unreadable, restic failure + retry, exit 3 warning, Sunday prune/check.
-- [ ] Failure push message = last ERROR line; success = `OK`; exactly one status/msg.
+- [x] Failure push message = last ERROR line; success = `OK`; exactly one status/msg.
 - [ ] Integration test with a local restic repo and a Postgres container: backup, then drill restores and finds the table.

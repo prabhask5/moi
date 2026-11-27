@@ -31,4 +31,5 @@ Each dependency and why (keep this list current when adding one):
 | *(none)* for systemd | Decided in M6: `systemctl` and `journalctl`, which every systemd machine has, instead of D-Bus through `zbus` (an async runtime and a dozen crates for a handful of calls a minute) |
 | *(none)* for file watching | Decided in M6: inotify through `rustix` (`fs::inotify`, already a dependency, no `unsafe`), one watch per directory, instead of the `notify` crate and its cross-platform backends moi has no use for |
 | *(none)* for Uptime Kuma's API | Decided in M5: a socket.io v4 client over Engine.IO long-polling on moi's own HTTP client (`monitors::socket`) |
-| (planned) flate2 / zstd, tar | dumps and local archives |
+| flate2 (pure-Rust `miniz_oxide` backend) | gzip for database dumps and the local archive. No zstd: it would bring a C library into the build for the local copy only (07) |
+| tar (no default features) | writing (and, for restore, reading) the local archive, entry by entry from data read through `Host` — the crate never touches the file system itself |

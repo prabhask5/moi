@@ -58,6 +58,8 @@ pub enum Work {
     Check(Arc<dyn Check>),
     /// Snapshot, audit, housekeeping, drift report.
     Daily,
+    /// The nightly backup.
+    Backup,
     /// A snapshot because something changed, and the container monitors that follow from it.
     Snapshot,
     /// A heal rule whose trigger fired, and what fired it.
@@ -73,6 +75,7 @@ impl std::fmt::Debug for Work {
         match self {
             Work::Check(check) => write!(f, "Check({})", check.name()),
             Work::Daily => f.write_str("Daily"),
+            Work::Backup => f.write_str("Backup"),
             Work::Snapshot => f.write_str("Snapshot"),
             Work::Heal(rule, _) => write!(f, "Heal({})", rule.name),
             Work::Boot => f.write_str("Boot"),
@@ -217,6 +220,9 @@ impl Daemon {
             Ok(())
         };
         calendar("daily", DAILY_AT, Work::Daily)?;
+        if core.config.backup.enabled {
+            calendar("backup", &core.config.backup.schedule, Work::Backup)?;
+        }
         // on demand: the snapshot after a change, and the heal rules that fire on events
         let on_demand = |name: String, work: Work| Job {
             name,

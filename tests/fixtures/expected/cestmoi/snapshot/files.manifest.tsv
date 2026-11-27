@@ -85,7 +85,10 @@
 644	root	root	/opt/services/outline/docker-compose.yml	370	b88fdb4c11b7e36a2f022b7b5ac293db36a49935c7c2a77a36c615fff24e6233
 644	root	root	/opt/services/seerr/docker-compose.yml	156	a927a5fcf6bfe661e7bcd40a80bb236a7962213e25daa9d1c9218f4f982eaa38
 644	root	root	/opt/yams/.env	68	8e5aeacd1bd71af34bc1caf9e575062f763ec7c0580c777179eb758be93ece6e
+644	root	root	/opt/yams/config/sonarr/MediaCover/CACHEDIR.TAG	64	093d0dc242609c39d4a9cfd582adaa318d289614adbdceb8cb3375792ca0fd68
+644	root	root	/opt/yams/config/sonarr/MediaCover/poster.jpg	3	f8146b6cb4961f87a1519047b8c83402754ed108ade55457d43166e564b7b4fe
 644	root	root	/opt/yams/config/sonarr/config.xml	71	09d03e5ae45fbd446a6aef1aeb79a9bbd2488271ef4f69c4591e6f4ed829220e
+777	root	root	/opt/yams/current.env	4	-> .env
 644	root	root	/opt/yams/docker-compose.yml	1417	fa9ad9f725e7fea3e5b34a082fc17b4ef69ca67fa450fc6b5bf004727f05031a
 644	root	root	/root/.bashrc	9	2e447780a0a3d5d912a8094f23065dede4923d4671fba3cfb5bbbaadef9fc234
 755	root	root	/usr/local/bin/ctop	21	78905c29ae6edb6def80bdaaf9634ccb5296cb119359fffbf06e886947a2523f

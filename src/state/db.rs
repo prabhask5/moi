@@ -119,6 +119,21 @@ pub const MIGRATIONS: &[Migration] = &[
         ) WITHOUT ROWID;
     ",
     },
+    Migration {
+        version: 4,
+        name: "backup runs",
+        sql: "
+        -- one row per backup run: what `moi status`, the audit and the context file say about backups
+        CREATE TABLE backup_runs (
+            id         INTEGER PRIMARY KEY,
+            at         INTEGER NOT NULL,
+            status     TEXT    NOT NULL,              -- ok | failed
+            bytes      INTEGER NOT NULL DEFAULT 0,    -- size of the local run directory
+            duration_s INTEGER NOT NULL DEFAULT 0,
+            message    TEXT    NOT NULL DEFAULT ''    -- the last error, or the directory
+        );
+    ",
+    },
 ];
 
 /// An open `moi.db` at the current schema.
