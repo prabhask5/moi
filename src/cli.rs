@@ -328,7 +328,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             return context_share(cli, *ttl, *revoke, *list, host, out);
         }
         Command::Check(args) => return check(cli, args, host, out),
-        Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
+        Command::Monitors(command) => return monitors(cli, command, host, out),
         Command::Daemon | Command::Status | Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => {
             ("daemon, init & firewall", "M6")
         }
@@ -785,4 +785,84 @@ fn check(cli: &Cli, args: &CheckArgs, host: Arc<dyn Host>, out: &mut dyn Write) 
         }
     }
     if down > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+fn monitors(cli: &Cli, command: &MonitorsCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::monitors::{self, Options};
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let docker = crate::docker::Docker::new(Arc::clone(&host));
+    match command {
+        MonitorsCommand::Sync { dry_run, update, prune } => {
+            let options = Options { update: *update, prune: *prune };
+            let (plan, _) = monitors::gather(host.as_ref(), &loaded.config, &docker, &state, &db, options)?;
+            if !*dry_run {
+                return Err(Error::NotImplemented {
+                    what: "applying the monitor plan (use --dry-run to see it)",
+                    milestone: "M5",
+                });
+            }
+            if cli.json {
+                print_json(
+                    out,
+                    &json!({ "ok": true, "dry_run": true, "changes": plan.changes(), "plan": plan.steps, "warnings": plan.warnings }),
+                );
+            } else {
+                let _ = write!(out, "{}", plan.render());
+                for warning in &plan.warnings {
+                    let _ = writeln!(out, "warning: {warning}");
+                }
+            }
+            Ok(())
+        }
+        MonitorsCommand::List => {
+            let (plan, inventory) =
+                monitors::gather(host.as_ref(), &loaded.config, &docker, &state, &db, Options::default())?;
+            // who a monitor belongs to: its binding, or what a sync would bind it to
+            let owner = |id: i64| {
+                plan.steps
+                    .iter()
+                    .find(|s| s.kuma_id == Some(id) && s.owner.is_some())
+                    .map(|s| (s.action, s.owner.clone().unwrap_or_default()))
+            };
+            let rows: Vec<serde_json::Value> = inventory
+                .monitors
+                .iter()
+                .map(|m| {
+                    let status = if m.active { m.last_status.clone().unwrap_or_else(|| "no data".to_string()) } else { "paused".to_string() };
+                    let (bound, owner) = match owner(m.id) {
+                        Some((monitors::Action::Keep, owner)) => (true, Some(owner)),
+                        Some((_, owner)) => (false, Some(owner)),
+                        None => (false, None),
+                    };
+                    json!({ "id": m.id, "name": m.name, "type": m.kind, "status": status, "owner": owner, "bound": bound, "watchdog": m.is_watchdog() })
+                })
+                .collect();
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "db": inventory.db, "monitors": rows }));
+            } else {
+                let cells: Vec<[String; 4]> = rows
+                    .iter()
+                    .map(|r| {
+                        let owner = match (r["owner"].as_str(), r["bound"].as_bool()) {
+                            (Some(owner), Some(true)) => owner.to_string(),
+                            (Some(owner), _) => format!("{owner} (not bound yet: moi monitors sync)"),
+                            (None, _) if r["watchdog"] == true => "- (watchdog)".to_string(),
+                            (None, _) => "-".to_string(),
+                        };
+                        [
+                            r["name"].as_str().unwrap_or_default().to_string(),
+                            r["type"].as_str().unwrap_or_default().to_string(),
+                            r["status"].as_str().unwrap_or_default().to_string(),
+                            owner,
+                        ]
+                    })
+                    .collect();
+                let _ = write!(out, "{}", monitors::table(["MONITOR", "TYPE", "STATUS", "OWNER"], &cells));
+            }
+            Ok(())
+        }
+    }
 }

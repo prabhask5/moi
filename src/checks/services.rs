@@ -286,6 +286,10 @@ impl Check for Services {
         config.checks.services.common.timeout.as_duration()
     }
 
+    fn interval(&self, config: &Config) -> Duration {
+        config.checks.services.common.interval.as_duration()
+    }
+
     fn monitor(&self, config: &Config) -> Option<String> {
         if self.part == Part::Edge {
             config.checks.edge.monitor.clone()

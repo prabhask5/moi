@@ -154,6 +154,9 @@ impl Check for Fake {
     fn timeout(&self, _: &Config) -> Duration {
         self.timeout
     }
+    fn interval(&self, _: &Config) -> Duration {
+        Duration::from_secs(300)
+    }
     fn monitor(&self, _: &Config) -> Option<String> {
         None
     }

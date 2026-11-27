@@ -30,6 +30,10 @@ impl Check for Custom {
         self.settings(config).common.timeout.as_duration() + Duration::from_secs(5)
     }
 
+    fn interval(&self, config: &Config) -> Duration {
+        self.settings(config).common.interval.as_duration()
+    }
+
     fn monitor(&self, config: &Config) -> Option<String> {
         self.settings(config).common.monitor.clone()
     }

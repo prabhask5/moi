@@ -64,6 +64,10 @@ impl Check for Storage {
         config.checks.storage.common.timeout.as_duration()
     }
 
+    fn interval(&self, config: &Config) -> Duration {
+        config.checks.storage.common.interval.as_duration()
+    }
+
     fn monitor(&self, config: &Config) -> Option<String> {
         config.checks.storage.common.monitor.clone()
     }

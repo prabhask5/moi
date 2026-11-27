@@ -52,7 +52,7 @@ Specs: 05
 
 ## M5 — Uptime Kuma
 Specs: 06
-- [ ] Read-only kuma.db inventory; push client (one status/msg)
+- [x] Read-only kuma.db inventory; push client (one status/msg)
 - [ ] socket.io client: login, monitor list, add/edit/pause/tag, docker hosts (1.23 + 2.x)
 - [ ] Adoption planner + `moi monitors sync [--dry-run] [--update] [--prune]`
 - [ ] CI integration job with `louislam/uptime-kuma:1.23.17`

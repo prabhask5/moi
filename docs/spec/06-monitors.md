@@ -43,8 +43,19 @@ adopt    Server Resources             push    token …0Ov3 (fed by /opt/scripts
 adopt    Server Storage               push    token …JQIB
 create   cestmoi: dozzle              docker  host local
 keep     Server Watchdog: Healthchecks.io  http  not managed by moi (watchdog)
-drift    Server Backup                push    interval 90000 (moi default 90000) — ok
+drift    Server Backup                push    interval 86400 (moi default 90000)
 ```
+
+### Decisions (M5)
+
+- **Where the inventory comes from**: the `kuma.db` in the host directory that a container of an `uptime-kuma` image mounts at `/app/data` (asked from the Docker API at plan time, so no snapshot is needed). A Kuma on another machine has no local database: planning for it is an error that says so.
+- **Owners**: every desired monitor has an owner key, which is the key of its binding in `moi.db`: `check:<name>` (`check:backup` included), `freshness:snapshot`, `boot:verify`, `container:<name>`.
+- **Migration map (rule 2)** is derived from the last snapshot's `monitoring/integrations.json`: a push integration found in a script that something still calls (cron, a unit), is not a stale copy, and whose file name without extension equals the check's name, `<name>-check`, or the check's `journal_tag` (`resource-check.sh` ↔ the check logging as `resource-check`; `backup.sh` ↔ `check:backup`). Without a snapshot, rule 2 has nothing to go on and rule 3 (name) decides. `moi migrate` (11) may refine the map.
+- **Plan lines**: one per desired monitor (`keep` when bound, `adopt`, `create`, `conflict`), in the order checks, backup, freshness, boot verify, containers; then, directly after its monitor, a `drift` line when an existing monitor's interval differs from moi's default or it is paused (`update` with `--update`); then orphans (`pause`, or `delete` with `--prune`; an orphan already paused is not listed); then every other monitor as `keep … not managed by moi`, the healthchecks.io watchdog marked `(watchdog)`. No line is printed for a setting that equals the default.
+- A push token is shown by its last four characters only and is never part of `--json`.
+- **Warnings** after the plan: `expect_watchdog = true` and no active watchdog monitor; a name in `monitors.kuma.notifications` that Kuma does not have.
+- **`moi monitors list`**: every Kuma monitor with type, state (`paused`, else its latest heartbeat: `up`/`down`/`pending`/`maintenance`/`no data`) and owner — the bound owner, `<owner> (not bound yet: moi monitors sync)` for one a sync would adopt, `- (watchdog)`, or `-`. `--json`: `{ ok, db, monitors: [{id, name, type, status, owner, bound, watchdog}] }`.
+- `moi monitors sync --dry-run --json`: `{ ok, dry_run, changes, plan: [{action, monitor, kind, detail, owner, kuma_id}], warnings }`; `changes` counts the steps that would alter Kuma or `moi.db` (not `keep`, `drift`, `conflict`).
 
 The daemon runs sync automatically only for **creating container monitors** when containers appear (debounced, `containers = true`), and pauses moi-owned container monitors when containers are removed. Everything else happens only on explicit `moi monitors sync`.
 
