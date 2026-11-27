@@ -4,7 +4,7 @@ One directory per check and case:
 
 ```
 parity/<check>/<case>/
-  host/        # this case's machine state: a fixture *case* layered over hosts/cestmoi (see ../fixtures/README.md):
+  host/        # (absent when the case only differs in prev.json) this case's machine state: a fixture *case* layered over hosts/cestmoi (see ../fixtures/README.md):
                #   root/ (files that differ), commands/ (canned outputs that differ, <key>.missing, <key>.timeout),
                #   docker/ (API answers that differ), statvfs, absent, unwritable
   prev.json    # what the previous run left: {"values": {...}, "sustained": {condition: runs}}

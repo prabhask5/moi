@@ -35,12 +35,12 @@ fn cases(check: &str) -> Vec<String> {
 fn run_case(check: &str, case: &str) -> (String, String) {
     let dir = parity_dir(check).join(case);
     let overlay = common::scratch(&format!("parity-{check}-{case}"));
-    let fixture = FixtureHost::open(&common::fixture_dir("cestmoi"))
-        .unwrap()
-        .with_case(&dir.join("host"))
-        .unwrap()
-        .with_overlay(&overlay)
-        .unwrap();
+    // a case that changes nothing about the machine has no host/ directory (git keeps no empty ones)
+    let mut fixture = FixtureHost::open(&common::fixture_dir("cestmoi")).unwrap();
+    if dir.join("host").is_dir() {
+        fixture = fixture.with_case(&dir.join("host")).unwrap();
+    }
+    let fixture = fixture.with_overlay(&overlay).unwrap();
     let host: Arc<dyn Host> = Arc::new(fixture);
     let loaded = config::load(host.as_ref(), &Paths::new("/etc/moi/moi.toml".into(), None)).unwrap();
     let config = Arc::new(loaded.config);

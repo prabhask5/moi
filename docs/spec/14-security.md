@@ -25,6 +25,7 @@ Each dependency and why (keep this list current when adding one):
 | tokio | daemon runtime, async I/O |
 | *(none)* for the Docker Engine API | Decided in M2: a ~200-line blocking HTTP/1.1 client over the unix socket (`docker::http`) instead of hyper/hyperlocal or bollard. moi makes a handful of local requests per run; an async HTTP stack would be most of the dependency tree for no measurable gain |
 | rustls (`ring` provider, no default features) | TLS for outbound HTTPS: the share bucket now; staged probes, Kuma and the R2 guard later. Trust anchors are the system CA bundle read through `Host` — neither `webpki-roots` (certificates compiled in) nor `rustls-native-certs` is used. The HTTP/1.1 client on top is moi's own (`net::http1`, shared with the Docker client); HMAC-SHA256 and SigV4 are implemented on `sha2` and verified against published vectors |
+| rustix (`fs` only) | `statvfs` for the storage check (space and inodes of a filesystem) without `unsafe` or running `df`; already in the dependency tree |
 | rusqlite (bundled SQLite) | `moi.db`; later read-only `kuma.db` and SQLite online backups. Bundled so behaviour does not depend on the distro's SQLite |
 | gix (`sha1`, `revision` features only) | state history without a git binary: object writing, commits, revision parsing and walking. No network, worktree, index-status or blob-diff features; tree comparison and the line diff are moi's own |
 | (planned) zbus | systemd over D-Bus |
