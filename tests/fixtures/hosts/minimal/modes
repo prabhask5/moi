@@ -1,0 +1,3 @@
+# mode uid gid path — overrides what git cannot store
+0600 0 0 /cases/full/secrets.toml
+0640 0 4 /etc/hosts

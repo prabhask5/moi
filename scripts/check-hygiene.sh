@@ -32,7 +32,7 @@ hits=$(echo "$files" | grep -E '(\.orig|\.rej|\.bak|\.swp|~|\.tmp|\.log|\.DS_Sto
 # 4. large files (fixtures should be minimal; binaries never)
 while IFS= read -r f; do
   [[ -f $f ]] || continue
-  s=$(stat -c %s "$f")
+  s=$(wc -c <"$f")   # portable (GNU stat -c and BSD stat -f differ)
   (( s > 1048576 )) && problem "file over 1 MB: $f ($((s/1024)) KB)"
 done <<<"$files"
 

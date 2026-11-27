@@ -58,6 +58,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `restore` | Phases, interactive storage mapping, DB import, verify + reboot expectations |
 | `daemon` | tokio runtime: scheduler, watchers (docker events, inotify), heal executor, boot tasks, firewall apply, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |
+| `log` | Structured journal entries under systemd (native protocol via `Host`), stderr lines otherwise; masks known secrets |
 | `redact` | One place for secret detection and masking (env keys, URLs with credentials, tokens, hc-ping keys) |
 
 Rules:
@@ -87,10 +88,12 @@ Rules:
 scripts/ci.sh            # everything CI runs: fmt, clippy, deny, tests, docs links, budgets
 cargo test               # unit + integration tests (fixtures only)
 cargo run -- --help
-MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-state   # run against a fixture host
+MOI_ROOT=tests/fixtures/hosts/minimal cargo run -- config check                      # run against a fixture host
+MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-state   # (fixture arrives with M2)
 ```
 
 - **Tests live in `tests/`** (CI fails on test files elsewhere; small `#[cfg(test)]` unit tests inside modules are allowed for pure functions). Fixture hosts: `tests/fixtures/hosts/<name>/` (a fake root: `proc/`, `sys/`, `etc/`, `docker/` API responses, `commands/` canned outputs).
+- **`MOI_ROOT=<fixture dir>`** makes the binary use `FixtureHost` instead of the real machine: files from `<dir>/root`, canned commands, fixed clock, no journal, only `MOI_*` environment. It is read-only unless `MOI_ROOT_OVERLAY=<dir>` gives it somewhere to write. A `MOI_ROOT` that is not a fixture is an error, never a fallback to the real system.
 - **Parity tests**: `tests/parity/` holds inputs and the exact Kuma messages the legacy scripts in `reference/cestmoi/scripts/` produce; built-in checks must reproduce them byte for byte (see `docs/spec/05-checks.md`).
 - **Integration tests that need services** (Uptime Kuma 1.23.17, Postgres, restic with a local repo) run in CI service containers and are `#[ignore]` locally unless `MOI_IT=1`.
 - Never run moi against the development machine's real system in tests. Never commit secrets: `reference/` is redacted; fixtures use fake tokens (`FAKE…`).

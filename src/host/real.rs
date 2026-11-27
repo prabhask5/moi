@@ -1,0 +1,181 @@
+//! The real machine. With a root prefix other than `/` it only does file access under that prefix (a
+//! mounted target during restore, a scratch tree in tests) and refuses to run commands or log, because
+//! those would act on the machine moi runs on, not on the tree it was pointed at.
+
+use std::fs;
+use std::io::{self, Read, Write};
+use std::os::unix::process::ExitStatusExt;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime};
+
+use super::rooted;
+use super::{Cmd, CmdOutput, Host, Metadata};
+
+const JOURNAL_SOCKET: &str = "/run/systemd/journal/socket";
+
+#[derive(Debug, Clone)]
+pub struct RealHost {
+    root: PathBuf,
+}
+
+impl Default for RealHost {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RealHost {
+    /// The machine itself, rooted at `/`.
+    pub fn new() -> Self {
+        Self { root: PathBuf::from("/") }
+    }
+
+    /// File access confined to `root`.
+    pub fn with_root(root: &Path) -> Self {
+        Self { root: root.to_path_buf() }
+    }
+
+    fn is_system(&self) -> bool {
+        self.root == Path::new("/")
+    }
+
+    fn real(&self, path: &Path, follow_last: bool) -> io::Result<PathBuf> {
+        if self.is_system() {
+            if !path.is_absolute() {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("path must be absolute: {}", path.display()),
+                ));
+            }
+            return Ok(path.to_path_buf());
+        }
+        Ok(rooted::resolve(&[&self.root], path, follow_last)?.real)
+    }
+
+    fn refuse(&self, what: &str) -> io::Error {
+        io::Error::new(
+            io::ErrorKind::Unsupported,
+            format!("refusing to {what}: this host is confined to {}", self.root.display()),
+        )
+    }
+}
+
+impl Host for RealHost {
+    fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
+        fs::read(self.real(path, true)?)
+    }
+
+    fn metadata(&self, path: &Path) -> io::Result<Metadata> {
+        Ok(rooted::to_metadata(&fs::metadata(self.real(path, true)?)?))
+    }
+
+    fn symlink_metadata(&self, path: &Path) -> io::Result<Metadata> {
+        Ok(rooted::to_metadata(&fs::symlink_metadata(self.real(path, false)?)?))
+    }
+
+    fn read_link(&self, path: &Path) -> io::Result<PathBuf> {
+        fs::read_link(self.real(path, false)?)
+    }
+
+    fn read_dir(&self, path: &Path) -> io::Result<Vec<String>> {
+        let mut names = rooted::dir_names(&self.real(path, true)?)?;
+        names.sort_unstable();
+        Ok(names)
+    }
+
+    fn write(&self, path: &Path, data: &[u8], mode: u32) -> io::Result<()> {
+        rooted::write_atomic(&self.real(path, true)?, data, mode)
+    }
+
+    fn create_dir_all(&self, path: &Path, mode: u32) -> io::Result<()> {
+        rooted::create_dir_all(&self.real(path, true)?, mode)
+    }
+
+    fn remove_file(&self, path: &Path) -> io::Result<()> {
+        fs::remove_file(self.real(path, false)?)
+    }
+
+    fn set_mode(&self, path: &Path, mode: u32) -> io::Result<()> {
+        rooted::set_mode(&self.real(path, true)?, mode)
+    }
+
+    fn real_path(&self, path: &Path) -> io::Result<PathBuf> {
+        self.real(path, true)
+    }
+
+    fn run(&self, cmd: &Cmd) -> io::Result<CmdOutput> {
+        if !self.is_system() {
+            return Err(self.refuse(&format!("run `{}`", cmd.line())));
+        }
+        let mut child = Command::new(&cmd.program)
+            .args(&cmd.args)
+            .envs(cmd.env.iter().map(|(k, v)| (k, v)))
+            .stdin(if cmd.stdin.is_some() { Stdio::piped() } else { Stdio::null() })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| io::Error::new(e.kind(), format!("cannot run `{}`: {e}", cmd.program)))?;
+
+        // Pipes are drained on threads so a chatty child can never block on a full pipe while we wait.
+        let stdin = child.stdin.take().zip(cmd.stdin.clone()).map(|(mut pipe, data)| {
+            thread::spawn(move || {
+                let _ = pipe.write_all(&data);
+            })
+        });
+        let stdout = child.stdout.take().map(drain);
+        let stderr = child.stderr.take().map(drain);
+
+        let deadline = cmd.timeout.map(|t| Instant::now() + t);
+        let mut timed_out = false;
+        let mut pause = Duration::from_millis(1);
+        let status = loop {
+            if let Some(status) = child.try_wait()? {
+                break status;
+            }
+            if deadline.is_some_and(|d| Instant::now() >= d) {
+                timed_out = true;
+                let _ = child.kill();
+                break child.wait()?;
+            }
+            thread::sleep(pause);
+            pause = (pause * 2).min(Duration::from_millis(20));
+        };
+        if let Some(t) = stdin {
+            let _ = t.join();
+        }
+        let collect = |t: Option<thread::JoinHandle<Vec<u8>>>| t.and_then(|t| t.join().ok()).unwrap_or_default();
+        Ok(CmdOutput {
+            status: status.code().or_else(|| status.signal().map(|s| 128 + s)).unwrap_or(-1),
+            stdout: collect(stdout),
+            stderr: collect(stderr),
+            timed_out,
+        })
+    }
+
+    fn now(&self) -> SystemTime {
+        SystemTime::now()
+    }
+
+    fn env(&self, name: &str) -> Option<String> {
+        std::env::var(name).ok()
+    }
+
+    fn journal(&self, fields: &[(String, String)]) -> io::Result<()> {
+        if !self.is_system() {
+            return Err(self.refuse("write to the journal"));
+        }
+        let socket = std::os::unix::net::UnixDatagram::unbound()?;
+        socket.send_to(&crate::log::encode_journal(fields), JOURNAL_SOCKET)?;
+        Ok(())
+    }
+}
+
+fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>> {
+    thread::spawn(move || {
+        let mut buf = Vec::new();
+        let _ = pipe.read_to_end(&mut buf);
+        buf
+    })
+}

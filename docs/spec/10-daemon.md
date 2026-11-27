@@ -58,6 +58,13 @@ cestmoi's rules (see `examples/cestmoi.toml`) replace: `traefik-homelab.service`
 
 `firewall.manage = true`: moi owns exactly the chains in `firewall.chains` (default `INPUT`, `DOCKER-USER`). Rules files contain chain bodies in `iptables-restore` syntax (`-A INPUT …`); moi flushes and refills only those chains atomically (`iptables-restore --noflush` with a generated table that flushes the owned chains), for v4 and v6. Applied at boot (INPUT immediately, DOCKER-USER once Docker is up) and re-applied when Docker restarts. `moi firewall apply|diff|status`; over SSH, `apply` uses the auto-rollback confirmation. Migration copies `/etc/host-firewall/rules{4,6}.txt` to `/etc/moi/firewall/` unchanged.
 
+## Logging
+
+- Under systemd (`JOURNAL_STREAM` is set, as for `moi.service`) moi writes to the journal with the native protocol (`/run/systemd/journal/socket`): `MESSAGE`, `PRIORITY` (3 error, 4 warning, 6 info, 7 debug), `SYSLOG_IDENTIFIER` (`moi`, or a check's `journal_tag`) and one `MOI_<NAME>` field per structured value (`MOI_CHECK`, `MOI_JOB`, `MOI_RULE`, …), so `journalctl -t moi MOI_JOB=backup` works. If the socket is unavailable the entry goes to stderr instead of being lost.
+- Run by hand, moi logs to stderr as `moi: message`, `moi: warning: …`, `moi: error: …` with fields appended as `(key=value, …)`. `--quiet` keeps warnings and errors.
+- Every message and field value is masked for known secrets before it leaves the process (14).
+- Command results go to stdout; logs never do.
+
 ## Acceptance
 
 - [ ] Persistent calendar semantics (missed backup runs after boot), interval jitter-free scheduling, job timeout/cancel.

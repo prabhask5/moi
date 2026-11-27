@@ -2,7 +2,7 @@
 
 moi runs as root and holds the keys to the server's backups and monitoring. Rules:
 
-- **Secrets** only in `/etc/moi/secrets.toml` (0600 root, refused if more permissive) or `MOI_SECRET_*` env. Never in `moi.toml`, logs, journal, CONTEXT.md, `--json` output, panic messages or commit messages. `redact` is applied to every string that leaves the process except pushes to their own endpoint.
+- **Secrets** only in `/etc/moi/secrets.toml` (0600 root, refused if group or others have any access) or `MOI_SECRET_*` env. Never in `moi.toml`, logs, journal, CONTEXT.md, `--json` output, panic messages or commit messages. `redact` is applied to every string that leaves the process except pushes to their own endpoint. Credentials are held in a type whose debug and serialized forms are `***`, and every value loaded from `secrets.toml` or a resolved `MOI_SECRET_*` is masked wherever it appears in logs and output.
 - **State dir** `/var/lib/moi` is 0700 root: it contains copies of `/etc/shadow`, `.env` files, SSH keys. Off-site it is protected by restic's encryption.
 - **Network egress** only to configured endpoints: Kuma URL, restic repository, Cloudflare GraphQL (guard), public URLs under `checks.edge`, HTTP checks. No telemetry, no update checks.
 - **Destructive operations** need explicit confirmation and keep a backup: disk format (typed `FORMAT /dev/x`), firewall apply over SSH (auto-rollback), file overwrite during restore (`*.pre-moi`), migration switch (archive + rollback), monitor deletion (only moi-owned, only with `--prune`).
@@ -22,7 +22,7 @@ Each dependency and why (keep this list current when adding one):
 | tokio | daemon runtime, async I/O |
 | (planned) hyper / hyper-util / hyperlocal or bollard | Docker Engine API over the unix socket |
 | (planned) rustls, tokio-rustls, webpki-roots or rustls-native-certs | staged HTTPS probes, Kuma, R2 guard |
-| (planned) rusqlite (bundled) | `moi.db`, read-only `kuma.db`, SQLite online backups |
+| rusqlite (bundled SQLite) | `moi.db`; later read-only `kuma.db` and SQLite online backups. Bundled so behaviour does not depend on the distro's SQLite |
 | (planned) gix | state history without a git binary |
 | (planned) zbus | systemd over D-Bus |
 | (planned) notify | inotify watcher |

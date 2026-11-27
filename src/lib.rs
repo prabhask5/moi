@@ -16,6 +16,7 @@ pub mod daemon;
 pub mod docker;
 pub mod error;
 pub mod host;
+pub mod log;
 pub mod migrate;
 pub mod monitors;
 pub mod redact;

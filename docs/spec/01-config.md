@@ -1,6 +1,6 @@
 # 01 — Configuration
 
-moi is configured by `/etc/moi/moi.toml` (override with `--config` or `MOI_CONFIG`) and secrets in `/etc/moi/secrets.toml` (0600, root; override `MOI_SECRETS`). Everything has a sensible default; an empty `moi.toml` is valid and gives a capture-only setup (snapshot, context, audit) with no checks, backups or monitors.
+moi is configured by `/etc/moi/moi.toml` (override with `--config` or `MOI_CONFIG`) and secrets in `secrets.toml` next to it, so `/etc/moi/secrets.toml` (0600, root; override with `--secrets` or `MOI_SECRETS`). Everything has a sensible default; an empty `moi.toml` is valid and gives a capture-only setup (snapshot, context, audit) with no checks, backups or monitors.
 
 `moi init` writes both files from discovery (§ Discovery). `moi config check` validates them and prints the effective config with secrets masked.
 
@@ -11,6 +11,39 @@ moi is configured by `/etc/moi/moi.toml` (override with `--config` or `MOI_CONFI
 - **Durations** are strings: `"30s"`, `"5m"`, `"1h"`, `"20h"`, `"7d"`. **Sizes**: `"20GB"`, `"512KB"` (powers of 1024). **Schedules**: systemd `OnCalendar` syntax (`"03:30"`, `"*-*-* 03:30:00"`, `"Sun 04:00"`).
 - **Paths** are absolute. Globs (`*`, `**`) are allowed where noted.
 - Validation reports *all* errors at once with `file:line:col`.
+
+### Decisions (M1)
+
+- **A feature is on when its section is present.** `[checks.resources]`, `[checks.storage]`, `[checks.services]`, `[checks.edge]`, `[backup]`, `[backup.offsite]`, `[backup.offsite.r2_guard]` and `[monitors.kuma]` are off in an empty config and on as soon as the section appears (a sub-section such as `[backup.offsite]` implies its parent). Each accepts `enabled = false` to switch it off without deleting its settings. `firewall.manage` stays an explicit opt-in. The effective config always contains every section, so defaults of features that are off are still shown.
+- **Required when enabled:** `backup.local_dir`; `backup.offsite.repository` and `.password`; `backup.offsite.r2_guard.account_id` and `.api_token`; `monitors.kuma.url`; `name` + `run` of a custom check; `name`, `when`, `action` of a heal rule; `name`/`target`/`path` of an http check; `name`/`container`/`cmd` of an exec check.
+- **Credentials must be references.** `password`, `api_token`, `api_key` and `backup.offsite.env` values whose name looks sensitive (`redact::is_sensitive_key`) are rejected unless written as `"secret:NAME"`. `username`, `repository` and `account_id` may be literal but are always masked in output.
+- **Secret names** use letters, digits and `_`. The environment fallback for `secret:restic_password` is `MOI_SECRET_RESTIC_PASSWORD` (name upper-cased); `secrets.toml` wins when both exist. A missing `secrets.toml` is not an error by itself. Every reference must resolve, also in sections that are switched off.
+- **`secrets.toml`** contains only `[secrets]` with string values, and is refused if any group/other permission bit is set (the error says `chmod 600`).
+- **`"auto"`** is a valid value wherever the default is discovery: `capture.data_roots`, `checks.storage.disks`, `backup.databases`, `backup.volumes`.
+- **Check settings:** `interval` defaults to `checks.default_interval`, `timeout` to `60s`, `journal_tag` to `moi-check-<name>`. `[checks.edge]` takes `enabled` and `monitor` only (it runs with `services`). `disks[].type` defaults to `auto`; `temp_max` defaults by disk type (05).
+- **Defaults not stated in the schema above:** `checks.storage.mounts = ["/"]`, `writable = []`; `data.fungible`, `context.copies`, `backup.paths`, `restore.etc_paths`, `boot.*` lists, `checks.edge` host/URL lists empty; `monitors.healthchecks.expect_watchdog = false`; `backup.local_dir`, `require_mount`, `log_file` unset.
+- **Also errors:** two settings naming the same monitor; a custom check named like a built-in; duplicate custom/heal/http/exec names; `fungible_reason` for a path not in `fungible`; limits outside 1–100 %; relative paths; a heal rule without exactly one trigger and one action. A `monitor` without `[monitors.kuma]` is a **warning** (nothing would be pushed).
+- **Schedules** are syntax-checked at config time for the `[weekdays] [date] time` forms and the systemd shorthands (`daily`, `weekly`, …); the scheduler (10) is the authority.
+- **Unknown keys** get a "did you mean" when a known key is within two edits. TOML that does not parse is reported with its syntax errors only (no schema errors on top).
+- **Files:** `examples/moi.toml` is generated — the effective configuration of an empty `moi.toml` — and a test keeps it identical to the code. `examples/minimal.toml` is the short starting point.
+
+### `moi config check` / `moi config path`
+
+`moi config check` prints the effective configuration in `moi.toml` syntax on stdout (every default spelled out, keys sorted, settings without a value omitted, every secret shown as `***`) and `…: ok (N secrets resolved, masked above)` plus any warnings on stderr; exit 0. On errors it prints one `file:line:col: key: message` line per problem and `moi: configuration is invalid (N errors)` on stderr, nothing on stdout; exit 2.
+
+Masking: credential settings always print `***`; in every other string, any value from `secrets.toml` or a resolved `MOI_SECRET_*` is replaced (whole-value matches always, substrings for secrets of 6+ characters).
+
+With `--json` (contract, golden-tested):
+
+```json
+{ "ok": true, "files": { "config": "…", "secrets": "…" }, "secrets_resolved": 7, "warnings": [], "config": { … } }
+{ "ok": false, "error": { "kind": "config", "message": "configuration is invalid (2 errors)", "exit_code": 2,
+                          "diagnostics": [ { "file": "…", "line": 2, "col": 1, "key": "server.nmae", "message": "unknown key (did you mean `name`?)" } ] } }
+```
+
+`line`/`col` are 1-based; `0` means the file as a whole (missing, unreadable, wrong permissions). Every command's `--json` output is one document with an `ok` field; failures of any command use the `error` object above with `kind` one of `config`, `state`, `io`, `not_implemented`, `problems_found`.
+
+`moi config path` prints the two file paths (`--json`: `{ "ok": true, "config": "…", "secrets": "…" }`) without reading them.
 
 ## Schema
 
@@ -227,7 +260,7 @@ Re-running `moi init` never overwrites an existing config; it prints a diff of s
 
 ## Acceptance
 
-- [ ] Unknown key, wrong type, bad duration, missing secret → validation error with location; all errors reported in one run.
-- [ ] `secret:` resolution from file and env; `moi config check` masks every resolved secret.
-- [ ] Empty config is valid; defaults documented in `examples/moi.toml` match the code (golden test).
+- [x] Unknown key, wrong type, bad duration, missing secret → validation error with location; all errors reported in one run.
+- [x] `secret:` resolution from file and env; `moi config check` masks every resolved secret.
+- [x] Empty config is valid; defaults documented in `examples/moi.toml` match the code (golden test).
 - [ ] `moi init` on the `cestmoi` fixture host produces a config equivalent to `examples/cestmoi.toml` minus hand-written checks.

@@ -1,0 +1,45 @@
+{
+  "error": {
+    "diagnostics": [
+      {
+        "col": 1,
+        "file": "/cases/bad/moi.toml",
+        "key": "server.nmae",
+        "line": 2,
+        "message": "unknown key (did you mean `name`?)"
+      },
+      {
+        "col": 20,
+        "file": "/cases/bad/moi.toml",
+        "key": "checks.default_interval",
+        "line": 5,
+        "message": "invalid duration \"5 minutes\": use a number followed by s, m, h or d (e.g. \"30s\", \"5m\", \"20h\", \"7d\")"
+      },
+      {
+        "col": 13,
+        "file": "/cases/bad/moi.toml",
+        "key": "checks.resources.cpu_limit",
+        "line": 8,
+        "message": "expected an integer, found string"
+      },
+      {
+        "col": 1,
+        "file": "/cases/bad/moi.toml",
+        "key": "backup.local_dir",
+        "line": 10,
+        "message": "missing required key"
+      },
+      {
+        "col": 12,
+        "file": "/cases/bad/moi.toml",
+        "key": "backup.offsite.password",
+        "line": 12,
+        "message": "secret `restic_password` is not defined: add `restic_password = \"…\"` under [secrets] in /cases/bad/secrets.toml or set MOI_SECRET_RESTIC_PASSWORD"
+      }
+    ],
+    "exit_code": 2,
+    "kind": "config",
+    "message": "configuration is invalid (5 errors)"
+  },
+  "ok": false
+}
