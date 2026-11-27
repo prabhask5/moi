@@ -1,0 +1,1 @@
+restic unlock --quiet

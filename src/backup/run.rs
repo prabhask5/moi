@@ -64,7 +64,7 @@ impl Log<'_> {
     fn line(&mut self, message: &str) {
         let (y, m, d, h, mi, s) = local(&self.zone, host::unix_seconds(self.host.now()));
         self.raw(&format!("[{y:04}-{m:02}-{d:02} {h:02}:{mi:02}:{s:02}] {message}"));
-        if message.starts_with("ERROR") {
+        if message.contains("ERROR:") {
             self.journal.error(message, &[("job", "backup")]);
             self.last_error = Some(message.to_string());
         } else {
@@ -211,20 +211,21 @@ fn save_redis(host: &dyn Host, docker: &Docker) -> Vec<String> {
         }
         let Some(id) = container["Id"].as_str() else { continue };
         let name = container["Name"].as_str().unwrap_or_default().trim_start_matches('/');
-        let ask = |command: &str| {
+        let ask = |command: &[&str]| {
             docker
-                .exec(id, &["redis-cli", command], &ExecOptions::default())
+                .exec(id, &[&["redis-cli"], command].concat(), &ExecOptions::default())
                 .ok()
                 .filter(|o| o.success())
-                .map(|o| o.stdout_str().trim().to_string())
+                .map(|o| o.stdout_str().into_owned())
         };
-        let Some(before) = ask("LASTSAVE") else {
+        // a save in the background, then wait until the store says it is no longer saving
+        if ask(&["BGSAVE"]).is_none() {
             notes.push(format!("{name}: could not ask for a save; its files are copied as they lie"));
             continue;
-        };
-        let _ = ask("BGSAVE");
+        }
+        let saving = || ask(&["INFO", "persistence"]).is_none_or(|info| info.contains("rdb_bgsave_in_progress:1"));
         let mut waited = 0;
-        while ask("LASTSAVE").as_deref() == Some(before.as_str()) && waited < 30 {
+        while saving() && waited < 30 {
             host.sleep(Duration::from_secs(1));
             waited += 1;
         }
@@ -316,9 +317,11 @@ pub fn run(
     let staging = state.root().join("staging/sqlite");
     let _ = crate::init::remove_tree(host.as_ref(), &staging);
     host.create_dir_all(&staging, 0o700).map_err(|e| Error::host(format!("cannot create {}", staging.display()), e))?;
+    let mut live_databases: Vec<String> = Vec::new();
     match archive::write(host.as_ref(), &roots, &excluder, &out.join("configs.tar.gz"), &staging) {
         Ok(archived) => {
             report.files = archived.files;
+            live_databases = archived.databases.clone();
             // what tar would warn about and carry on
             for warning in archived.warnings.iter().take(20) {
                 log.line(&format!("warning: {warning}"));
@@ -329,8 +332,6 @@ pub fn run(
             fail = true;
         }
     }
-    let _ = crate::init::remove_tree(host.as_ref(), &staging);
-
     // ---- retention: runs older than keep_local go, by the time in their name
     let limit = started - i64::try_from(backup.keep_local.as_secs()).unwrap_or(i64::MAX);
     for name in host.read_dir(Path::new(local_dir)).unwrap_or_default() {
@@ -353,6 +354,32 @@ pub fn run(
         log.line(&format!("ERROR: backups exceed {allowed}"));
         fail = true;
     }
+    // ---- off-site: only a local backup that is whole goes anywhere
+    if !fail && backup.offsite.enabled {
+        let mut paths = vec![out.join("db").to_string_lossy().into_owned()];
+        paths.extend(roots.iter().cloned());
+        let mut excludes: Vec<String> = backup.exclude.clone();
+        excludes.extend(raw.iter().cloned());
+        excludes.extend(identity.fungible().iter().map(|(path, _)| path.clone()));
+        // the tarballs are the local copy; the consistent copies of live databases stand in for the files
+        excludes.push(format!("{}/*/configs.tar.gz", local_dir.trim_end_matches('/')));
+        for database in &live_databases {
+            excludes.extend([
+                database.clone(),
+                format!("{database}-wal"),
+                format!("{database}-shm"),
+                format!("{database}-journal"),
+            ]);
+        }
+        let upload = super::offsite::Upload { paths: super::offsite::existing(host.as_ref(), paths), excludes };
+        if super::offsite::run(host, config, state, db, &upload, &mut |line| log.line(&format!("offsite: {line}")))
+            .is_err()
+        {
+            log.line("ERROR: off-site backup failed");
+            fail = true;
+        }
+    }
+    let _ = crate::init::remove_tree(host.as_ref(), &state.root().join("staging"));
     finish(host, config, state, db, masker, report, log, started, fail)
 }
 

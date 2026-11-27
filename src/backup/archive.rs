@@ -94,7 +94,8 @@ fn header(meta: &Metadata, kind: tar::EntryType, size: u64) -> tar::Header {
     header
 }
 
-/// Write the archive of `roots` to `target`. `staging` is an empty directory for SQLite copies.
+/// Write the archive of `roots` to `target`. `staging` is an empty directory for SQLite copies, which
+/// stay there (the off-site step uploads them in place of the live files) until the caller removes it.
 pub fn write(
     host: &dyn Host,
     roots: &[String],
@@ -121,7 +122,6 @@ pub fn write(
             .iter()
             .any(|suffix| name.strip_suffix(suffix).is_some_and(|base| sqlite.iter().any(|db| db == Path::new(base))))
     };
-    let mut staged_count = 0;
     for (path, meta) in &entries {
         let name = path.strip_prefix("/").unwrap_or(path);
         if name.as_os_str().is_empty() || sidecar(path) {
@@ -138,8 +138,11 @@ pub fn write(
                 let mut source = path.clone();
                 let mut size = meta.size;
                 if sqlite.contains(path) {
-                    let staged = staging.join(format!("{staged_count}.sqlite"));
-                    staged_count += 1;
+                    // under its own path below the staging directory, so the off-site copy knows what it is
+                    let staged = staging.join(name);
+                    if let Some(parent) = staged.parent() {
+                        host.create_dir_all(parent, 0o700)?;
+                    }
                     match stage_sqlite(host, path, &staged)
                         .and_then(|()| host.metadata(&staged).map_err(|e| e.to_string()))
                     {
@@ -163,9 +166,6 @@ pub fn write(
                         done.files += 1;
                     }
                     Err(_) => done.warnings.push(format!("{}: file removed before we read it", path.display())),
-                }
-                if source != *path {
-                    let _ = host.remove_file(&source);
                 }
             }
             // sockets, devices, pipes: nothing to keep

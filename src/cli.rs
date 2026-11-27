@@ -338,7 +338,20 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         Command::Init(args) => return init(cli, args, host, out),
         Command::Uninstall { purge } => return uninstall(cli, *purge, host, out),
         Command::Backup(args) => return backup(cli, args, host, out),
-        Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => ("the state bundle", "M7"),
+        Command::Push { force } => return push(cli, *force, host, out),
+        Command::Pull { repository } => return pull(cli, repository.as_deref(), host, out),
+        Command::RecoveryCard => {
+            let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+            let card = crate::bundle::recovery_card(host.as_ref(), &loaded.config, &cli.paths().config);
+            // belt and braces: whatever was assembled goes through the masker that knows every secret
+            let card = loaded.masker.mask(&card);
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "card": card }));
+            } else {
+                let _ = write!(out, "{card}");
+            }
+            return Ok(());
+        }
         Command::Restore(_) | Command::Verify => ("restore & verify", "M8"),
         Command::Migrate(_) => ("migration", "M9"),
     };
@@ -1380,4 +1393,85 @@ fn backup(cli: &Cli, args: &BackupArgs, host: Arc<dyn Host>, out: &mut dyn Write
         }
     }
     if failing > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+fn push(cli: &Cli, force: bool, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::bundle::{self, Pushed};
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let pushed = bundle::push(&host, &loaded.config, &state, &db, force)?;
+    let said = match pushed {
+        Pushed::Saved => "state bundle saved off-site",
+        Pushed::Unchanged => "nothing changed since the last push (use --force to push anyway)",
+    };
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "pushed": pushed == Pushed::Saved }));
+    } else {
+        let _ = writeln!(out, "{said}");
+    }
+    Ok(())
+}
+
+fn pull(cli: &Cli, repository: Option<&str>, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::backup::offsite::Restic;
+    // a machine being rebuilt has no configuration yet; one that has, has the repository in it
+    let loaded = crate::config::load(host.as_ref(), &cli.paths()).ok();
+    let offsite = loaded.as_ref().map(|l| &l.config.backup.offsite).filter(|o| o.enabled);
+    let restic = match (repository, offsite) {
+        (None, Some(offsite)) => Restic::new(&host, offsite)?,
+        (Some(url), configured) => {
+            // the password and the access keys come from the environment — or are asked for
+            let mut env = vec![("RESTIC_REPOSITORY".to_string(), url.to_string())];
+            let have_password = host.env("RESTIC_PASSWORD").is_some() || host.env("RESTIC_PASSWORD_FILE").is_some();
+            if let Some(offsite) = configured.filter(|o| o.repository.as_ref().is_some_and(|r| r.expose() == url)) {
+                return pull_with(cli, Restic::new(&host, offsite)?, &host, loaded.as_ref(), out);
+            }
+            if !have_password {
+                let prompt = "Repository password (it will be visible as you type; set RESTIC_PASSWORD or RESTIC_PASSWORD_FILE to avoid that): ";
+                match host.ask(prompt, std::time::Duration::from_secs(300)).ok().flatten().filter(|p| !p.is_empty()) {
+                    Some(password) => env.push(("RESTIC_PASSWORD".to_string(), password)),
+                    None => {
+                        return Err(Error::Usage(
+                            "the repository's password is needed: set RESTIC_PASSWORD or RESTIC_PASSWORD_FILE (and the repository's access keys, e.g. AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) and run again"
+                                .to_string(),
+                        ));
+                    }
+                }
+            }
+            Restic::with_env(&host, env)
+        }
+        (None, None) => {
+            return Err(Error::Usage(
+                "which repository? `moi pull --repository <URL>` (the URL is on your recovery card)".to_string(),
+            ));
+        }
+    };
+    pull_with(cli, restic, &host, loaded.as_ref(), out)
+}
+
+fn pull_with(
+    cli: &Cli,
+    restic: crate::backup::offsite::Restic,
+    host: &Arc<dyn Host>,
+    loaded: Option<&crate::config::Loaded>,
+    out: &mut dyn Write,
+) -> Result<(), Error> {
+    let root = loaded.map_or_else(|| PathBuf::from("/var/lib/moi"), |l| PathBuf::from(&l.config.state.dir));
+    host.create_dir_all(&root, 0o700).map_err(|e| Error::host(format!("cannot create {}", root.display()), e))?;
+    let pulled = crate::bundle::pull(host, &restic, &root)?;
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "dir": pulled.dir, "host": pulled.host, "time": pulled.time }));
+    } else {
+        let _ = writeln!(
+            out,
+            "state bundle of {} from {} restored to {}",
+            pulled.host,
+            history::display_time(&pulled.time),
+            pulled.dir
+        );
+        let _ = writeln!(out, "next: moi restore --bundle {} --dry-run", pulled.dir);
+    }
+    Ok(())
 }

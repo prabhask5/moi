@@ -4,6 +4,7 @@
 //! Spec: docs/spec/07-backup.md § What is backed up.
 
 pub mod archive;
+pub mod offsite;
 pub mod plan;
 pub mod run;
 

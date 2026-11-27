@@ -43,6 +43,18 @@ Log line format (kept from backup.sh): `[%F %T] message`, off-site lines prefixe
 - **`moi backup --dry-run`** prints the dumps (with the user each is taken as), the paths (size, files, why), what is not on this machine, what is left out and why, and the guards (`ok` / `FAIL`: backups switched on, `require_mount`, the size limit, databases not running). It writes nothing under `local_dir`, runs no dump, and exits 1 if a guard fails. `--json`: `{ plan: {dumps, roots, excluded, missing}, guards }` — never a password.
 - The daemon runs the `backup` job at `backup.schedule` (local time, caught up after downtime like every calendar job).
 
+### Decisions (M7, off-site)
+
+- **Only a whole local backup goes off-site**: any error before this step, and it is not attempted. Its lines are the script's, prefixed `offsite: `; a failure ends with the script's `ERROR: off-site backup failed`, which — being the last `ERROR` line — is what the monitor is told.
+- **restic gets everything secret in its environment** (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, and `backup.offsite.env`), never on its command line. `password` is the password itself, not a file as in the legacy env file.
+- **Rate limit**: the time of the last *successful* upload is in `moi.db` (`offsite.last_upload`); younger than `min_interval` → `skipped: last upload was Nh ago (minimum Mh)` and the run is a success. A failed upload leaves no stamp, so the next run tries again.
+- **R2 guard** (when `[backup.offsite.r2_guard]` is there): the script's GraphQL query, verbatim, for the last 30 days. Class A is the script's action list, the four delete/abort actions are free, everything else is Class B; storage is, per bucket, the largest `payloadSize + metadataSize` seen, summed. Refused at `>=` any limit, and when the answer cannot be had (connection, status, not JSON, `errors`, no account) — with the script's messages. `MOI_CF_GRAPHQL_URL` overrides the endpoint, as `CF_GRAPHQL_URL` did.
+- **What is uploaded**: the run's `db/` directory and every path of the identity set, raw (restic deduplicates). Not uploaded, via `--exclude-file`: `backup.exclude`, raw database directories, `data.fungible`, the local tarballs (`local_dir/*/configs.tar.gz`), and every live SQLite file with its `-wal`/`-shm`/`-journal` — the consistent copies made for the archive stay in `<state>/staging/sqlite/<original path>` until the upload is done and are uploaded with the state directory. `--exclude-caches` as before.
+- **Attempts**: `restic unlock`, then up to two attempts ten minutes apart; exit 3 is the warning `some files could not be read (snapshot still saved)`.
+- **Retention** as configured (`keep`); on the `prune_on` weekday (server's local time) also `--prune` and `restic check --read-data-subset=<check_subset>`.
+- **Repository size** from `restic stats --mode raw-data --json`; at or above `max_repo` the run fails with `repository near the free tier`.
+- **Then the state bundle** (08) and `done`.
+
 ## Adoption (existing restic repository)
 
 `moi init`/`moi migrate` detects an existing restic env file (cestmoi: `/root/.config/restic/r2.env` with `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE`, `AWS_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`) and moves the values into `secrets.toml`, keeping the **same repository, password and tag** so snapshot history and dedupe continue. moi never initializes a new repository over an existing one.
@@ -54,6 +66,6 @@ Optional, scheduled weekly: restore the latest dumps into throwaway database con
 ## Acceptance
 
 - [x] On the cestmoi fixture, `--dry-run` lists: dumps for outline-postgres, bookorbit-db, supabase-db (user supabase_admin), dokploy-postgres (swarm); volumes stellar-data, shortless redis, dokploy; paths from config; excludes media and incus; raw DB dirs excluded.
-- [ ] Each guard has a test: mount missing, size limit, rate limit skip, R2 usage over limit, R2 usage unreadable, restic failure + retry, exit 3 warning, Sunday prune/check.
+- [x] Each guard has a test: mount missing, size limit, rate limit skip, R2 usage over limit, R2 usage unreadable, restic failure + retry, exit 3 warning, Sunday prune/check.
 - [x] Failure push message = last ERROR line; success = `OK`; exactly one status/msg.
 - [ ] Integration test with a local restic repo and a Postgres container: backup, then drill restores and finds the table.
