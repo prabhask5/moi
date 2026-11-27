@@ -1,0 +1,84 @@
+{
+ "Id": "277cb6c4b68b0a842bcf7ee7e79cedf55349a2f5b8f705c527600011aa8672cf",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1012
+ },
+ "Image": "sha256:723e8d4c193a6e305e901ca00ab4e8eb899b6c69c5037c7608c3639831e4194b",
+ "Name": "/supabase-auth",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "database_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [],
+ "Config": {
+  "Hostname": "277cb6c4b68b",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "DB_PASSWORD=FAKEsupabasedbpass00"
+  ],
+  "Cmd": null,
+  "Image": "supabase/gotrue:v2.182.1",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "auth",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "database_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "supabase-auth",
+     "auth",
+     "277cb6c4b68b"
+    ],
+    "NetworkID": "0df5c6b9e1d294ae96fc93aff276922b13798fe59083a05d9afead223628b872",
+    "EndpointID": "1f0a225cde2766a6112c79cb250838b729796fd30dca26c9a0f24fd220e07f81",
+    "Gateway": "172.21.0.1",
+    "IPAddress": "172.21.0.24",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:18"
+   }
+  },
+  "Ports": {}
+ }
+}

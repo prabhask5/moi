@@ -1,0 +1,18 @@
+architecture: x86_64
+config:
+  image.description: Ubuntu resolute amd64
+  limits.cpu: "4"
+  limits.memory: 6GiB
+  volatile.base_image: 0f0f0f0f0f0f
+  volatile.eth0.hwaddr: 00:16:3e:aa:bb:cc
+  volatile.last_state.power: RUNNING
+devices:
+  root:
+    path: /
+    pool: default
+    size: 40GiB
+    type: disk
+ephemeral: false
+profiles:
+- default
+stateful: false

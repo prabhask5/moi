@@ -1,0 +1,93 @@
+{
+ "Id": "0e22903c65beb8c4667a0b7e236805cff1cd2a1d6b1d4bfdb460e673e8b33276",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1036
+ },
+ "Image": "sha256:f2ffef2586ea08a36cafaa440885e3694da4032e2f3b71d747260f45d3560a83",
+ "Name": "/stellar-planner-x7k2.1.fa4b3671df183a27496e06d22",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "volume",
+   "Name": "stellar-data",
+   "Source": "/var/lib/docker/volumes/stellar-data/_data",
+   "Destination": "/app/data",
+   "Driver": "local",
+   "Mode": "z",
+   "RW": true
+  }
+ ],
+ "Config": {
+  "Hostname": "0e22903c65be",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "NODE_ENV=production",
+   "SESSION_SECRET=FAKEstellarsession000000"
+  ],
+  "Cmd": null,
+  "Image": "stellar-planner-x7k2:latest",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "stellar-planner-x7k2",
+   "com.docker.swarm.task.id": "c23b11f930225640de8314db1",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "stellar-planner-x7k2.1.fa4b3671df183a27496e06d22",
+     "stellar-planner-x7k2.1.fa4b3671df183a27496e06d22",
+     "0e22903c65be"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "1d535c7001ac4defe0f8e1b4dd0f973cad053cc67c1c069ed9a42f7fae551667",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.49",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:31"
+   }
+  },
+  "Ports": {}
+ }
+}

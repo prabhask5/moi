@@ -1,0 +1,82 @@
+{
+ "Id": "622e096c08b638625915364453acf20c10f42d5dc69776846e5b02aa09804ee3",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1037
+ },
+ "Image": "sha256:39ac74ac2b19c783af34f1bafab68527b5aaefd45e97d8eaa927cdd8ab7e2f8a",
+ "Name": "/shortless-app-p9q1.1.e8331589c27aaeb94b5b55795",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [],
+ "Config": {
+  "Hostname": "622e096c08b6",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "REDIS_URL=redis://shortless-redis-m3n4:6379"
+  ],
+  "Cmd": null,
+  "Image": "shortless-app-p9q1:latest",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "shortless-app-p9q1",
+   "com.docker.swarm.task.id": "764a0483e33d3605bf7d77676",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "shortless-app-p9q1.1.e8331589c27aaeb94b5b55795",
+     "shortless-app-p9q1.1.e8331589c27aaeb94b5b55795",
+     "622e096c08b6"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "3980f3d6ebd9291a7d0c6df3aec9711199221871ea4d42179021e1c855c370c7",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.50",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:32"
+   }
+  },
+  "Ports": {}
+ }
+}

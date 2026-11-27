@@ -41,9 +41,12 @@ A small Docker host for the client tests: a compose stack (`web`, `db`), a stopp
 
 The first real server, rebuilt from its non-secret profile (`reference/cestmoi/PROFILE.md`) and its redacted legacy
 scripts — **not** from a dump of the machine: every token, key, password and domain is fake (`FAKE…`, `example.com`).
-So far it has the filesystem (`/etc` with the custom units, cron jobs and firewall rule files, dpkg state, scripts
-incl. a stale `backup.sh.bak` holding a push token, a user's dotfiles, the `/mnt/storage` layout) and the canned
-outputs of the read-only tools snapshots run. Docker, Incus and Uptime Kuma are added with their collectors.
+It has the filesystem (`/etc` with the custom units, cron jobs and firewall rule files, dpkg state, the legacy
+scripts with fake push tokens that match the Kuma database, a stale `backup.sh.bak` holding another token, a
+user's dotfiles, the `/mnt/storage` layout, a compose file per stack), the canned outputs of the read-only tools
+snapshots run (incl. Incus), the Docker engine state (34 containers in 13 compose stacks plus the standalone
+`dokploy-traefik`, 7 Dokploy swarm services with their task containers, `container:<id>` network modes) and
+Uptime Kuma's `kuma.db` with 21 monitors (one whose last message is `[object Object]`).
 It must reproduce the situations the specs call out: Dokploy swarm
 services and task containers, `container:<id>` network modes, socket-activated ssh, host-firewall.service with rules files,
 an Incus loop mount, read-only and log bind mounts, fungible media, a stale `backup.sh.bak` with a push token, a Kuma

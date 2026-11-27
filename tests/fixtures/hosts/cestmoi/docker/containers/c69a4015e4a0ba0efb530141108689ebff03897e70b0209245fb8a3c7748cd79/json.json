@@ -1,0 +1,94 @@
+{
+ "Id": "c69a4015e4a0ba0efb530141108689ebff03897e70b0209245fb8a3c7748cd79",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1035
+ },
+ "Image": "sha256:a35647c49bc8fa45d98b5bb5c151fafdd70f5f734f86ff01930daae179534745",
+ "Name": "/dokploy-postgres.1.70129bcd5327002b39f022e98",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "no",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "volume",
+   "Name": "dokploy-postgres-database",
+   "Source": "/var/lib/docker/volumes/dokploy-postgres-database/_data",
+   "Destination": "/var/lib/postgresql/data",
+   "Driver": "local",
+   "Mode": "z",
+   "RW": true
+  }
+ ],
+ "Config": {
+  "Hostname": "c69a4015e4a0",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "POSTGRES_USER=dokploy",
+   "POSTGRES_PASSWORD=FAKEdokploydbpass",
+   "POSTGRES_DB=dokploy"
+  ],
+  "Cmd": null,
+  "Image": "postgres:16",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.swarm.service.name": "dokploy-postgres",
+   "com.docker.swarm.task.id": "647c72d4b8ebb04afab5c62cb",
+   "com.docker.swarm.node.id": "n0decestmoi"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "dokploy-postgres.1.70129bcd5327002b39f022e98",
+     "dokploy-postgres.1.70129bcd5327002b39f022e98",
+     "c69a4015e4a0"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "ef18609afbc44ffdbd0c0d86c1ea741f7307b375c8883de9db5e2c52048b7879",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.48",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:30"
+   }
+  },
+  "Ports": {}
+ }
+}

@@ -1,0 +1,106 @@
+{
+ "Id": "2abce365a11e89d12af0d68537f5516bfc87cd72ace95ded3a64853aaffce06b",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1011
+ },
+ "Image": "sha256:d8a7fe5352718948fab5995efc66cc82ecea0eef090ed746b0536c5fa42a26de",
+ "Name": "/supabase-envoy",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/database/volumes/api/envoy.yaml",
+   "Destination": "/etc/envoy/envoy.yaml",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "2abce365a11e",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "envoyproxy/envoy:v1.36.2",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "envoy",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "supabase-envoy",
+     "envoy",
+     "2abce365a11e"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "74103bf1190834e8b49b8b33cc7c26b3144c86cc5aa717a77dad2a9bf6e4d282",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.22",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:16"
+   },
+   "database_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "supabase-envoy",
+     "envoy",
+     "2abce365a11e"
+    ],
+    "NetworkID": "0df5c6b9e1d294ae96fc93aff276922b13798fe59083a05d9afead223628b872",
+    "EndpointID": "cadf413ab33c64f95d6eb2e0829e45892ee04c6d0b73f6006019bf954d8e10ce",
+    "Gateway": "172.21.0.1",
+    "IPAddress": "172.21.0.23",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:17"
+   }
+  },
+  "Ports": {}
+ }
+}

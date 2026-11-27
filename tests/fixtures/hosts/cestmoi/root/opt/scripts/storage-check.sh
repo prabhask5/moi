@@ -10,7 +10,7 @@
 #   - Disk/USB errors in the kernel log since the last run
 #   - A disk disappearing entirely (USB drive dropped off the bus)
 
-KUMA_PUSH="http://uptime.home/api/push/FAKE_TOKEN"
+KUMA_PUSH="http://uptime.home/api/push/FAKEstorageTok0003"
 
 MOUNTS="/ /mnt/storage"     # filesystems to check for space / read-only
 MEDIA_MOUNT="/mnt/storage"  # the USB drive: must be mounted and writable

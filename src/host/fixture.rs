@@ -331,9 +331,12 @@ impl Host for FixtureHost {
     }
 
     fn real_path(&self, path: &Path) -> io::Result<PathBuf> {
-        match self.overlay {
-            Some(_) => self.writable(path),
-            None => Ok(self.resolve(path, true)?.real),
+        // An existing file is wherever it is (the fixture, for read-only opens); a new one goes to the
+        // overlay.
+        let resolved = self.resolve(path, true)?;
+        match (resolved.layer, &self.overlay) {
+            (Some(_), _) | (None, None) => Ok(resolved.real),
+            (None, Some(_)) => self.writable(path),
         }
     }
 

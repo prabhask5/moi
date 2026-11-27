@@ -1,0 +1,94 @@
+{
+ "Id": "c31bc69db553e93d83d85bfe9286d926c5cf00a6961c5657db2d97576a9e11dd",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1030
+ },
+ "Image": "sha256:ae7e9011a87f1cd0de8a9dceacb2d92d2d171a19afa5a989f6e92f6dd0d98bc7",
+ "Name": "/bookorbit-db",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "yams_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/yams/config/bookorbit-db",
+   "Destination": "/var/lib/postgresql",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "c31bc69db553",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "POSTGRES_USER=bookorbit",
+   "POSTGRES_PASSWORD=FAKEbookorbitdbpass"
+  ],
+  "Cmd": null,
+  "Image": "pgvector/pgvector:pg18",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "bookorbit-db",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "yams_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "bookorbit-db",
+     "bookorbit-db",
+     "c31bc69db553"
+    ],
+    "NetworkID": "d4d21bd9bc67ae8d9be3b2e91e4f6e969b5ce27f246f345bbb79cb02584bfd74",
+    "EndpointID": "f4b510069bbaa820016c550997605b36b548c372408dd3692e0104e00e571896",
+    "Gateway": "172.22.0.1",
+    "IPAddress": "172.22.0.42",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:2a"
+   }
+  },
+  "Ports": {}
+ }
+}

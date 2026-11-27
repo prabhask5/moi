@@ -1,0 +1,93 @@
+{
+ "Id": "a91f0e72a26ff0d3fd7ad2a321a7e4fe93c80e0d852acf6a16bc304963267e6f",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1009
+ },
+ "Image": "sha256:89ed3e5226c9f64f7d8fa787cda1fb03151074efe77d1bd1fad1dd8a770ef136",
+ "Name": "/seerr",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/seerr/config",
+   "Destination": "/app/config",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "a91f0e72a26f",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "TZ=America/New_York"
+  ],
+  "Cmd": null,
+  "Image": "ghcr.io/seerr-team/seerr:v3.0.1",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "seerr",
+   "com.docker.compose.service": "seerr",
+   "com.docker.compose.project.working_dir": "/opt/services/seerr",
+   "com.docker.compose.project.config_files": "/opt/services/seerr/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "seerr",
+     "seerr",
+     "a91f0e72a26f"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "1933a6afcc706c43693d1ef53eb009b271cb572df3b75b027fc841ee07168c50",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.20",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:14"
+   }
+  },
+  "Ports": {}
+ }
+}

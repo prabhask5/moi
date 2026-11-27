@@ -1,0 +1,100 @@
+{
+ "Id": "21fb299c8fdeac6da2269afc4f3e53c5cfeeb5bb26bff6ee4988d884e66542de",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1005
+ },
+ "Image": "sha256:49b9d3600b5fdf24ce5fc31b123aebb71169ea29c5e76e7d1bb8b544327cd46f",
+ "Name": "/host-logs",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/var/log/server-backup.log",
+   "Destination": "/logs/server-backup.log",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/var/log/service-check-public.log",
+   "Destination": "/logs/service-check-public.log",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "21fb299c8fde",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "amir20/dozzle:v8.13.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "host-logs",
+   "com.docker.compose.service": "host-logs",
+   "com.docker.compose.project.working_dir": "/opt/services/host-logs",
+   "com.docker.compose.project.config_files": "/opt/services/host-logs/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "host-logs",
+     "host-logs",
+     "21fb299c8fde"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "635a8e4b64154a05605ac1ec1b7b609d399d3be76282c2e4a23c65d309f0d35d",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.15",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:0f"
+   }
+  },
+  "Ports": {}
+ }
+}

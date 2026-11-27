@@ -1,0 +1,104 @@
+{
+ "Id": "ceb712381397a40d6186d73bce75829998dbdf60290127c97390a9d4931156ce",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1007
+ },
+ "Image": "sha256:ca106b21aca5236e874960c47af9b6cfcb981962aeb379542cdf2cd17825467c",
+ "Name": "/outline-postgres",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "outline_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/outline/pgdata",
+   "Destination": "/var/lib/postgresql",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "ceb712381397",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "POSTGRES_USER=outline",
+   "POSTGRES_PASSWORD=FAKEoutlinedbpass",
+   "POSTGRES_DB=outline"
+  ],
+  "Cmd": null,
+  "Image": "postgres:18",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "postgres",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {},
+  "Healthcheck": {
+   "Test": [
+    "CMD-SHELL",
+    "pg_isready -U outline"
+   ],
+   "Interval": 30000000000,
+   "Timeout": 5000000000,
+   "Retries": 3
+  }
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "outline_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "outline-postgres",
+     "postgres",
+     "ceb712381397"
+    ],
+    "NetworkID": "1e292113672ede096d4c39a30fd72eae884af69ae02877d01f16ef71848a2d01",
+    "EndpointID": "b53fecc753dd375d5495bcffd88ac756ca2cfe050068bae71a92c0824ec30d9a",
+    "Gateway": "172.20.0.1",
+    "IPAddress": "172.20.0.18",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:12"
+   }
+  },
+  "Ports": {}
+ }
+}

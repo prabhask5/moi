@@ -1,0 +1,109 @@
+{
+ "Id": "637ed89cb667242bdfeb1cbf647ec453eead371812d527695591d87cadb49fa8",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1020
+ },
+ "Image": "sha256:fcb89daf7bd03ff707c40403b1ab7ea8546195b9a74c0ba68814aea6d108a77a",
+ "Name": "/uptime-kuma",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/monitoring/uptime-kuma/data",
+   "Destination": "/app/data",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "637ed89cb667",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "louislam/uptime-kuma:1.23.17",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "uptime-kuma",
+   "com.docker.compose.service": "uptime-kuma",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/uptime-kuma",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/uptime-kuma/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {},
+  "Healthcheck": {
+   "Test": [
+    "CMD-SHELL",
+    "extra/healthcheck"
+   ],
+   "Interval": 30000000000,
+   "Timeout": 5000000000,
+   "Retries": 3
+  }
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "uptime-kuma",
+     "uptime-kuma",
+     "637ed89cb667"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "bdc5813dcaee703d7b56486cc5898596dafae21257fc1e17a3ae9bd078653dee",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.32",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:20"
+   }
+  },
+  "Ports": {}
+ }
+}

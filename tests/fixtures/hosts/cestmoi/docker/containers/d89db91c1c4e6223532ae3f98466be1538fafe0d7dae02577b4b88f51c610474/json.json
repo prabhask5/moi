@@ -1,0 +1,93 @@
+{
+ "Id": "d89db91c1c4e6223532ae3f98466be1538fafe0d7dae02577b4b88f51c610474",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1015
+ },
+ "Image": "sha256:0570ab0aa170779cb1d441ae86c91832f830ca48de8602f02a7dd8909b2a802d",
+ "Name": "/supabase-storage",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "database_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/mnt/storage/database/storage",
+   "Destination": "/var/lib/storage",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "d89db91c1c4e",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "DB_PASSWORD=FAKEsupabasedbpass00"
+  ],
+  "Cmd": null,
+  "Image": "supabase/storage-api:v1.32.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "database",
+   "com.docker.compose.service": "storage",
+   "com.docker.compose.project.working_dir": "/opt/services/database",
+   "com.docker.compose.project.config_files": "/opt/services/database/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "database_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "supabase-storage",
+     "storage",
+     "d89db91c1c4e"
+    ],
+    "NetworkID": "0df5c6b9e1d294ae96fc93aff276922b13798fe59083a05d9afead223628b872",
+    "EndpointID": "1376be3985f16aaf7b95beaa20c34a3d24f4ee0ecb30c7ca1d347e09e284c7fd",
+    "Gateway": "172.21.0.1",
+    "IPAddress": "172.21.0.27",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:1b"
+   }
+  },
+  "Ports": {}
+ }
+}

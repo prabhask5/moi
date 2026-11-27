@@ -1,0 +1,364 @@
+[
+ {
+  "ID": "ad5c9e3223cae597bdae5bf4c",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "dokploy",
+   "Labels": {},
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "dokploy/dokploy:v0.31.0@sha256:edf0aae700c2480b4bbf2106c12b45d7c79ff581caf2a0bf6e8fc5d07e50b69a",
+     "Env": [
+      "DATABASE_URL=postgres://dokploy:FAKEdokploydbpass@dokploy-postgres:5432/dokploy"
+     ],
+     "Labels": {},
+     "Mounts": [
+      {
+       "Type": "bind",
+       "Source": "/var/run/docker.sock",
+       "Target": "/var/run/docker.sock"
+      },
+      {
+       "Type": "bind",
+       "Source": "/etc/dokploy",
+       "Target": "/etc/dokploy"
+      },
+      {
+       "Type": "volume",
+       "Source": "dokploy-docker-config",
+       "Target": "/root/.docker"
+      }
+     ]
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {
+     "Constraints": [
+      "node.role==manager"
+     ]
+    },
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "dokploy"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "vip",
+    "Ports": [
+     {
+      "Protocol": "tcp",
+      "TargetPort": 3000,
+      "PublishedPort": 3000,
+      "PublishMode": "host"
+     }
+    ]
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "b87abe04b2a89f382be03ac2c",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "dokploy-postgres",
+   "Labels": {},
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "postgres:16@sha256:7622c7b1bceca291357b7a88086fe495ef294b8132228d1c88ab429a4b69b8af",
+     "Env": [
+      "POSTGRES_USER=dokploy",
+      "POSTGRES_PASSWORD=FAKEdokploydbpass",
+      "POSTGRES_DB=dokploy"
+     ],
+     "Labels": {},
+     "Mounts": [
+      {
+       "Type": "volume",
+       "Source": "dokploy-postgres-database",
+       "Target": "/var/lib/postgresql/data"
+      }
+     ]
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "dokploy-postgres"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "71655488ce1f217ff80f01c9f",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "stellar-planner-x7k2",
+   "Labels": {
+    "traefik.enable": "true"
+   },
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "stellar-planner-x7k2:latest@sha256:cf7aa89e9deb8727e43f2d4575976899f35060ba323ca2f201285658ce6b899c",
+     "Env": [
+      "NODE_ENV=production",
+      "SESSION_SECRET=FAKEstellarsession000000"
+     ],
+     "Labels": {},
+     "Mounts": [
+      {
+       "Type": "volume",
+       "Source": "stellar-data",
+       "Target": "/app/data"
+      }
+     ]
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "stellar-planner-x7k2"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "a54a5f78f67a88aad30d4b659",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "shortless-app-p9q1",
+   "Labels": {
+    "traefik.enable": "true"
+   },
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "shortless-app-p9q1:latest@sha256:66abf1bb2581aa371a1cf6999cd12a6ea16a4d7996aa160353a677ebca207cf8",
+     "Env": [
+      "REDIS_URL=redis://shortless-redis-m3n4:6379"
+     ],
+     "Labels": {},
+     "Mounts": []
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "shortless-app-p9q1"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "6b416dee40025f16314ff0fad",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "shortless-redis-m3n4",
+   "Labels": {
+    "traefik.enable": "true"
+   },
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "redis:8@sha256:8b6a95272cca60bcfecdf6ec1e3982c2e8bbf013e6668322dfd187eb4ddb7419",
+     "Env": [],
+     "Labels": {},
+     "Mounts": [
+      {
+       "Type": "volume",
+       "Source": "shortless-redis-m3n4-data",
+       "Target": "/data"
+      }
+     ]
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "shortless-redis-m3n4"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "6e27f4456eedcf1167a3a1370",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "compiler-ui-a5b6",
+   "Labels": {
+    "traefik.enable": "true"
+   },
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "compiler-ui-a5b6:latest@sha256:4bfb009b5b42ae524c236f2775536f67a83278f37c455bc924518706fce23a44",
+     "Env": [],
+     "Labels": {},
+     "Mounts": []
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "compiler-ui-a5b6"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ },
+ {
+  "ID": "d232722a4ef1cbff130925e26",
+  "Version": {
+   "Index": 100
+  },
+  "CreatedAt": "2026-08-01T00:00:00Z",
+  "UpdatedAt": "2026-11-20T00:00:00Z",
+  "Spec": {
+   "Name": "dokploy-bridge-c7d8",
+   "Labels": {
+    "traefik.enable": "true"
+   },
+   "TaskTemplate": {
+    "ContainerSpec": {
+     "Image": "dokploy-bridge-c7d8:latest@sha256:76d0aff47412e8cea30d5ad19014c5c51a063c810d71928395117b27bf0222b7",
+     "Env": [
+      "BRIDGE_TOKEN=FAKEbridgetoken000000"
+     ],
+     "Labels": {},
+     "Mounts": []
+    },
+    "RestartPolicy": {
+     "Condition": "any"
+    },
+    "Placement": {},
+    "Networks": [
+     {
+      "Target": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+      "Aliases": [
+       "dokploy-bridge-c7d8"
+      ]
+     }
+    ]
+   },
+   "Mode": {
+    "Replicated": {
+     "Replicas": 1
+    }
+   },
+   "EndpointSpec": {
+    "Mode": "dnsrr",
+    "Ports": []
+   }
+  },
+  "Endpoint": {}
+ }
+]

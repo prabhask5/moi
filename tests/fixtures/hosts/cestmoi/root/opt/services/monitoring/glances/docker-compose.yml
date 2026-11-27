@@ -1,0 +1,8 @@
+services:
+  glances:
+    image: nicolargo/glances:4.4.1
+    container_name: glances
+    restart: unless-stopped
+networks:
+  homelab:
+    external: true

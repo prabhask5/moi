@@ -1,6 +1,6 @@
 //! What a collector is, what it produces, and the helpers collectors share.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,12 +15,24 @@ pub struct Ctx {
     pub host: Arc<dyn Host>,
     pub config: Arc<Config>,
     pub docker: Docker,
+    /// For collectors that run after the others ([`Collector::after_capture`]): every host file the first
+    /// round asked to copy…
+    pub captured: Vec<PathBuf>,
+    /// …the stable files it generated, by path under `snapshot/`…
+    pub generated: BTreeMap<String, Vec<u8>>,
+    /// …and the names of the collectors that failed.
+    pub failed: Vec<String>,
 }
 
 /// One area of the server (docs/spec/02-snapshot.md § Collectors).
 pub trait Collector: Send + Sync {
     /// Short name: used in reports, logs and `collector-errors.json`.
     fn name(&self) -> &'static str;
+
+    /// True for a collector that needs what the others captured; it runs in a second round.
+    fn after_capture(&self) -> bool {
+        false
+    }
 
     /// Read the area. An `Err` (or taking too long) keeps this collector's previous output in place.
     fn collect(&self, cx: &Ctx) -> Result<Output, String>;

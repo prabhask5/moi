@@ -1,0 +1,92 @@
+{
+ "Id": "f33e4c144d0a4e6383241ef9451bf15a3dfee9200502a40d95fb1704c2869f18",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1000
+ },
+ "Image": "sha256:8844a9fda782267a3f967c83524e52bb896cb0f990357b8c2a188ff7ebad992b",
+ "Name": "/adguard",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "host",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/services/adguard/work",
+   "Destination": "/opt/adguardhome/work",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/opt/services/adguard/conf",
+   "Destination": "/opt/adguardhome/conf",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "f33e4c144d0a",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "adguard/adguardhome:v0.107.71",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "adguard",
+   "com.docker.compose.service": "adguard",
+   "com.docker.compose.project.working_dir": "/opt/services/adguard",
+   "com.docker.compose.project.config_files": "/opt/services/adguard/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "host": {
+    "IPAMConfig": null,
+    "Aliases": null,
+    "NetworkID": "213cc7d76d0e85b51ec951b1447ace8cfd904c60c764708caa6b885ba961feb5",
+    "IPAddress": ""
+   }
+  },
+  "Ports": {}
+ }
+}

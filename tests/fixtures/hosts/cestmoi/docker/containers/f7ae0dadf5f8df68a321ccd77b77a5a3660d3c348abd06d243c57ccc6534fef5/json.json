@@ -1,0 +1,93 @@
+{
+ "Id": "f7ae0dadf5f8df68a321ccd77b77a5a3660d3c348abd06d243c57ccc6534fef5",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1008
+ },
+ "Image": "sha256:e0c42b7387b52519fee99b365e6202acc2a109d1e054b4d664b9e9471611ca05",
+ "Name": "/outline-redis",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "outline_default",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "volume",
+   "Name": "57e568c64d0a511197b7bcd1776b4138d70321e3563eae2204fc11bd80254f98",
+   "Source": "/var/lib/docker/volumes/57e568c64d0a511197b7bcd1776b4138d70321e3563eae2204fc11bd80254f98/_data",
+   "Destination": "/data",
+   "Driver": "local",
+   "Mode": "",
+   "RW": true
+  }
+ ],
+ "Config": {
+  "Hostname": "f7ae0dadf5f8",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "redis:8-alpine",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "outline",
+   "com.docker.compose.service": "redis",
+   "com.docker.compose.project.working_dir": "/opt/services/outline",
+   "com.docker.compose.project.config_files": "/opt/services/outline/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "outline_default": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "outline-redis",
+     "redis",
+     "f7ae0dadf5f8"
+    ],
+    "NetworkID": "1e292113672ede096d4c39a30fd72eae884af69ae02877d01f16ef71848a2d01",
+    "EndpointID": "b50b6cf6285e4e8aacc6fcd42e1ce1c4ba5a91ba934bda35c2ee606555d22553",
+    "Gateway": "172.20.0.1",
+    "IPAddress": "172.20.0.19",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:13"
+   }
+  },
+  "Ports": {}
+ }
+}

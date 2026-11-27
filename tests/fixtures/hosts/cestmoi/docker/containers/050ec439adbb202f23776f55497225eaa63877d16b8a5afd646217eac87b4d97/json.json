@@ -1,0 +1,92 @@
+{
+ "Id": "050ec439adbb202f23776f55497225eaa63877d16b8a5afd646217eac87b4d97",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1018
+ },
+ "Image": "sha256:71a80bff819ab2ab50cd564204d415a8424386865cf0a266ffa765bb9f00abfd",
+ "Name": "/glances",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "host",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "050ec439adbb",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ],
+  "Cmd": null,
+  "Image": "nicolargo/glances:4.4.1",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "glances",
+   "com.docker.compose.service": "glances",
+   "com.docker.compose.project.working_dir": "/opt/services/monitoring/glances",
+   "com.docker.compose.project.config_files": "/opt/services/monitoring/glances/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "glances",
+     "glances",
+     "050ec439adbb"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "394c319891e317843857020fffd9c1fbd2be669ba2c7f782fbebbc4d42185220",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.30",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:1e"
+   }
+  },
+  "Ports": {}
+ }
+}

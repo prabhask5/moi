@@ -1,0 +1,89 @@
+{
+ "Id": "54aff3c942f75987e7342d00d19fb4b4cf7af729799af8751599b3304cfc2ec5",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1001
+ },
+ "Image": "sha256:4ea457beabf938f91aefff2acaa7f70c29d6bd0ef502f5697c68302c023c4c67",
+ "Name": "/cloudflared",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [],
+ "Config": {
+  "Hostname": "54aff3c942f7",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "TUNNEL_TOKEN=FAKEtunneltoken0000000000000000"
+  ],
+  "Cmd": [
+   "tunnel",
+   "--no-autoupdate",
+   "run"
+  ],
+  "Image": "cloudflare/cloudflared:2026.10.0",
+  "Entrypoint": null,
+  "Labels": {
+   "com.docker.compose.project": "cloudflared",
+   "com.docker.compose.service": "cloudflared",
+   "com.docker.compose.project.working_dir": "/opt/services/cloudflared",
+   "com.docker.compose.project.config_files": "/opt/services/cloudflared/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3",
+   "com.docker.compose.project.environment_file": "/opt/services/cloudflared/.env"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "cloudflared",
+     "cloudflared",
+     "54aff3c942f7"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "504626510806d21a397c074ec1bdfd3ea1639f16f328a9cbe4084569ecc385f1",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.11",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:0b"
+   }
+  },
+  "Ports": {}
+ }
+}
