@@ -121,6 +121,17 @@ Every captured text file (scripts, units, crontabs, compose files and env files)
 - `moi log [-n N]`, `moi diff [rev]` (default HEAD; secrets in the diff are shown only with `--show-secrets` as root).
 - `volatile/changelog.txt` = last 25 commits for the context file.
 
+### Decisions (M2)
+
+- Trees are built directly from the files of `snapshot/`, `NOTES.md` and `.gitignore` (`volatile/`, `CONTEXT.md`, `audit.md`); no index is written. `git log`, `git show` and `git fsck` work on the repository (a test checks this when `git` is installed), but `git status` in the state dir is not meaningful and nobody should commit there by hand.
+- The repository is opened isolated: no system or user git configuration is read. Branch `main`, author and committer `moi <moi@<hostname>>`, commit time = the host clock.
+- First commit: `initial snapshot of <hostname>`. Later subjects list the areas (the directory under `snapshot/`, or the top-level file such as `NOTES.md`) in alphabetical order, then up to four captured files by their host path, then ` +N files`. `files.manifest.tsv` is never named: it changes whenever a captured file does.
+- Body: `+ container x (image)`, `- container y (image)`, `~ container z: env, mounts` (the changed top-level fields of the normalized record), sorted by name, then the same for `service`; then `A|M|D<tab>path` lines (captured files by host path), at most 60, then `… and N more`.
+- `moi log [-n N]` prints `YYYY-MM-DD HH:MM  subject`, newest first, times in UTC. `--json`: `{ "ok": true, "commits": [{id, time, subject, body}] }`.
+- `moi diff [rev]` prints the commit, its `A|M|D` list and a unified diff (3 context lines) of every changed text file except the manifest; binary files are named only. `rev` is `HEAD`, `HEAD~N` or an id prefix. Secrets are masked by shape (assignments to sensitive names, `name: value` lines, URL credentials, push/ping tokens, password hashes) and by value (everything in `secrets.toml`). `--show-secrets` shows them and is refused unless the caller is root. `--json`: `{ "ok": true, "commit": {…}, "files": [{status, path, diff}], "secrets_shown": false }`.
+- Before the first snapshot, `log` and `diff` say `no history yet: run \`moi snapshot\`` and exit 0 without creating anything.
+- `moi snapshot` now ends with `recorded <short id>` and the subject, or `no configuration changes`; its JSON gains `"commit": {…} | null`.
+
 ## Performance
 
 Incremental: keep a cache of `(path, size, mtime, inode) → sha256` in `moi.db`; unchanged files are not re-read or re-copied. Budget: full snapshot of the `cestmoi` fixture < 2 s cold, < 500 ms warm (13).

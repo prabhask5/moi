@@ -30,7 +30,7 @@ Specs: 01, CLAUDE.md §3 (host), 14
 Specs: 02
 - [x] Docker Engine API client over the unix socket (containers, networks, volumes, services, events, exec, logs) with fixture-replay tests
 - [x] All collectors, parallel, with timeouts; stable/volatile split; incremental capture cache
-- [ ] Git history via gix, commit summaries incl. docker/swarm diffs; `moi log`, `moi diff`
+- [x] Git history via gix, commit summaries incl. docker/swarm diffs; `moi log`, `moi diff`
 - [ ] Fixture host `cestmoi` built from the prototype's real output (redacted); golden snapshot test
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 

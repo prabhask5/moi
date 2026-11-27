@@ -25,7 +25,7 @@ Each dependency and why (keep this list current when adding one):
 | *(none)* for the Docker Engine API | Decided in M2: a ~200-line blocking HTTP/1.1 client over the unix socket (`docker::http`) instead of hyper/hyperlocal or bollard. moi makes a handful of local requests per run; an async HTTP stack would be most of the dependency tree for no measurable gain |
 | (planned) rustls, tokio-rustls, webpki-roots or rustls-native-certs | staged HTTPS probes, Kuma, R2 guard |
 | rusqlite (bundled SQLite) | `moi.db`; later read-only `kuma.db` and SQLite online backups. Bundled so behaviour does not depend on the distro's SQLite |
-| (planned) gix | state history without a git binary |
+| gix (`sha1`, `revision` features only) | state history without a git binary: object writing, commits, revision parsing and walking. No network, worktree, index-status or blob-diff features; tree comparison and the line diff are moi's own |
 | (planned) zbus | systemd over D-Bus |
 | (planned) notify | inotify watcher |
 | (planned) rust_socketio or a minimal socket.io v4 client | Uptime Kuma API |

@@ -195,7 +195,8 @@ impl<'a> Store<'a> {
     pub fn finish(mut self) -> Result<Outcome, Error> {
         for top in ["snapshot", "volatile"] {
             for path in super::list_tree(self.host, &self.root, top) {
-                if self.next.contains_key(&path) {
+                // the changelog is written after the commit that follows a snapshot (state::history)
+                if self.next.contains_key(&path) || path == "volatile/changelog.txt" {
                     continue;
                 }
                 let abs = self.root.join(&path);

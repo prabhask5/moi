@@ -18,7 +18,9 @@ use crate::config::Paths;
 use crate::error::Error;
 use crate::host::{FixtureHost, Host, RealHost};
 use crate::log::{Level, Logger};
+use crate::redact::Masker;
 use crate::state::StateDir;
+use crate::state::history::{self, History};
 
 /// moi — run a Linux server from one binary.
 #[derive(Debug, Parser)]
@@ -61,6 +63,9 @@ pub enum Command {
         /// Revision (git syntax, e.g. HEAD~3)
         #[arg(default_value = "HEAD")]
         rev: String,
+        /// Show secret values instead of masking them (root only)
+        #[arg(long)]
+        show_secrets: bool,
     },
     /// Regenerate CONTEXT.md for AI assistants, or share it with an expiring link
     Context {
@@ -303,7 +308,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
     let (what, milestone) = match &cli.command {
         Command::Config(cmd) => return config(cli, cmd, host, out),
         Command::Snapshot(args) => return snapshot(cli, args, host, out),
-        Command::Log { .. } | Command::Diff { .. } => ("history", "M2"),
+        Command::Log { count } => return log(cli, *count, host, out),
+        Command::Diff { rev, show_secrets } => return diff(cli, rev, *show_secrets, host, out),
         Command::Context { .. } | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
         Command::Check(_) => ("health checks", "M4"),
         Command::Monitors(_) => ("Uptime Kuma monitors", "M5"),
@@ -411,6 +417,7 @@ fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn W
     state.ensure(host.as_ref())?;
     let db = state.open_db(host.as_ref())?;
     let report = crate::snapshot::run(&host, &Arc::new(loaded.config), &state, &db)?;
+    let commit = history::record(host.as_ref(), &state)?;
 
     for failed in report.failed() {
         let error = failed.error.as_deref().unwrap_or_default();
@@ -420,15 +427,88 @@ fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn W
         log.warn("--push ignored: the state bundle arrives with milestone M7", &[]);
     }
     if cli.json {
-        print_json(out, &json!({ "ok": true, "state": state.state(), "snapshot": report }));
+        print_json(out, &json!({ "ok": true, "state": state.state(), "snapshot": report, "commit": commit }));
     } else {
-        let changes = match report.changed.len() {
-            0 => "no configuration changes".to_string(),
-            1 => "1 file changed".to_string(),
-            n => format!("{n} files changed"),
+        let _ = write!(out, "snapshot saved to {}: {} files, ", state.state().display(), report.stable_files);
+        let _ = match &commit {
+            Some(c) => writeln!(out, "recorded {}\n  {}", &c.id[..10.min(c.id.len())], c.subject),
+            None => writeln!(out, "no configuration changes"),
         };
-        let _ =
-            writeln!(out, "snapshot saved to {}: {} files, {changes}", state.state().display(), report.stable_files);
+    }
+    Ok(())
+}
+
+/// The history of this server, or `None` (after saying so) when no snapshot was taken yet.
+fn open_history(cli: &Cli, host: &Arc<dyn Host>, out: &mut dyn Write) -> Result<Option<(History, Masker)>, Error> {
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    if !host.exists(&state.state().join(".git")) {
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "commits": [] }));
+        } else {
+            let _ = writeln!(out, "no history yet: run `moi snapshot`");
+        }
+        return Ok(None);
+    }
+    Ok(Some((History::open(host.as_ref(), &state)?, loaded.masker)))
+}
+
+fn log(cli: &Cli, count: usize, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let Some((history, _)) = open_history(cli, &host, out)? else { return Ok(()) };
+    let commits = history.log(count)?;
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "commits": commits }));
+    } else {
+        for c in &commits {
+            let _ = writeln!(out, "{}  {}", history::display_time(&c.time), c.subject);
+        }
+    }
+    Ok(())
+}
+
+fn diff(cli: &Cli, rev: &str, show_secrets: bool, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    if show_secrets && !history::is_root(host.as_ref()) {
+        return Err(Error::Usage("--show-secrets needs root (the state dir holds the server's secrets)".into()));
+    }
+    let Some((history, masker)) = open_history(cli, &host, out)? else { return Ok(()) };
+    let (commit, changes) = history.show(rev)?;
+    let shown = |text: &str| if show_secrets { text.to_string() } else { masker.mask(&crate::redact::text(text)) };
+    let as_text = |bytes: &Option<Vec<u8>>| match bytes {
+        None => Some(String::new()),
+        Some(b) if !b.iter().take(8192).any(|x| *x == 0) => Some(String::from_utf8_lossy(b).into_owned()),
+        Some(_) => None,
+    };
+    let mut files = Vec::new();
+    // The manifest only repeats, as hashes, what the other files show.
+    for c in changes.iter().filter(|c| c.path != "snapshot/files.manifest.tsv") {
+        let path = history::host_path(&c.path).unwrap_or(&c.path).to_string();
+        let body = match (as_text(&c.old), as_text(&c.new)) {
+            (Some(old), Some(new)) => shown(&crate::state::diff::unified(&old, &new, 3)),
+            _ => "Binary file changed\n".to_string(),
+        };
+        files.push((c.status, path, body));
+    }
+    if cli.json {
+        let files: Vec<_> =
+            files.iter().map(|(status, path, diff)| json!({ "status": status, "path": path, "diff": diff })).collect();
+        print_json(out, &json!({ "ok": true, "commit": commit, "files": files, "secrets_shown": show_secrets }));
+        return Ok(());
+    }
+    let when = history::display_time(&commit.time);
+    let _ = writeln!(out, "commit {}\nDate:   {when} UTC\n\n    {}\n", commit.id, commit.subject);
+    for (status, path, _) in &files {
+        let _ = writeln!(out, "{}\t{path}", status.letter());
+    }
+    for (status, path, body) in &files {
+        let (old, new) = match status {
+            history::Status::Added => ("/dev/null", path.as_str()),
+            history::Status::Deleted => (path.as_str(), "/dev/null"),
+            history::Status::Modified => (path.as_str(), path.as_str()),
+        };
+        let _ = write!(out, "\n--- {old}\n+++ {new}\n{body}");
+    }
+    if !show_secrets {
+        let _ = writeln!(out, "\n(secrets are masked; `sudo moi diff {rev} --show-secrets` shows them)");
     }
     Ok(())
 }
