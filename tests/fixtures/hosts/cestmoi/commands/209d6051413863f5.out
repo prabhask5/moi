@@ -1,0 +1,3 @@
+-P INPUT ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -j DROP

@@ -120,12 +120,13 @@ fn checks_run_at_start_and_then_on_their_interval_without_drift() {
             ("check:resources".to_string(), start),
             ("check:storage".to_string(), start),
             ("check:services".to_string(), start),
-            ("daily".to_string(), at("2026-11-27T10:00:00Z"))
+            ("daily".to_string(), at("2026-11-27T10:00:00Z")),
+            ("boot".to_string(), start),
         ],
-        "checks are due at once; the daily job at 05:00 local time"
+        "checks are due at once; the daily job at 05:00 local time; this is the first start since the machine booted"
     );
     let ran = daemon.tick().unwrap();
-    assert_eq!(names(&ran), ["check:resources", "check:storage", "check:services"]);
+    assert_eq!(names(&ran), ["check:resources", "check:storage", "check:services", "boot"]);
     assert_eq!((ran[0].1.status.as_str(), ran[0].1.message.as_str()), ("up", "OK: RAM 38%, swap 2%, CPU 48C"));
     assert_eq!(ran[2].1.message, "All 35 containers + 7 swarm services running, 17 app, 4 database, 10 edge checks OK");
     // recorded: results, and what the next run needs
@@ -315,7 +316,7 @@ fn status_says_what_ran_and_what_comes_next() {
     let status = daemon.status();
     assert_eq!(
         (status["running"].as_bool(), status["started"].as_str(), status["jobs"].as_array().unwrap().len()),
-        (Some(true), Some(START), 7)
+        (Some(true), Some(START), 9)
     );
     assert_eq!(
         status["jobs"][0],
@@ -358,7 +359,7 @@ fn moi_status_asks_the_running_daemon_and_says_when_there_is_none() {
     assert_eq!(status["jobs"][0]["last"]["message"], "OK: RAM 38%, swap 2%, CPU 48C");
     let told = s.fixture.notifications();
     assert_eq!(told[0], "READY=1");
-    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=7 jobs, "), "{told:?}");
+    assert!(told[1].starts_with("WATCHDOG=1\nSTATUS=9 jobs, "), "{told:?}");
     assert!(
         !told.iter().any(|t| t.contains("heal:")),
         "jobs that wait to be asked for are not announced as next: {told:?}"
@@ -455,7 +456,7 @@ fn the_daemon_snapshots_once_after_a_burst_and_keeps_up_with_continuous_change()
     let snapshot = &ran.iter().find(|(name, _)| name == "snapshot").expect("one snapshot").1;
     assert_eq!(
         (snapshot.status.as_str(), snapshot.message.as_str()),
-        ("ok", "151 files changed: initial snapshot of cestmoi")
+        ("ok", "153 files changed: initial snapshot of cestmoi")
     );
     assert_eq!(next(&daemon, "snapshot"), i64::MAX);
     s.fixture.advance(Duration::from_secs(600));
@@ -703,7 +704,9 @@ fn a_changed_configuration_is_taken_at_once_and_a_broken_one_is_not() {
             "daily",
             "snapshot",
             "heal:traefik-homelab",
-            "heal:traefik-config-guard"
+            "heal:traefik-config-guard",
+            "firewall",
+            "boot"
         ]
     );
     // checks that stay keep their rhythm and their last result; the new one starts now
@@ -713,7 +716,7 @@ fn a_changed_configuration_is_taken_at_once_and_a_broken_one_is_not() {
     // a configuration that does not load is refused, loudly, and the daemon goes on as it was
     s.host.write(Path::new("/etc/moi/moi.toml"), b"[checks.resources\ninterval = 5", 0o644).unwrap();
     daemon.file_changed(Path::new("/etc/moi/moi.toml"));
-    assert_eq!(daemon.jobs().len(), 7);
+    assert_eq!(daemon.jobs().len(), 9);
     let logged: Vec<String> = s.fixture.journal_entries().iter().map(|e| e[0].1.clone()).collect();
     assert!(logged.iter().any(|m| m == "configuration reloaded"), "{logged:?}");
     assert!(logged.iter().any(|m| m.starts_with("configuration not reloaded, keeping the one in use: ")), "{logged:?}");

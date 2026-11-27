@@ -53,10 +53,10 @@ fn version_has_build_info() {
 
 #[test]
 fn unimplemented_commands_exit_3_and_name_the_milestone() {
-    let out = moi(&["firewall", "status"]);
+    let out = moi(&["backup"]);
     assert_eq!(out.status.code(), Some(3));
     let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("milestone M6"), "{err}");
+    assert!(err.contains("milestone M7"), "{err}");
 }
 
 #[test]
@@ -195,13 +195,13 @@ fn config_path_prints_both_files() {
 
 #[test]
 fn json_errors_cover_unimplemented_commands_too() {
-    let out = moi_on_fixture(&["firewall", "status", "--json"], &[]);
+    let out = moi_on_fixture(&["backup", "--json"], &[]);
     assert_eq!(out.status.code(), Some(3));
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"]["kind"], "not_implemented");
     assert_eq!(v["error"]["exit_code"], 3);
-    assert!(text(&out.stderr).contains("milestone M6"));
+    assert!(text(&out.stderr).contains("milestone M7"));
 }
 
 #[test]

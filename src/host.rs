@@ -236,6 +236,10 @@ pub trait Host: fmt::Debug + Send + Sync {
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
 
+    /// Ask whoever is at the terminal a question and wait for a line, at most `timeout`. `None` when
+    /// nobody answers in time or there is no terminal to ask on.
+    fn ask(&self, prompt: &str, timeout: Duration) -> io::Result<Option<String>>;
+
     /// Watch directories (not their subdirectories) for changes. Directories that do not exist are
     /// skipped. `Unsupported` where the kernel has no inotify.
     fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn Watch>>;

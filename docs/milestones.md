@@ -62,7 +62,7 @@ Specs: 06
 Specs: 10
 - [x] Scheduler (interval + persistent calendar), watcher (docker events + inotify) with debounce, IPC socket, sd_notify/watchdog
 - [x] Heal rules (network_connect, restart sequence, run, compose_up), cooldowns, reports
-- [ ] Boot tasks (mounts, firewall, compose_up, post-boot verify), firewall apply/diff with SSH rollback
+- [x] Boot tasks (mounts, firewall, compose_up; post-boot verify with M8), firewall apply/diff with SSH rollback
 - [ ] `moi init` installs/enables `moi.service`; `moi uninstall`
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 

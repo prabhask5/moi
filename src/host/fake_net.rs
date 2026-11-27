@@ -24,6 +24,11 @@ pub(crate) fn spent() -> Duration {
     SPENT.with(Cell::get)
 }
 
+/// Start this thread's virtual time over (a new fixture host begins at its own clock).
+pub(crate) fn reset() {
+    SPENT.with(|s| s.set(Duration::ZERO));
+}
+
 /// Let virtual time pass for this thread.
 pub(crate) fn spend(duration: Duration) {
     SPENT.with(|s| s.set(s.get() + duration));

@@ -57,8 +57,9 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `backup` | DB dump discovery/execution, volume/path selection, local archive, restic driver, R2 free-tier guard, retention |
 | `bundle` | State bundle (stored as a tagged restic snapshot), bootstrap |
 | `restore` | Phases, interactive storage mapping, DB import, verify + reboot expectations |
+| `firewall` | The managed chains: rules files, atomic apply (`iptables-restore --noflush`), save and roll back, drift status |
 | `heal` | Heal rule actions (network connect, restart sequence, run), cooldowns and reports; fired by the services check and by the daemon's triggers |
-| `daemon` | The service loop (threads and a channel, no async runtime): scheduler, watchers (docker events, inotify), heal triggers, boot tasks, firewall apply, IPC socket `/run/moi.sock`, sd_notify + watchdog |
+| `daemon` | The service loop (threads and a channel, no async runtime): scheduler, watchers (docker events, inotify), heal triggers, boot tasks, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |
 | `log` | Structured journal entries under systemd (native protocol via `Host`), stderr lines otherwise; masks known secrets |
 | `net` | Outbound HTTP(S): a blocking HTTP/1.1 client over connections from `Host`, TLS by rustls with the system CA bundle; the staged probe (DNS → TCP → TLS → HTTP, each timed) |
@@ -67,7 +68,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
 - No async runtime. The daemon is a loop sleeping on a channel with one thread per running job; outbound HTTP (`net`) is blocking, and so is Kuma's socket.io client, which uses the long-polling transport on top of it. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
-- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `docker compose up -d` (heal and boot: Compose has no API), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
+- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` (and `ip6tables…`) / `nft`, `systemd-run` (the firewall's rollback timer), `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `docker compose up -d` (heal and boot: Compose has no API), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.
 - Output that other systems consume (Kuma messages, `--json`) is covered by golden tests; changing it is a breaking change.

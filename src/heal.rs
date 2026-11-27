@@ -122,22 +122,23 @@ impl Healer {
                 }
                 Ok(out.stdout_str().into_owned())
             }
-            Action::ComposeUp { compose_up: dir } => {
-                // Compose has no API of its own: the `docker compose` plugin is the interface
-                let cmd = Cmd::new("docker")
-                    .args(["compose", "--project-directory", dir.as_str(), "up", "-d"])
-                    .timeout(RUN_TIMEOUT);
-                let out = self.host.run(&cmd).map_err(|e| format!("cannot run docker compose: {e}"))?;
-                if out.timed_out || out.status != 0 {
-                    let said = out.stderr_str();
-                    return Err(format!(
-                        "docker compose up in {dir} failed: {}",
-                        said.lines().last().unwrap_or("no output").trim()
-                    ));
-                }
-                Ok(String::new())
-            }
+            Action::ComposeUp { compose_up: dir } => self.compose_up(dir).map(|()| String::new()),
         }
+    }
+
+    /// `docker compose up -d` in a project directory. Compose has no API of its own: the `docker compose`
+    /// plugin is the interface.
+    pub fn compose_up(&self, dir: &str) -> Result<(), String> {
+        let cmd = Cmd::new("docker").args(["compose", "--project-directory", dir, "up", "-d"]).timeout(RUN_TIMEOUT);
+        let out = self.host.run(&cmd).map_err(|e| format!("cannot run docker compose: {e}"))?;
+        if out.timed_out || out.status != 0 {
+            let said = out.stderr_str();
+            return Err(format!(
+                "docker compose up in {dir} failed: {}",
+                said.lines().last().unwrap_or("no output").trim()
+            ));
+        }
+        Ok(())
     }
 
     /// Whether a rule's precondition says it must act: the container is not on the network (or gone).

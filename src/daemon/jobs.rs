@@ -16,6 +16,8 @@ pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
         Work::Check(check) => self::check(core, check),
         Work::Daily => daily(core).map(|message| ("ok".to_string(), message)),
         Work::Snapshot => snapshot(core).map(|message| ("ok".to_string(), message)),
+        Work::Boot => boot(core),
+        Work::Firewall => firewall(core, &core.config.firewall.chains).map(|message| ("ok".to_string(), message)),
         Work::Heal(rule, why) => {
             let healer = crate::heal::Healer {
                 host: Arc::clone(&core.host),
@@ -156,4 +158,150 @@ fn snapshot(core: &Arc<Core>) -> Result<String, Error> {
         Err(e) => message.push_str(&format!("; monitors not synced: {e}")),
     }
     Ok(message)
+}
+
+/// This boot's id, as the kernel gives it.
+pub(crate) fn boot_id(host: &dyn crate::host::Host) -> Option<String> {
+    host.read_to_string(std::path::Path::new("/proc/sys/kernel/random/boot_id"))
+        .ok()
+        .map(|id| id.trim().to_string())
+        .filter(|id| !id.is_empty())
+}
+
+/// Replace these managed chains, for both address families.
+fn firewall(core: &Arc<Core>, chains: &[String]) -> Result<String, Error> {
+    use crate::firewall::{self, Family};
+    let db = core.state.open_db(core.host.as_ref())?;
+    let mut rules = 0;
+    for family in Family::ALL {
+        rules += firewall::apply(core.host.as_ref(), &core.config, &db, family, chains)?.rules;
+    }
+    Ok(format!("firewall: {rules} rules in {}", chains.join(", ")))
+}
+
+/// Compose project directories a `boot.compose_up` entry names: the directory itself, or with `/**`
+/// every directory below it (three levels) that has a compose file — in sorted order.
+pub fn compose_dirs(host: &dyn crate::host::Host, entry: &str) -> Vec<String> {
+    use std::path::{Path, PathBuf};
+    let has_compose = |dir: &Path| {
+        ["compose.yaml", "compose.yml", "docker-compose.yml", "docker-compose.yaml"]
+            .iter()
+            .any(|f| host.exists(&dir.join(f)))
+    };
+    let Some(top) = entry.strip_suffix("/**") else {
+        return if has_compose(Path::new(entry)) { vec![entry.to_string()] } else { Vec::new() };
+    };
+    let mut found = Vec::new();
+    let mut level: Vec<PathBuf> = vec![PathBuf::from(top)];
+    for _ in 0..3 {
+        let mut below = Vec::new();
+        for dir in &level {
+            for name in host.read_dir(dir).unwrap_or_default() {
+                let child = dir.join(name);
+                if host.metadata(&child).is_ok_and(|m| m.kind == crate::host::FileKind::Dir) {
+                    if has_compose(&child) {
+                        found.push(child.to_string_lossy().into_owned());
+                    } else {
+                        below.push(child);
+                    }
+                }
+            }
+        }
+        level = below;
+    }
+    found.sort();
+    found
+}
+
+/// What the first start after a boot does: the firewall's built-in chains at once, then wait for the
+/// data mounts and for Docker, the rest of the firewall, and the compose stacks that are not up yet.
+fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
+    use std::time::Duration;
+    let host = &core.host;
+    let config = &core.config;
+    let log = Logger::new(Arc::clone(host), "moi").with_masker(core.masker.clone());
+    let (mut done, mut problems): (Vec<String>, Vec<String>) = (Vec::new(), Vec::new());
+    let wait = |ready: &dyn Fn() -> bool, limit: u64| -> bool {
+        let mut waited = 0;
+        while !ready() && waited < limit {
+            host.sleep(Duration::from_secs(2));
+            waited += 2;
+        }
+        ready()
+    };
+    // 1. the host's own firewall must not wait for anything
+    let (own, later): (Vec<String>, Vec<String>) =
+        config.firewall.chains.iter().cloned().partition(|chain| crate::firewall::builtin(chain));
+    if config.firewall.manage && !own.is_empty() {
+        match firewall(core, &own) {
+            Ok(message) => done.push(message),
+            Err(e) => problems.push(format!("firewall not applied: {e}")),
+        }
+    }
+    // 2. data that stacks need
+    let missing: Vec<&String> = config
+        .boot
+        .wait_for_mounts
+        .iter()
+        .filter(|mount| !wait(&|| crate::snapshot::mounts(host.as_ref()).iter().any(|m| m.target == **mount), 300))
+        .collect();
+    for mount in &missing {
+        problems.push(format!("{mount} is not mounted after 5 minutes"));
+    }
+    // 3. Docker, and the chains it has to exist for
+    let docker = crate::docker::Docker::new(Arc::clone(host));
+    let needs_docker = !later.is_empty() && config.firewall.manage || !config.boot.compose_up.is_empty();
+    if needs_docker {
+        if wait(&|| docker.ping(), 120) {
+            if config.firewall.manage && !later.is_empty() {
+                match firewall(core, &config.firewall.chains) {
+                    Ok(message) => done.push(message),
+                    Err(e) => problems.push(format!("firewall not applied: {e}")),
+                }
+            }
+            // 4. stacks, in the configured order — unless what they keep their data on is missing
+            if missing.is_empty() {
+                let running: Vec<String> = docker
+                    .containers(false)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|c| c["Labels"]["com.docker.compose.project.working_dir"].as_str().map(str::to_string))
+                    .collect();
+                let healer = crate::heal::Healer {
+                    host: Arc::clone(host),
+                    docker: docker.clone(),
+                    state: core.state.clone(),
+                    act: true,
+                };
+                let mut started = 0;
+                for dir in config.boot.compose_up.iter().flat_map(|entry| compose_dirs(host.as_ref(), entry)) {
+                    if running.contains(&dir) {
+                        continue;
+                    }
+                    match healer.compose_up(&dir) {
+                        Ok(()) => started += 1,
+                        Err(e) => problems.push(e),
+                    }
+                }
+                done.push(format!("{started} stacks started"));
+            } else if !config.boot.compose_up.is_empty() {
+                problems.push("stacks not started: their data is not mounted".to_string());
+            }
+        } else {
+            problems.push("Docker did not come up within 2 minutes".to_string());
+        }
+    }
+    // this boot is dealt with, whatever came of it: a restart of the service must not do it again
+    if let Some(id) = boot_id(host.as_ref()) {
+        let db = core.state.open_db(host.as_ref())?;
+        db.conn()
+            .execute("INSERT INTO settings (key, value) VALUES ('daemon.boot_id', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [id])
+            .map_err(|e| Error::Db(e.to_string()))?;
+    }
+    for problem in &problems {
+        log.warn(&format!("boot: {problem}"), &[("job", "boot")]);
+    }
+    let said: Vec<String> = done.into_iter().chain(problems.iter().cloned()).collect();
+    let message = if said.is_empty() { "nothing to do".to_string() } else { said.join("; ") };
+    Ok((if problems.is_empty() { "ok" } else { "failed" }.to_string(), message))
 }

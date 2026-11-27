@@ -65,6 +65,11 @@ struct State {
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
     chmodded: BTreeSet<PathBuf>,
+    /// What whoever is "at the terminal" will type, in order, and what they were asked.
+    answers: Vec<String>,
+    asked: Vec<String>,
+    /// Standard input of commands that were given one: (command line, input).
+    inputs: Vec<(String, String)>,
     /// Watches handed out: the directories each covers, and where its events go.
     watchers: Vec<(Vec<PathBuf>, std::sync::mpsc::Sender<PathBuf>)>,
     /// What was sent to the service manager (`READY=1`, …).
@@ -159,6 +164,8 @@ impl FixtureHost {
         if !base.is_dir() {
             return Err(bad_fixture(format!("{} is not a fixture host: it has no root/ directory", dir.display())));
         }
+        // what an earlier fixture on this thread waited is not this one's time
+        fake_net::reset();
         let now = read_clock(dir)?.unwrap_or(UNIX_EPOCH + Duration::from_secs(DEFAULT_CLOCK));
         let mut host = Self {
             dir: dir.to_path_buf(),
@@ -180,6 +187,9 @@ impl FixtureHost {
                 journal: Vec::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
+                answers: Vec::new(),
+                asked: Vec::new(),
+                inputs: Vec::new(),
                 watchers: Vec::new(),
                 notified: Vec::new(),
                 random_counter: 0,
@@ -326,6 +336,22 @@ impl FixtureHost {
     pub fn advance(&self, by: Duration) {
         let mut state = self.state();
         state.now += by;
+    }
+
+    /// What the person at the terminal answers to the next question (`Host::ask`); without one, they
+    /// say nothing and the question times out.
+    pub fn answer(&self, text: &str) {
+        self.state().answers.push(text.to_string());
+    }
+
+    /// Every question asked at the terminal so far.
+    pub fn asked(&self) -> Vec<String> {
+        self.state().asked.clone()
+    }
+
+    /// What commands were given on standard input: (command line, input).
+    pub fn inputs(&self) -> Vec<(String, String)> {
+        self.state().inputs.clone()
     }
 
     /// Tell every watch that covers this path's directory that the path changed (the fixture's inotify).
@@ -612,6 +638,9 @@ impl Host for FixtureHost {
         let line = cmd.line();
         let mut state = self.state();
         state.ran.push(line.clone());
+        if let Some(input) = &cmd.stdin {
+            state.inputs.push((line.clone(), String::from_utf8_lossy(input).into_owned()));
+        }
         if let Some(out) = state.commands.get(&line) {
             return Ok(out.clone());
         }
@@ -669,6 +698,18 @@ impl Host for FixtureHost {
             return Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display())));
         }
         Ok(Box::new(FakeConn::new(dirs, Arc::clone(&self.docker))))
+    }
+
+    fn ask(&self, prompt: &str, timeout: Duration) -> io::Result<Option<String>> {
+        let mut state = self.state();
+        state.asked.push(prompt.to_string());
+        let answer = if state.answers.is_empty() { None } else { Some(state.answers.remove(0)) };
+        drop(state);
+        if answer.is_none() {
+            // nobody answered: the time to answer passes
+            fake_net::spend(timeout);
+        }
+        Ok(answer)
     }
 
     fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn super::Watch>> {

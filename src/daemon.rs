@@ -28,6 +28,7 @@ use crate::log::Logger;
 use crate::redact::Masker;
 use crate::state::StateDir;
 use calendar::Calendar;
+pub use jobs::compose_dirs;
 use zone::Zone;
 
 /// Where the CLI reaches the daemon.
@@ -61,6 +62,10 @@ pub enum Work {
     Snapshot,
     /// A heal rule whose trigger fired, and what fired it.
     Heal(Box<HealRule>, String),
+    /// Once after the machine started: firewall, mounts, compose stacks.
+    Boot,
+    /// Put the managed chains back (Docker restarted and may have rebuilt its own).
+    Firewall,
 }
 
 impl std::fmt::Debug for Work {
@@ -70,6 +75,8 @@ impl std::fmt::Debug for Work {
             Work::Daily => f.write_str("Daily"),
             Work::Snapshot => f.write_str("Snapshot"),
             Work::Heal(rule, _) => write!(f, "Heal({})", rule.name),
+            Work::Boot => f.write_str("Boot"),
+            Work::Firewall => f.write_str("Firewall"),
         }
     }
 }
@@ -122,6 +129,8 @@ enum Event {
     /// The CLI asks for a job to run now.
     Trigger(String),
     Docker(crate::docker::Event),
+    /// The engine's event stream is back after having been gone: Docker restarted.
+    DockerBack,
     File(std::path::PathBuf),
 }
 
@@ -221,7 +230,26 @@ impl Daemon {
         for rule in core.config.heal.iter().filter(|rule| !matches!(rule.when, When::Failing(_))) {
             self.jobs.push(on_demand(format!("heal:{}", rule.name), Work::Heal(Box::new(rule.clone()), String::new())));
         }
+        if core.config.firewall.manage {
+            self.jobs.push(on_demand("firewall".to_string(), Work::Firewall));
+        }
+        // the first start since the machine booted (not a restart of the service) has more to do
+        let mut boot = on_demand("boot".to_string(), Work::Boot);
+        let booted: Option<String> =
+            db.conn().query_row("SELECT value FROM settings WHERE key = 'daemon.boot_id'", [], |r| r.get(0)).ok();
+        if jobs::boot_id(core.host.as_ref()).is_some_and(|id| Some(id) != booted) {
+            boot.next = self.started;
+        }
+        self.jobs.push(boot);
         Ok(())
+    }
+
+    /// Docker came back after a restart: its chains may be new, so the managed ones are put back.
+    pub fn docker_back(&mut self) {
+        let now = self.now();
+        if let Some(job) = self.jobs.iter_mut().find(|j| j.name == "firewall") {
+            job.next = now;
+        }
     }
 
     /// Something on the machine changed: a snapshot follows once things are quiet.
@@ -465,6 +493,7 @@ impl Daemon {
                     }
                 }
                 Ok(Event::Docker(event)) => self.docker_event(&event),
+                Ok(Event::DockerBack) => self.docker_back(),
                 Ok(Event::File(path)) => self.file_changed(&path),
                 Ok(Event::Trigger(name)) => {
                     self.trigger(&name);
@@ -486,10 +515,15 @@ impl Daemon {
             let (docker, events) = (docker.clone(), events.clone());
             let _ = thread::Builder::new().name("moi-docker-events".into()).spawn(move || {
                 let mut since = None;
+                let mut connected_before = false;
                 loop {
                     let types = ["container", "network", "volume", "service"].map(str::to_string).to_vec();
                     let filters = std::collections::BTreeMap::from([("type".to_string(), types)]);
                     if let Ok(stream) = docker.events(&filters, since, None) {
+                        if connected_before && events.send(Event::DockerBack).is_err() {
+                            return;
+                        }
+                        connected_before = true;
                         for event in stream.flatten() {
                             since = Some(event.time + 1);
                             if events.send(Event::Docker(event)).is_err() {
