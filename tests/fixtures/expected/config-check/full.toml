@@ -1,0 +1,209 @@
+heal = []
+
+[backup]
+databases = "auto"
+enabled = true
+exclude = [
+    "*/cache",
+    "*/Cache",
+    "*/transcodes",
+    "*/logs",
+    "*/log",
+]
+keep_local = "7d"
+local_dir = "/srv/backups"
+max_local = "20GB"
+paths = []
+schedule = "03:30"
+volumes = "auto"
+
+[backup.offsite]
+check_subset = "2%"
+enabled = true
+max_repo = "8GB"
+min_interval = "20h"
+pack_size = "64MB"
+password = "***"
+prune_on = "Sun"
+repository = "***"
+tag = "nightly"
+
+[backup.offsite.env]
+AWS_ACCESS_KEY_ID = "***"
+AWS_SECRET_ACCESS_KEY = "***"
+
+[backup.offsite.keep]
+daily = 7
+monthly = 6
+weekly = 4
+
+[backup.offsite.r2_guard]
+enabled = false
+max_class_a = 500000
+max_class_b = 5000000
+max_storage = "8GB"
+
+[backup.special_users]
+
+[boot]
+compose_up = []
+verify_after = "4m"
+wait_for_mounts = []
+
+[capture]
+compose_search = [
+    "/opt",
+    "/srv",
+    "/home",
+    "/root",
+    "/docker",
+    "/data",
+    "/mnt",
+]
+data_roots = "auto"
+etc_exclude = [
+    "/etc/dokploy/applications",
+    "/etc/dokploy/logs",
+    "/etc/dokploy/compose",
+    "/etc/ssl/certs",
+]
+extra = []
+home_files = [
+    ".bashrc",
+    ".profile",
+    ".ssh",
+    ".config/rclone",
+    ".config/restic",
+    ".gitconfig",
+]
+max_file = "1MB"
+prune_dirs = [
+    "node_modules",
+    ".git",
+    "cache",
+    "logs",
+    "data",
+    "db",
+    "postgres",
+    "pgdata",
+    "media",
+]
+script_dirs = [
+    "/usr/local/bin",
+    "/usr/local/sbin",
+    "/opt/scripts",
+    "/root/bin",
+    "/home/*/bin",
+]
+tree_depth = 4
+
+[checks]
+custom = []
+default_interval = "5m"
+
+[checks.backup]
+
+[checks.edge]
+enabled = false
+firewall_required = []
+lan_hosts = []
+ok_status = [
+    "2xx",
+    "3xx",
+    "401",
+]
+proxy_error_window = "5m"
+public_log = "/var/log/moi/public-probes.log"
+public_retry_after = "3s"
+public_urls = []
+
+[checks.resources]
+container_restarts = true
+cpu_limit = 90
+enabled = true
+interval = "5m"
+journal_tag = "moi-check-resources"
+mem_limit = 90
+monitor = "Server Resources"
+oom_window = "6m"
+sustain_runs = 2
+swap_limit = 80
+temp_limit = 85
+timeout = "1m"
+
+[checks.services]
+enabled = true
+exec = []
+ignore = []
+interval = "5m"
+journal_tag = "moi-check-services"
+monitor = "Server Internal Services"
+timeout = "1m"
+
+[[checks.services.http]]
+api_key = "***"
+name = "sonarr"
+path = "8989/api/v3/health"
+target = "sonarr"
+trouble = '"error"'
+
+[checks.storage]
+allowed_bad_sectors = 0
+disk_limit = 85
+disks = "auto"
+enabled = false
+inode_limit = 85
+interval = "5m"
+journal_tag = "moi-check-storage"
+kernel_error_window = "6m"
+mounts = ["/"]
+nvme_wear_limit = 90
+timeout = "1m"
+writable = []
+
+[context]
+claude_pointer = true
+copies = []
+
+[data]
+fungible = []
+
+[data.fungible_reason]
+
+[firewall]
+chains = [
+    "INPUT",
+    "DOCKER-USER",
+]
+manage = false
+rules_v4 = "/etc/moi/firewall/rules4.txt"
+rules_v6 = "/etc/moi/firewall/rules6.txt"
+
+[monitors]
+mode = "live"
+
+[monitors.healthchecks]
+expect_watchdog = false
+
+[monitors.kuma]
+containers = true
+docker_host = "local"
+enabled = true
+freshness = true
+group = ""
+notifications = []
+password = "***"
+push_base = ""
+url = "http://kuma.lan:3001"
+username = "***"
+
+[restore]
+etc_paths = []
+restore_modified_conffiles = true
+
+[server]
+name = "full"
+timezone = "Etc/UTC"
+
+[state]
+dir = "/var/lib/moi"

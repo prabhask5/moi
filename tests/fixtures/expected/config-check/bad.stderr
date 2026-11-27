@@ -1,0 +1,6 @@
+/cases/bad/moi.toml:2:1: server.nmae: unknown key (did you mean `name`?)
+/cases/bad/moi.toml:5:20: checks.default_interval: invalid duration "5 minutes": use a number followed by s, m, h or d (e.g. "30s", "5m", "20h", "7d")
+/cases/bad/moi.toml:8:13: checks.resources.cpu_limit: expected an integer, found string
+/cases/bad/moi.toml:10:1: backup.local_dir: missing required key
+/cases/bad/moi.toml:12:12: backup.offsite.password: secret `restic_password` is not defined: add `restic_password = "…"` under [secrets] in /cases/bad/secrets.toml or set MOI_SECRET_RESTIC_PASSWORD
+moi: configuration is invalid (5 errors)

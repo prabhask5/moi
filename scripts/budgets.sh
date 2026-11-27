@@ -9,11 +9,15 @@ fail=0
 report() { printf '| %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4"; }
 {
   echo "| metric | budget | measured | result |"; echo "|---|---|---|---|"
-  size_mb=$(awk -v b="$(stat -c %s "$bin")" 'BEGIN{printf "%.1f", b/1048576}')
+  size_mb=$(awk -v b="$(wc -c <"$bin")" 'BEGIN{printf "%.1f", b/1048576}')
   ok=$(awk -v m="$size_mb" -v b="$(val binary_mb)" 'BEGIN{print (m <= b*1.1) ? "ok" : "OVER"}'); [[ $ok == ok ]] || fail=1
   report binary_mb "$(val binary_mb)" "$size_mb" "$ok"
-  best=999999
-  for _ in 1 2 3 4 5; do s=$(date +%s%N); "$bin" --version >/dev/null; e=$(( ($(date +%s%N) - s) / 1000000 )); (( e < best )) && best=$e; done
+  # best of 5, timed in python: `date +%s%N` is GNU-only
+  best=$(python3 -c 'import subprocess, sys, time
+runs = []
+for _ in range(5):
+    t = time.perf_counter_ns(); subprocess.run([sys.argv[1], "--version"], stdout=subprocess.DEVNULL); runs.append(time.perf_counter_ns() - t)
+print(min(runs) // 1000000)' "$bin")
   ok=$(awk -v m="$best" -v b="$(val version_ms)" 'BEGIN{print (m <= b*1.1) ? "ok" : "OVER"}'); [[ $ok == ok ]] || fail=1
   report version_ms "$(val version_ms)" "$best" "$ok"
   for k in check_resources_storage_ms check_services_ms snapshot_cold_ms snapshot_warm_ms context_ms audit_ms daemon_rss_mb daemon_cpu_percent; do

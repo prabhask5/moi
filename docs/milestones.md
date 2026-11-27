@@ -19,12 +19,12 @@ The repo must be publishable after any milestone; M12 makes it public-ready for 
 
 ## M1 — Foundations: host, config, state, CLI plumbing
 Specs: 01, CLAUDE.md §3 (host), 14
-- [ ] `host::Host` trait with `RealHost` and `FixtureHost` (root prefix, canned command outputs, fake clock)
-- [ ] Config schema with defaults, `secret:` resolution, all-errors validation with locations; `moi config check`
-- [ ] State dir + `moi.db` with schema versioning and forward migrations
-- [ ] Logging to journal (structured fields), `--json` output plumbing, exit codes
-- [ ] `examples/moi.toml` golden test against defaults
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] `host::Host` trait with `RealHost` and `FixtureHost` (root prefix, canned command outputs, fake clock)
+- [x] Config schema with defaults, `secret:` resolution, all-errors validation with locations; `moi config check`
+- [x] State dir + `moi.db` with schema versioning and forward migrations
+- [x] Logging to journal (structured fields), `--json` output plumbing, exit codes
+- [x] `examples/moi.toml` golden test against defaults
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M2 — Snapshot & history
 Specs: 02

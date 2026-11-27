@@ -32,6 +32,15 @@ state/
 
 The split matters: only `snapshot/` and `NOTES.md` are committed, so the history contains real changes and nothing that changes on its own (uptime, counters, container IPs, ban lists, timers' next-run, directory trees of media).
 
+## moi.db
+
+`<state.dir>/moi.db` (0600, next to `state/`, never committed) is SQLite and holds what must survive restarts but is not server state: check results and sustained counters (05), previous-run values for deltas, monitor bindings and push tokens (06), heal cooldowns and schedule last-runs (10), and from M2 the capture cache below.
+
+- The schema version is SQLite's `user_version`. Opening the database applies every migration newer than it, in order, each in its own transaction, and records it in `schema_history (version, name, applied_at)`. A migration that fails leaves nothing behind and names itself in the error.
+- Migrations are forward-only and append-only: a shipped migration is never edited; a schema change is a new one.
+- A database with a higher version than the binary knows is refused untouched (`upgrade moi`): downgrading moi never rewrites state.
+- `state.dir`, `state/` and `archive/` are created 0700; a state root that already exists more open is tightened.
+
 ## Collectors
 
 One collector per area, run concurrently, each with its own timeout (default 60 s, `du`-like work never runs here). A failing collector logs a warning and the snapshot continues; its previous output is kept (not deleted) and marked stale in `volatile/collector-errors.json`.

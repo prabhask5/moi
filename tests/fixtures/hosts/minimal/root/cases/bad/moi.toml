@@ -1,0 +1,12 @@
+[server]
+nmae = "typo"
+
+[checks]
+default_interval = "5 minutes"
+
+[checks.resources]
+cpu_limit = "ninety"
+
+[backup.offsite]
+repository = "/srv/restic"
+password = "secret:restic_password"

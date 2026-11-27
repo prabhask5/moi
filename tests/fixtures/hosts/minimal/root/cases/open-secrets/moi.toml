@@ -1,0 +1,24 @@
+[server]
+name = "full"
+
+[checks.resources]
+monitor = "Server Resources"
+
+[checks.services]
+monitor = "Server Internal Services"
+http = [
+  { name = "sonarr", target = "sonarr", path = "8989/api/v3/health", api_key = "secret:sonarr_key", trouble = '"error"' },
+]
+
+[backup]
+local_dir = "/srv/backups"
+
+[backup.offsite]
+repository = "secret:restic_repository"
+password = "secret:restic_password"
+env = { AWS_ACCESS_KEY_ID = "secret:r2_key_id", AWS_SECRET_ACCESS_KEY = "secret:r2_secret" }
+
+[monitors.kuma]
+url = "http://kuma.lan:3001"
+username = "secret:kuma_username"
+password = "secret:kuma_password"

@@ -1,0 +1,30 @@
+# Minimal moi.toml — everything not set uses the defaults documented in docs/spec/01-config.md.
+# An empty file is valid: snapshots, CONTEXT.md and audits only.
+
+[server]
+name = "myserver"
+
+[data]
+fungible = ["/srv/media"]                 # never backed up, never reported as a gap
+
+[context]
+copies = ["/home/me/SERVER_CONTEXT.md"]
+
+[checks.resources]
+monitor = "myserver: resources"
+
+[checks.storage]
+monitor = "myserver: storage"
+
+[backup]
+schedule = "03:30"
+local_dir = "/srv/backups"
+
+[backup.offsite]
+repository = "secret:restic_repository"
+password = "secret:restic_password"
+
+[monitors.kuma]
+url = "http://kuma.lan:3001"
+username = "secret:kuma_username"
+password = "secret:kuma_password"

@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Until a release exists, every command exits with "not implemented yet".
+> **Status: pre-alpha, under active development.** The spec is complete ([docs/spec](docs/spec/README.md)); commands are being implemented milestone by milestone ([docs/milestones.md](docs/milestones.md)). Working today: `moi config check` and `moi config path`; every other command still exits with "not implemented yet".
 
 ## What it does
 
@@ -37,10 +37,22 @@ Also planned: `.deb`/`.rpm` packages, `cargo install cestmoi`, Homebrew (`brew i
 | `moi backup [--dry-run]` · `moi push` · `moi pull` | backups and the state bundle |
 | `moi restore` · `moi verify` | rebuild and prove it |
 | `moi migrate plan\|shadow\|compare\|switch\|rollback\|finish` | move off legacy scripts without breaking monitors |
+| `moi config check` · `moi config path` | validate `moi.toml` + `secrets.toml`, print the effective config with secrets masked |
+
+Global flags: `--config` (`MOI_CONFIG`), `--secrets` (`MOI_SECRETS`, default `secrets.toml` next to the config), `--json`, `--quiet`.
 
 Exit codes: `0` ok · `1` problems found · `2` error · `3` not implemented yet.
 
-Configuration reference: [docs/spec/01-config.md](docs/spec/01-config.md) — examples: [minimal](examples/moi.toml), [a real homelab](examples/cestmoi.toml).
+## Configuration
+
+One file, `/etc/moi/moi.toml`; an empty file is valid and gives snapshots, context and audits only. A feature is switched on by adding its section. Secrets never go in it: write `"secret:NAME"` and put the value under `[secrets]` in `/etc/moi/secrets.toml` (mode 0600) or in the environment as `MOI_SECRET_NAME`.
+
+```bash
+moi config check          # every problem at once, as file:line:col; then the effective config, secrets masked
+moi config check --json   # the same for scripts
+```
+
+Reference: [docs/spec/01-config.md](docs/spec/01-config.md) — examples: [minimal](examples/minimal.toml), [every default](examples/moi.toml), [a real homelab](examples/cestmoi.toml).
 
 ## Development
 

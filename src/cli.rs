@@ -2,13 +2,22 @@
 //!
 //! `src/main.rs` only calls [`run`]. Every command exists from day one; unimplemented ones
 //! return [`Error::NotImplemented`] (exit code 3) and name the milestone that delivers them.
+//!
+//! Output contract: results on stdout (human text, or one JSON document with `--json` that always has
+//! an `ok` field), diagnostics and log lines on stderr, exit codes as in `error`.
 
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use clap::{Args, Parser, Subcommand};
+use serde_json::json;
 
+use crate::config::Paths;
 use crate::error::Error;
+use crate::host::{FixtureHost, Host, RealHost};
+use crate::log::{Level, Logger};
 
 /// moi — run a Linux server from one binary.
 #[derive(Debug, Parser)]
@@ -17,6 +26,10 @@ pub struct Cli {
     /// Config file
     #[arg(long, global = true, env = "MOI_CONFIG", default_value = "/etc/moi/moi.toml")]
     pub config: PathBuf,
+
+    /// Secrets file [default: secrets.toml next to the config file]
+    #[arg(long, global = true, env = "MOI_SECRETS")]
+    pub secrets: Option<PathBuf>,
 
     /// Machine-readable JSON output where supported
     #[arg(long, global = true)]
@@ -234,18 +247,41 @@ pub enum ConfigCommand {
 /// Parse arguments and run the command. Returns the process exit code.
 pub fn run() -> ExitCode {
     let cli = Cli::parse();
-    match dispatch(&cli) {
+    let stdout = std::io::stdout();
+    let mut out = stdout.lock();
+    let result = select_host().and_then(|host| dispatch(&cli, host, &mut out));
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("moi: {e}");
+            report_error(&cli, &e, &mut out);
             ExitCode::from(e.exit_code())
         }
     }
 }
 
-fn dispatch(cli: &Cli) -> Result<(), Error> {
+/// The machine to act on: the real one, or — when `MOI_ROOT` names a fixture directory
+/// (`tests/fixtures/hosts/<name>`) — a fake one that never runs a command or touches the real system.
+/// Its writes go to `MOI_ROOT_OVERLAY` if set and are refused otherwise.
+///
+/// This and argument parsing are the only places that read the process environment directly;
+/// everything after goes through the host.
+fn select_host() -> Result<Arc<dyn Host>, Error> {
+    let Some(root) = std::env::var_os("MOI_ROOT") else { return Ok(Arc::new(RealHost::new())) };
+    let root = PathBuf::from(root);
+    let ctx = |e| Error::host(format!("MOI_ROOT={}", root.display()), e);
+    let mut host = FixtureHost::open(&root).map_err(ctx)?;
+    if let Some(overlay) = std::env::var_os("MOI_ROOT_OVERLAY") {
+        host = host.with_overlay(Path::new(&overlay)).map_err(ctx)?;
+    }
+    for (name, value) in std::env::vars().filter(|(name, _)| name.starts_with("MOI_")) {
+        host.set_env(&name, &value);
+    }
+    Ok(Arc::new(host))
+}
+
+fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
     let (what, milestone) = match &cli.command {
-        Command::Config(_) => ("config", "M1"),
+        Command::Config(cmd) => return config(cli, cmd, host, out),
         Command::Snapshot(_) | Command::Log { .. } | Command::Diff { .. } => ("snapshot & history", "M2"),
         Command::Context | Command::Notes | Command::Audit => ("context, notes & audit", "M3"),
         Command::Check(_) => ("health checks", "M4"),
@@ -260,4 +296,88 @@ fn dispatch(cli: &Cli) -> Result<(), Error> {
         Command::Migrate(_) => ("migration", "M9"),
     };
     Err(Error::NotImplemented { what, milestone })
+}
+
+impl Cli {
+    /// The config and secrets files this invocation uses.
+    pub fn paths(&self) -> Paths {
+        Paths::new(self.config.clone(), self.secrets.clone())
+    }
+
+    /// The logger for this invocation: journal under systemd, stderr otherwise; `--quiet` keeps only
+    /// warnings and errors.
+    fn logger(&self, host: Arc<dyn Host>) -> Logger {
+        let min = if self.quiet { Level::Warning } else { Level::Info };
+        Logger::new(host, "moi").with_min_level(min)
+    }
+}
+
+/// Print a value for `--json`: one pretty-printed document on stdout.
+fn print_json(out: &mut dyn Write, value: &serde_json::Value) {
+    // A closed pipe (`moi … --json | head`) is not an error worth reporting.
+    let _ = writeln!(out, "{}", serde_json::to_string_pretty(value).unwrap_or_default());
+}
+
+/// Errors go to stderr for people and, with `--json`, also to stdout as `{"ok": false, "error": …}` so a
+/// consumer always gets a document.
+fn report_error(cli: &Cli, e: &Error, out: &mut dyn Write) {
+    let message = match e {
+        Error::ConfigInvalid(diagnostics) => {
+            for d in diagnostics {
+                eprintln!("{d}");
+            }
+            let n = diagnostics.len();
+            format!("configuration is invalid ({n} error{})", if n == 1 { "" } else { "s" })
+        }
+        other => other.to_string(),
+    };
+    eprintln!("moi: {message}");
+    if cli.json {
+        let mut error = json!({ "kind": e.kind(), "message": message, "exit_code": e.exit_code() });
+        if let Error::ConfigInvalid(diagnostics) = e {
+            error["diagnostics"] = json!(diagnostics);
+        }
+        print_json(out, &json!({ "ok": false, "error": error }));
+    }
+}
+
+fn config(cli: &Cli, cmd: &ConfigCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    let paths = cli.paths();
+    match cmd {
+        ConfigCommand::Path => {
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "config": paths.config, "secrets": paths.secrets }));
+            } else {
+                let _ = writeln!(out, "config   {}\nsecrets  {}", paths.config.display(), paths.secrets.display());
+            }
+        }
+        ConfigCommand::Check => {
+            let loaded = crate::config::load(host.as_ref(), &paths)?;
+            let log = cli.logger(host).with_masker(loaded.masker.clone());
+            if cli.json {
+                print_json(
+                    out,
+                    &json!({
+                        "ok": true,
+                        "files": { "config": paths.config, "secrets": paths.secrets },
+                        "secrets_resolved": loaded.secrets_resolved,
+                        "warnings": loaded.warnings,
+                        "config": loaded.effective_json(),
+                    }),
+                );
+            } else {
+                let _ = write!(out, "{}", loaded.effective_toml());
+            }
+            for w in &loaded.warnings {
+                log.warn(&w.to_string(), &[]);
+            }
+            let secrets = match loaded.secrets_resolved {
+                0 => "no secrets used".to_string(),
+                1 => "1 secret resolved, masked above".to_string(),
+                n => format!("{n} secrets resolved, masked above"),
+            };
+            log.info(&format!("{}: ok ({secrets})", paths.config.display()), &[]);
+        }
+    }
+    Ok(())
 }
