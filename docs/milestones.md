@@ -63,8 +63,8 @@ Specs: 10
 - [x] Scheduler (interval + persistent calendar), watcher (docker events + inotify) with debounce, IPC socket, sd_notify/watchdog
 - [x] Heal rules (network_connect, restart sequence, run, compose_up), cooldowns, reports
 - [x] Boot tasks (mounts, firewall, compose_up; post-boot verify with M8), firewall apply/diff with SSH rollback
-- [ ] `moi init` installs/enables `moi.service`; `moi uninstall`
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] `moi init` installs/enables `moi.service`; `moi uninstall`
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M7 — Backup
 Specs: 07, 08
@@ -100,6 +100,8 @@ Specs: 12
 Specs: 13, 14
 - [ ] `budgets` job with real measurements and thresholds
 - [ ] Fuzz config parsing and Docker payload parsing; review every `unwrap` on external data
+- [ ] `state.history_keep`: squash history older than the limit (the key is accepted and has no effect until then)
+- [ ] Daemon budgets measured on Linux (`daemon_rss_mb`, `daemon_cpu_percent`); a time limit for the daily job as a whole
 - [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M12 — Public release readiness (v1.0.0)

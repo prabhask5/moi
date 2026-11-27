@@ -335,7 +335,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         }
         Command::Status => return status(cli, host, out),
         Command::Firewall(command) => return firewall(cli, command, host, out),
-        Command::Init(_) | Command::Uninstall { .. } => ("init & uninstall", "M6"),
+        Command::Init(args) => return init(cli, args, host, out),
+        Command::Uninstall { purge } => return uninstall(cli, *purge, host, out),
         Command::Backup(_) | Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => {
             ("backup & state bundle", "M7")
         }
@@ -1154,4 +1155,142 @@ fn firewall(cli: &Cli, command: &FirewallCommand, host: Arc<dyn Host>, out: &mut
             Ok(())
         }
     }
+}
+
+fn init(cli: &Cli, args: &InitArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::init;
+    let paths = cli.paths();
+    let found = init::discover(&host);
+    // an existing configuration is the owner's: never overwritten, only compared
+    if host.exists(&paths.config) {
+        let loaded = crate::config::load(host.as_ref(), &paths)?;
+        let suggestions = init::suggestions(&found, &loaded.config);
+        if cli.json {
+            print_json(
+                out,
+                &json!({ "ok": true, "written": false, "config": paths.config, "suggestions": suggestions }),
+            );
+        } else {
+            let _ = writeln!(out, "{} exists and was not changed.", paths.config.display());
+            if suggestions.is_empty() {
+                let _ = writeln!(out, "It covers everything `moi init` would propose for this server.");
+            } else {
+                let _ = writeln!(out, "What `moi init` would propose that it does not have:");
+                for suggestion in &suggestions {
+                    let _ = writeln!(out, "  {suggestion}");
+                }
+            }
+        }
+        return Ok(());
+    }
+    // nothing is written if the service could not be installed afterwards
+    if !args.observe {
+        init::binary(host.as_ref())?;
+    }
+    let text = init::config_text(&found, args.observe);
+    let dir = paths.config.parent().unwrap_or(Path::new("/etc/moi"));
+    host.create_dir_all(dir, 0o755).map_err(|e| Error::host(format!("cannot create {}", dir.display()), e))?;
+    host.write(&paths.config, text.as_bytes(), 0o644)
+        .map_err(|e| Error::host(format!("cannot write {}", paths.config.display()), e))?;
+    if !host.exists(&paths.secrets) {
+        let note = "# secrets.toml — the values behind the `secret:NAME` references in moi.toml, as NAME = \"value\".\n# Only root can read this file; moi never prints what is in it.\n";
+        host.write(&paths.secrets, note.as_bytes(), 0o600)
+            .map_err(|e| Error::host(format!("cannot write {}", paths.secrets.display()), e))?;
+    }
+    // what was written must be a configuration moi accepts
+    let loaded = crate::config::load(host.as_ref(), &paths)?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let config = Arc::new(loaded.config);
+    let (report, _) = crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
+    // the service last: its first act is a check cycle, and it should find the snapshot there
+    let service = if args.observe { None } else { Some(init::install_service(host.as_ref())?) };
+    if cli.json {
+        print_json(
+            out,
+            &json!({ "ok": true, "written": true, "config": paths.config, "secrets": paths.secrets, "found": found, "snapshot_files": report.stable_files, "service": service }),
+        );
+        return Ok(());
+    }
+    let _ = writeln!(out, "wrote {} and {}", paths.config.display(), paths.secrets.display());
+    let mut seen = vec![format!("{} disks", found.disks.len()), format!("{} data roots", found.data_roots.len())];
+    if found.docker {
+        seen.push("Docker".to_string());
+    }
+    if let Some(url) = &found.kuma_url {
+        seen.push(format!("Uptime Kuma at {url}"));
+    }
+    let _ = writeln!(out, "found: {}", seen.join(", "));
+    let _ = writeln!(out, "first snapshot: {} files in {}", report.stable_files, state.state().display());
+    match &service {
+        Some(binary) => {
+            let _ = writeln!(out, "moi.service installed and started ({binary} daemon)");
+        }
+        None => {
+            let _ = writeln!(out, "no service installed (--observe): `moi snapshot` updates the state when you run it");
+        }
+    }
+    let _ = writeln!(out, "next:");
+    let _ = writeln!(out, "  moi audit                      what is not backed up, or would not survive a reboot");
+    let _ = writeln!(out, "  less {}", state.context().display());
+    if found.kuma_url.is_some() && !args.observe {
+        let _ = writeln!(out, "  moi monitors sync --dry-run    what Uptime Kuma would be given");
+    }
+    if !found.legacy.is_empty() {
+        let _ = writeln!(out, "this server already looks after itself:");
+        for sign in &found.legacy {
+            let _ = writeln!(out, "  {sign}");
+        }
+        let _ = writeln!(out, "`moi migrate plan` shows how moi can take that over without breaking a monitor.");
+    }
+    Ok(())
+}
+
+fn uninstall(cli: &Cli, purge: bool, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    // a configuration that no longer loads must not keep moi from being removed
+    let loaded = crate::config::load(host.as_ref(), &cli.paths()).ok();
+    let config = loaded.as_ref().map(|l| &l.config);
+    let state = StateDir::new(config.map_or_else(|| PathBuf::from("/var/lib/moi"), |c| PathBuf::from(&c.state.dir)));
+    if purge {
+        // history, archives and bindings cannot be brought back: the one who asks must mean this server
+        let name = config.map_or_else(|| crate::host::short_hostname(host.as_ref()), |c| c.server.name.clone());
+        let prompt = format!(
+            "This deletes {} for good: the server's recorded history, the archive of everything moi replaced, and moi.db.\nType the server's name ({name}) to go on: ",
+            state.root().display()
+        );
+        let answer = host.ask(&prompt, std::time::Duration::from_secs(120)).ok().flatten();
+        if answer.as_deref() != Some(name.as_str()) {
+            return Err(Error::Usage("not confirmed: nothing was removed".to_string()));
+        }
+    }
+    let mut done = crate::init::uninstall(host.as_ref(), config);
+    if purge && host.exists(state.root()) {
+        crate::init::remove_tree(host.as_ref(), state.root())
+            .map_err(|e| Error::host(format!("cannot delete {}", state.root().display()), e))?;
+        done.push(format!("deleted {}", state.root().display()));
+    }
+    let config_dir = cli.paths().config.parent().map(|p| p.display().to_string()).unwrap_or_default();
+    let mut kept = vec![format!("{config_dir} (your configuration and secrets)")];
+    if !purge && host.exists(state.root()) {
+        kept.push(format!("{} (history and archive; `moi uninstall --purge` deletes them)", state.root().display()));
+    }
+    if cli.json {
+        print_json(out, &json!({ "ok": true, "removed": done, "kept": kept }));
+    } else {
+        if done.is_empty() {
+            let _ = writeln!(out, "nothing of moi was installed");
+        }
+        for line in &done {
+            let _ = writeln!(out, "{line}");
+        }
+        for line in &kept {
+            let _ = writeln!(out, "kept: {line}");
+        }
+        let _ = writeln!(
+            out,
+            "Monitors in Uptime Kuma, firewall rules in the kernel and backups in their repository are untouched."
+        );
+    }
+    Ok(())
 }

@@ -80,7 +80,7 @@ fn text(v: &Value) -> &str {
 
 /// Postgres or MySQL/MariaDB, recognised by the environment their images define or by the image's own
 /// name (`postgres`, `pgvector`, `supabase/postgres` — but not `postgrest` or `postgres-meta`).
-fn database_engine(image: &str, env: &Value) -> Option<&'static str> {
+pub(crate) fn database_engine(image: &str, env: &Value) -> Option<&'static str> {
     let has = |key: &str| env.as_array().into_iter().flatten().filter_map(|e| e.as_str()).any(|e| e.starts_with(key));
     let lower = image.to_lowercase();
     let name = lower

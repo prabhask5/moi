@@ -47,7 +47,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `config` | `moi.toml` + `secrets.toml` schema (serde), defaults, validation, `secret:NAME` references |
 | `host` | **All system access**: files under a root prefix, `/proc`, `/sys`, commands, time, sockets, DNS, inotify, sd_notify. `RealHost` and `FixtureHost` (tests). Nothing else touches the OS directly |
 | `docker` | Docker Engine API over the unix socket (containers, networks, volumes, services/swarm, events, exec, logs): a small blocking HTTP/1.1 client on a connection from `Host`, payloads as JSON values. No `docker` CLI, no HTTP crate |
-| `systemd` | Unit states, enable/start, timers, `TriggeredBy`, journal reads — via D-Bus (`zbus`); `systemctl` only as fallback |
+| `systemd` | Unit states, timers, `TriggeredBy`, journal reads — through `systemctl` and `journalctl` (no D-Bus dependency) |
 | `snapshot` | Collectors (one per area, run in parallel) → normalized files in the state dir; volatile vs stable split |
 | `state` | State dir layout, git history (gitoxide), change summaries, NOTES.md stubs |
 | `context` | CONTEXT.md generation + redaction |
@@ -58,6 +58,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `bundle` | State bundle (stored as a tagged restic snapshot), bootstrap |
 | `restore` | Phases, interactive storage mapping, DB import, verify + reboot expectations |
 | `firewall` | The managed chains: rules files, atomic apply (`iptables-restore --noflush`), save and roll back, drift status |
+| `init` | Discovery, the first configuration, installing and removing `moi.service` |
 | `heal` | Heal rule actions (network connect, restart sequence, run), cooldowns and reports; fired by the services check and by the daemon's triggers |
 | `daemon` | The service loop (threads and a channel, no async runtime): scheduler, watchers (docker events, inotify), heal triggers, boot tasks, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |

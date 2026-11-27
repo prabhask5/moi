@@ -18,6 +18,7 @@ pub mod error;
 pub mod firewall;
 pub mod heal;
 pub mod host;
+pub mod init;
 pub mod log;
 pub mod migrate;
 pub mod monitors;

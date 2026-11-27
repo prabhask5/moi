@@ -54,7 +54,7 @@ timezone = "America/New_York"    # default: system timezone (informational)
 
 [state]
 dir = "/var/lib/moi"             # state root (state/, moi.db, archive/)
-history_keep = "365d"            # prune git history older than this (squash), default keep all
+history_keep = "365d"            # prune git history older than this (squash), default keep all — accepted, not applied before M11
 
 # ---------------------------------------------------------------- capture (02-snapshot)
 [capture]
@@ -275,9 +275,26 @@ expect_watchdog = true
 
 Re-running `moi init` never overwrites an existing config; it prints a diff of suggested additions.
 
+### Decisions (M6)
+
+- **What is written**: `[server] name`; `[capture] data_roots`; `[data] fungible` for bind-mount sources with a path component named `media`, `movies`, `tv`, `music`, `download(s)`, `torrents`, `usenet` or `transcodes`; `[checks.resources]`; `[checks.storage]` with `mounts`, `writable` and `disks`; with Docker, `[checks.services]` with empty `http`/`exec` lists holding commented examples; with a Kuma container, `[monitors.kuma] url` and commented `secret:` references for a login. Nothing else: no firewall management, no heal rules, no off-site repository.
+- **Disks** are the block devices in `/sys/block` (no loop, ram, zram, dm, sr, md, fd, nbd): `nvme*` are type `nvme`; a device whose sysfs path goes through `/usb` (or that is `removable`) is type `sat`, which USB bridges need; others `auto`. **Mounts** are real filesystems (ext*, xfs, btrfs, zfs, f2fs, ntfs, exfat, vfat, bcachefs, nfs, cifs) outside `/`, `/boot*`, `/var`, `/var/lib/*` and `/snap*`; a mount on a USB disk is also `writable`.
+- **Examples for checks**: a database container (recognised as backups recognise them, plus redis/valkey/keydb by image name) gets its client's own probe (`pg_isready -q`, `mysqladmin ping --silent`, `redis-cli ping` expecting `PONG`); any other container with an exposed TCP port and an address gets `path = "<lowest port>/"`. Swarm tasks get none. They are comments: moi cannot know which URL means "healthy".
+- **Kuma's URL** is `http://127.0.0.1:<published port>` if port 3001 is published, else `http://<container address>:3001`.
+- **Backups are proposed, not switched on**: the `[backup]` section is written commented out — `local_dir` (`<first removable mount, else first data mount>/backups`, else `/var/backups/moi`) and `paths`: the directory of each compose project (several projects in one directory count as that directory) and bind-mount sources that are directories, not the system's (`/proc`, `/sys`, `/dev`, `/run`, `/var/run`, `/var/lib/docker`, `/etc`, `/lib`, `/usr`), not fungible-looking and not inside another proposed path. Where archives go and what is worth keeping is the owner's decision; `moi audit` shows the gaps meanwhile. An existing restic environment file is mentioned in a comment.
+- **No prompting.** Credentials are always left as commented `secret:` references (the spec offered prompting on a TTY; moi has no way to read a password without echoing it). `--non-interactive` is accepted and changes nothing.
+- **Order**: check that a moi binary is where a service can start it (`/usr/bin/moi`, `/usr/local/bin/moi`) — otherwise nothing at all is written; write `moi.toml` (0644) and an empty `secrets.toml` (0600); load it (what init writes must validate); take the first snapshot; write `/etc/systemd/system/moi.service` and `systemctl daemon-reload`, `systemctl enable --now moi.service`. `--observe` writes only the first three sections, takes the snapshot, and installs nothing.
+- **Legacy setups** are named at the end (serverstate directories; scripts in `/etc/cron.d`, `/opt/scripts`, `/usr/local/bin` that push to Uptime Kuma) with a pointer to `moi migrate plan`.
+- **Re-run**: the existing file is loaded and compared — checks not enabled, disks and mounts not checked, Kuma not set up, proposed paths neither in `backup.paths` nor in `data.fungible`, fungible-looking paths not declared. Nothing is written or installed.
+- **"Equivalent to `examples/cestmoi.toml` minus hand-written checks"** is tested as: same server name, data roots, storage mounts, writable mounts and disks (device and type); every path init proposes for backup or as fungible is dealt with one way or the other in the example; and `moi init` run on the configured fixture reports nothing missing.
+
+### `moi uninstall [--purge]`
+
+Stops and disables `moi.service`, removes the unit, the `context.copies` files and moi's block in the Claude Code instructions of their owners and root. `/etc/moi` and the state directory stay. `--purge` also deletes the state directory (history, archive, `moi.db`) after the server's name is typed at the prompt; anything else, or no terminal, removes nothing. A configuration that no longer loads does not prevent uninstalling. Uptime Kuma's monitors, firewall rules in the kernel and backup repositories are never touched; restoring legacy files that a migration replaced is `moi migrate rollback` (11).
+
 ## Acceptance
 
 - [x] Unknown key, wrong type, bad duration, missing secret → validation error with location; all errors reported in one run.
 - [x] `secret:` resolution from file and env; `moi config check` masks every resolved secret.
 - [x] Empty config is valid; defaults documented in `examples/moi.toml` match the code (golden test).
-- [ ] `moi init` on the `cestmoi` fixture host produces a config equivalent to `examples/cestmoi.toml` minus hand-written checks.
+- [x] `moi init` on the `cestmoi` fixture host produces a config equivalent to `examples/cestmoi.toml` minus hand-written checks.
