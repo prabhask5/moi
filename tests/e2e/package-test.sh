@@ -41,7 +41,7 @@ for image in fedora:latest; do
     set -e
     rpm -qlp /dist/$rpm | grep -q /usr/share/man/man1/moi.1
     # the package is not signed (the release's checksums and attestation vouch for it)
-    rpm -i --nodeps --nosignature --define "_pkgverify_level digest" /dist/$rpm
+    rpm -i --nodeps --nosignature --define '_pkgverify_level digest' /dist/$rpm
     $looks_right
     rpm -e moi
     test ! -e /usr/bin/moi
