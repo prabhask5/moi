@@ -1,0 +1,74 @@
+[
+  {
+    "ID": "svc0api",
+    "Version": {
+      "Index": 41
+    },
+    "CreatedAt": "2026-02-01T00:00:00Z",
+    "UpdatedAt": "2026-02-27T00:00:00Z",
+    "Spec": {
+      "Name": "api",
+      "Labels": {
+        "com.docker.stack.namespace": "app"
+      },
+      "TaskTemplate": {
+        "ContainerSpec": {
+          "Image": "ghcr.io/example/api:7@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+          "Env": [
+            "PORT=3000",
+            "DATABASE_URL=postgres://api:FAKEapidbpass01@db/api"
+          ],
+          "Labels": {
+            "traefik.enable": "true"
+          },
+          "Mounts": [
+            {
+              "Type": "volume",
+              "Source": "api-data",
+              "Target": "/data"
+            }
+          ],
+          "Secrets": [
+            {
+              "SecretName": "api_signing_key",
+              "SecretID": "sec0"
+            }
+          ]
+        },
+        "RestartPolicy": {
+          "Condition": "any"
+        },
+        "Placement": {
+          "Constraints": [
+            "node.role==manager"
+          ]
+        },
+        "Networks": [
+          {
+            "Target": "3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e",
+            "Aliases": [
+              "api"
+            ]
+          }
+        ]
+      },
+      "Mode": {
+        "Replicated": {
+          "Replicas": 1
+        }
+      },
+      "EndpointSpec": {
+        "Mode": "vip",
+        "Ports": [
+          {
+            "Protocol": "tcp",
+            "TargetPort": 3000,
+            "PublishedPort": 3000,
+            "PublishMode": "ingress"
+          }
+        ]
+      }
+    },
+    "Endpoint": {}
+  }
+]

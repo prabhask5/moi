@@ -19,9 +19,21 @@ How `FixtureHost` behaves:
 - **Commands** never run. The key of a command line (program and arguments joined by single spaces) is its 64-bit FNV-1a hash in hex, `FixtureHost::command_key`. Running a command with no canned output fails with the exact file name to add, so the easy way to add one is to run the test once. Put the command line in `<key>.cmd` so the directory stays readable. Tests can also can outputs in memory (`add_command`).
 - **Clock** is fixed and moves only with `advance`/`set_now`. **Environment** is empty unless set. **Journal** entries are collected in memory.
 
+The fake Docker engine (`docker/`, absent = no Docker on this host):
+
+- `GET /x/y?query` is answered from `docker/x/y.json`, the query ignored (`/containers/json` → `containers/json.json`, `/networks` → `networks.json`). Containers can be addressed by id, id prefix or name; their files live under `containers/<full id>/`.
+- `GET /events` streams the lines of `events.jsonl` and closes.
+- `exec` is answered from `exec/<container name>/<key>.out` (+ `.err`, `.exit`; `.cmd` for humans), keyed like `commands/` by the command line.
+- `GET /containers/<c>/logs` returns `containers/<id>/logs.txt` as stdout and `logs.err` as stderr.
+- Anything else (`POST`, `DELETE`) is accepted with 204 and changes nothing. Every request is recorded (`docker_requests()`), and a test can replace an answer with `set_docker(path, json)`.
+
 ## `minimal`
 
 A server with nothing on it: hostname `myserver.lan`, timezone link, an empty `/etc/moi/moi.toml`, and `cases/` with config files for the `moi config check` tests (`full` valid with secrets, `bad` with one error of each kind, `open-secrets` whose `secrets.toml` is world-readable because `modes` does not list it).
+
+## `docker`
+
+A small Docker host for the client tests: a compose stack (`web`, `db`), a stopped container sharing `web`'s network namespace (`container:<id>`), a swarm service `api` with its task container, bridge and overlay networks, a named and an anonymous volume, events, exec outputs and logs. All tokens are `FAKE…`.
 
 ## `cestmoi` (to build in M2)
 

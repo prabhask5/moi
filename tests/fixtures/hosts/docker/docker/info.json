@@ -1,0 +1,15 @@
+{
+  "ID": "eng0",
+  "Containers": 4,
+  "ContainersRunning": 3,
+  "Images": 2,
+  "ServerVersion": "29.1.3",
+  "DockerRootDir": "/var/lib/docker",
+  "Driver": "overlayfs",
+  "Name": "dockerhost",
+  "Swarm": {
+    "LocalNodeState": "active",
+    "NodeID": "n0de",
+    "ControlAvailable": true
+  }
+}

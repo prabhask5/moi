@@ -45,7 +45,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `cli` | clap definitions, output formatting (human / `--json`), exit codes |
 | `config` | `moi.toml` + `secrets.toml` schema (serde), defaults, validation, `secret:NAME` references |
 | `host` | **All system access**: files under a root prefix, `/proc`, `/sys`, commands, time. `RealHost` and `FixtureHost` (tests). Nothing else touches the OS directly |
-| `docker` | Docker Engine API over the unix socket (containers, networks, volumes, services/swarm, events, exec, logs). No `docker` CLI |
+| `docker` | Docker Engine API over the unix socket (containers, networks, volumes, services/swarm, events, exec, logs): a small blocking HTTP/1.1 client on a connection from `Host`, payloads as JSON values. No `docker` CLI, no HTTP crate |
 | `systemd` | Unit states, enable/start, timers, `TriggeredBy`, journal reads — via D-Bus (`zbus`); `systemctl` only as fallback |
 | `snapshot` | Collectors (one per area, run in parallel) → normalized files in the state dir; volatile vs stable split |
 | `state` | State dir layout, git history (gitoxide), change summaries, NOTES.md stubs |
@@ -63,7 +63,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
-- Async (tokio) only where it pays: daemon, Docker API, HTTP, Kuma. Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
+- Async (tokio) only where it pays: daemon, outbound HTTP, Kuma. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
 - External tools moi shells out to on purpose: `restic` (backups), `smartctl --json`, `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`. Each is optional and feature-detected.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.

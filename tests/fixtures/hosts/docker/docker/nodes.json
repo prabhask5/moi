@@ -1,0 +1,19 @@
+[
+  {
+    "ID": "n0de",
+    "Description": {
+      "Hostname": "dockerhost"
+    },
+    "Spec": {
+      "Role": "manager",
+      "Availability": "active"
+    },
+    "Status": {
+      "State": "ready"
+    },
+    "ManagerStatus": {
+      "Leader": true,
+      "Reachability": "reachable"
+    }
+  }
+]

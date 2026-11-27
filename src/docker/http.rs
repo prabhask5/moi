@@ -1,0 +1,210 @@
+//! A minimal HTTP/1.1 client for the Docker Engine API: one request per connection over a stream the
+//! host provides. Sync on purpose — snapshot collectors and checks make a handful of local requests
+//! that each take microseconds, and the daemon (M6) reads the event stream on its own thread; an async
+//! HTTP stack would add a large dependency tree for no gain (docs/spec/14-security.md § Dependencies).
+
+use std::io::{self, BufRead, BufReader, Read, Write};
+
+use crate::host::Conn;
+
+/// A response whose body has not been read yet.
+pub(crate) struct Response {
+    pub status: u16,
+    body: Body,
+}
+
+/// The body, decoded from its transfer encoding as it is read.
+pub(crate) struct Body {
+    reader: BufReader<Box<dyn Conn>>,
+    framing: Framing,
+}
+
+enum Framing {
+    Length(u64),
+    /// Bytes left in the current chunk; `None` before the first chunk header and after the last chunk.
+    Chunked {
+        left: u64,
+        done: bool,
+    },
+    /// Until the peer closes (upgraded/hijacked streams, HTTP/1.0-style bodies).
+    Eof,
+}
+
+fn protocol(msg: impl Into<String>) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, msg.into())
+}
+
+/// Send a request and read the response head.
+pub(crate) fn request(
+    mut conn: Box<dyn Conn>,
+    method: &str,
+    path: &str,
+    body: Option<&[u8]>,
+    upgrade: bool,
+) -> io::Result<Response> {
+    let mut head = format!("{method} {path} HTTP/1.1\r\nHost: docker\r\nUser-Agent: moi\r\nAccept: */*\r\n");
+    if upgrade {
+        head.push_str("Connection: Upgrade\r\nUpgrade: tcp\r\n");
+    } else {
+        head.push_str("Connection: close\r\n");
+    }
+    if let Some(body) = body {
+        head.push_str(&format!("Content-Type: application/json\r\nContent-Length: {}\r\n", body.len()));
+    } else if method != "GET" {
+        head.push_str("Content-Length: 0\r\n");
+    }
+    head.push_str("\r\n");
+    conn.write_all(head.as_bytes())?;
+    if let Some(body) = body {
+        conn.write_all(body)?;
+    }
+    conn.flush()?;
+
+    let mut reader = BufReader::new(conn);
+    let mut line = String::new();
+    reader.read_line(&mut line)?;
+    let mut parts = line.split_whitespace();
+    let status = match (parts.next(), parts.next().and_then(|s| s.parse::<u16>().ok())) {
+        (Some(version), Some(status)) if version.starts_with("HTTP/1.") => status,
+        _ => return Err(protocol(format!("not an HTTP response: {}", line.trim_end()))),
+    };
+    let mut headers = Vec::new();
+    loop {
+        line.clear();
+        if reader.read_line(&mut line)? == 0 {
+            return Err(protocol("connection closed in the response headers"));
+        }
+        let trimmed = line.trim_end();
+        if trimmed.is_empty() {
+            break;
+        }
+        if let Some((name, value)) = trimmed.split_once(':') {
+            headers.push((name.trim().to_ascii_lowercase(), value.trim().to_string()));
+        }
+    }
+    let header = |name: &str| headers.iter().find(|(n, _)| n == name).map(|(_, v)| v.as_str());
+    let framing = if status == 101 || method == "HEAD" && status < 300 {
+        Framing::Eof
+    } else if header("transfer-encoding").is_some_and(|v| v.eq_ignore_ascii_case("chunked")) {
+        Framing::Chunked { left: 0, done: false }
+    } else if let Some(len) = header("content-length") {
+        Framing::Length(len.parse().map_err(|_| protocol("bad Content-Length"))?)
+    } else if status == 204 || status == 304 {
+        Framing::Length(0)
+    } else {
+        Framing::Eof
+    };
+    Ok(Response { status, body: Body { reader, framing } })
+}
+
+impl Response {
+    /// The whole body.
+    pub fn bytes(mut self) -> io::Result<Vec<u8>> {
+        let mut out = Vec::new();
+        self.body.read_to_end(&mut out)?;
+        Ok(out)
+    }
+
+    /// The body as a stream (events, logs, exec output).
+    pub fn into_body(self) -> Body {
+        self.body
+    }
+}
+
+impl Body {
+    /// Change the read timeout of the underlying connection (`None` blocks forever, for event streams).
+    pub fn set_timeout(&mut self, timeout: Option<std::time::Duration>) -> io::Result<()> {
+        self.reader.get_mut().set_timeout(timeout)
+    }
+}
+
+impl Read for Body {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        match &mut self.framing {
+            Framing::Eof => self.reader.read(buf),
+            Framing::Length(left) => {
+                if *left == 0 {
+                    return Ok(0);
+                }
+                let want = buf.len().min(usize::try_from(*left).unwrap_or(usize::MAX));
+                let n = self.reader.read(&mut buf[..want])?;
+                if n == 0 {
+                    return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "connection closed mid-body"));
+                }
+                *left -= n as u64;
+                Ok(n)
+            }
+            Framing::Chunked { left, done } => {
+                if *done {
+                    return Ok(0);
+                }
+                if *left == 0 {
+                    let mut line = String::new();
+                    self.reader.read_line(&mut line)?;
+                    if line.trim().is_empty() {
+                        // the CRLF that ends the previous chunk; the size line follows
+                        line.clear();
+                        self.reader.read_line(&mut line)?;
+                    }
+                    let size = line.trim().split(';').next().unwrap_or_default();
+                    if size.is_empty() {
+                        // closed between chunks: how a daemon ends a stream it was following
+                        *done = true;
+                        return Ok(0);
+                    }
+                    *left = u64::from_str_radix(size, 16).map_err(|_| protocol(format!("bad chunk size: {size}")))?;
+                    if *left == 0 {
+                        *done = true;
+                        return Ok(0);
+                    }
+                }
+                let want = buf.len().min(usize::try_from(*left).unwrap_or(usize::MAX));
+                let n = self.reader.read(&mut buf[..want])?;
+                if n == 0 {
+                    return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "connection closed mid-chunk"));
+                }
+                *left -= n as u64;
+                Ok(n)
+            }
+        }
+    }
+}
+
+/// Percent-encode a query value (everything but unreserved characters).
+pub(crate) fn encode(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for b in value.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
+            out.push(char::from(b));
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+    }
+    out
+}
+
+/// Split Docker's multiplexed stream (8-byte frame headers: stream type, 3 zero bytes, big-endian
+/// length) into stdout and stderr. A stream that does not start with a valid frame header is a TTY
+/// stream and is returned whole as stdout.
+pub(crate) fn demux(raw: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    let framed = |b: &[u8]| b.len() >= 8 && b[0] <= 2 && b[1..4] == [0, 0, 0];
+    if !raw.is_empty() && !framed(raw) {
+        return (raw.to_vec(), Vec::new());
+    }
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    let mut rest = raw;
+    while framed(rest) {
+        let len = u32::from_be_bytes([rest[4], rest[5], rest[6], rest[7]]) as usize;
+        let end = (8 + len).min(rest.len());
+        if rest[0] == 2 {
+            stderr.extend_from_slice(&rest[8..end])
+        } else {
+            stdout.extend_from_slice(&rest[8..end])
+        }
+        rest = &rest[end..];
+    }
+    (stdout, stderr)
+}

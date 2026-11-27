@@ -221,6 +221,7 @@ fn real_host_with_root_prefix_refuses_to_run_commands_or_log() {
     let h = RealHost::with_root(&common::scratch("host-real-norun"));
     assert_eq!(h.run(&Cmd::new("true")).unwrap_err().kind(), ErrorKind::Unsupported);
     assert!(h.journal(&[("MESSAGE".into(), "x".into())]).is_err());
+    assert_eq!(h.connect_unix(Path::new("/var/run/docker.sock")).unwrap_err().kind(), ErrorKind::Unsupported);
 }
 
 #[test]
