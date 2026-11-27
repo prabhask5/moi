@@ -260,7 +260,7 @@ fn tree(dir: &Path) -> BTreeMap<String, Vec<u8>> {
 fn backup_drill_push_and_pull_with_a_real_database_and_a_real_repository() {
     let s = Sandbox::new("it-backup");
     s.write("/etc/moi/moi.toml", CONFIG, 0o644);
-    s.write("/etc/moi/secrets.toml", &format!("restic_password = \"{PASSWORD}\"\n"), 0o600);
+    s.write("/etc/moi/secrets.toml", &format!("[secrets]\nrestic_password = \"{PASSWORD}\"\n"), 0o600);
     let host: Arc<dyn Host> = s.clone();
 
     // ---- a database with something in it: the job's Postgres service container
