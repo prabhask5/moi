@@ -153,6 +153,11 @@ pub trait Conn: io::Read + io::Write + Send + fmt::Debug {
     /// Fail reads and writes that block longer than this; `None` waits forever.
     fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()>;
 
+    /// Say that nothing more will be written (the other side sees end of input); reading goes on.
+    fn close_write(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+
     /// Fixture connections stand in for the TLS layer as well: `Some(outcome)` is how the handshake went,
     /// and the connection then carries plain HTTP. A real socket returns `None` and gets a real handshake.
     fn fake_tls(&mut self) -> Option<io::Result<()>> {

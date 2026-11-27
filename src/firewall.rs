@@ -217,6 +217,105 @@ pub fn apply(host: &dyn Host, config: &Config, db: &Db, family: Family, chains: 
     Ok(Applied { family, chains: chains.to_vec(), rules: applied })
 }
 
+/// How long someone applying over SSH has to say that they can still reach the machine.
+pub const CONFIRM: Duration = Duration::from_secs(60);
+/// The transient unit that puts the previous rules back if nobody confirms.
+pub const ROLLBACK_UNIT: &str = "moi-firewall-rollback";
+
+/// What a guarded apply did, and where the rules it replaced are.
+#[derive(Debug, Clone)]
+pub struct Guarded {
+    pub applied: Vec<Applied>,
+    pub saved: Vec<(Family, String)>,
+}
+
+/// Apply both families with the way back arranged first: the rules in place are saved, and over SSH —
+/// where a wrong rule locks the person out, and their shell with this very process — a systemd timer
+/// outside the session puts them back unless the person confirms that they can still reach the machine.
+pub fn apply_guarded(
+    host: &std::sync::Arc<dyn Host>,
+    config: &Config,
+    state: &StateDir,
+    db: &Db,
+) -> Result<Guarded, Error> {
+    // read both files first: a typo in one must not leave the other family applied alone
+    for family in Family::ALL {
+        rules(host.as_ref(), config, family)?;
+    }
+    let mut saved = Vec::new();
+    for family in Family::ALL {
+        saved.push((family, save(host.as_ref(), state, family)?));
+    }
+    let stop_timer = || host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
+    let remote = host.env("SSH_CONNECTION").is_some() || host.env("SSH_TTY").is_some();
+    if remote {
+        let back: Vec<String> = saved
+            .iter()
+            .map(|(family, file)| {
+                format!("{}-restore '{file}'", if *family == Family::V4 { "iptables" } else { "ip6tables" })
+            })
+            .collect();
+        let seconds = format!("--on-active={}s", CONFIRM.as_secs() + 30);
+        let unit = format!("--unit={ROLLBACK_UNIT}");
+        let script = back.join("; ");
+        let timer = Cmd::new("systemd-run").args([
+            "--quiet",
+            "--collect",
+            unit.as_str(),
+            seconds.as_str(),
+            "/bin/sh",
+            "-c",
+            script.as_str(),
+        ]);
+        let scheduled =
+            host.run(&timer).map_err(|e| Error::host("cannot schedule the automatic rollback (systemd-run)", e))?;
+        if scheduled.status != 0 {
+            return Err(Error::Usage(format!(
+                "not applying over SSH without a way back: systemd-run could not schedule the rollback ({}). Run this at the console instead",
+                scheduled.stderr_str().trim()
+            )));
+        }
+    }
+    let mut applied = Vec::new();
+    for family in Family::ALL {
+        match apply(host.as_ref(), config, db, family, &config.firewall.chains) {
+            Ok(done) => applied.push(done),
+            Err(e) => {
+                // one family must not stay applied alone: put back what was there
+                for (family, file) in &saved {
+                    let _ = restore(host.as_ref(), *family, file);
+                }
+                if remote {
+                    let _ = stop_timer();
+                }
+                return Err(e);
+            }
+        }
+    }
+    if remote {
+        let prompt = format!(
+            "Rules applied. If you can still read this, type yes within {} seconds to keep them; otherwise they are rolled back: ",
+            CONFIRM.as_secs()
+        );
+        let kept =
+            host.ask(&prompt, CONFIRM).ok().flatten().is_some_and(|answer| answer.trim().eq_ignore_ascii_case("yes"));
+        if !kept {
+            // not confirmed: put everything back now rather than leave it to the timer
+            for (family, file) in &saved {
+                restore(host.as_ref(), *family, file)?;
+            }
+            let _ = stop_timer();
+            return Err(Error::Usage("not confirmed: the previous rules are back in place".to_string()));
+        }
+        if !stop_timer().is_ok_and(|o| o.status == 0) {
+            return Err(Error::Usage(format!(
+                "the rules are applied, but the rollback timer could not be stopped: run `systemctl stop {ROLLBACK_UNIT}.timer` now, or they are rolled back in a minute"
+            )));
+        }
+    }
+    Ok(Guarded { applied, saved })
+}
+
 /// Where a family's owned chains stand.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

@@ -378,12 +378,20 @@ impl Conn for TcpStream {
         self.set_read_timeout(timeout)?;
         self.set_write_timeout(timeout)
     }
+
+    fn close_write(&mut self) -> io::Result<()> {
+        self.shutdown(std::net::Shutdown::Write)
+    }
 }
 
 impl Conn for UnixStream {
     fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
         self.set_read_timeout(timeout)?;
         self.set_write_timeout(timeout)
+    }
+
+    fn close_write(&mut self) -> io::Result<()> {
+        self.shutdown(std::net::Shutdown::Write)
     }
 }
 

@@ -218,6 +218,9 @@ pub struct RestoreArgs {
     /// List the phases
     #[arg(long)]
     pub list: bool,
+    /// Restore the data from this restic snapshot instead of the latest one
+    #[arg(long, value_name = "ID")]
+    pub snapshot: Option<String>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -353,7 +356,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             return Ok(());
         }
         Command::Verify => return verify(cli, host, out),
-        Command::Restore(_) => ("restore", "M8"),
+        Command::Restore(args) => return restore(cli, args, host, out),
         Command::Migrate(_) => ("migration", "M9"),
     };
     Err(Error::NotImplemented { what, milestone })
@@ -1003,9 +1006,6 @@ fn status(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Err
 }
 
 /// How long someone applying rules over SSH has to say they can still get in.
-const FIREWALL_CONFIRM: std::time::Duration = std::time::Duration::from_secs(60);
-const ROLLBACK_UNIT: &str = "moi-firewall-rollback";
-
 fn firewall(cli: &Cli, command: &FirewallCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
     use crate::firewall::{self, Family, State};
     let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
@@ -1067,91 +1067,18 @@ fn firewall(cli: &Cli, command: &FirewallCommand, host: Arc<dyn Host>, out: &mut
             if all.is_empty() { Ok(()) } else { Err(Error::ProblemsFound) }
         }
         FirewallCommand::Apply => {
-            // read both files first: a typo in one must not leave the other family applied alone
-            for family in Family::ALL {
-                firewall::rules(host.as_ref(), config, family)?;
-            }
-            let mut saved = Vec::new();
-            for family in Family::ALL {
-                saved.push((family, firewall::save(host.as_ref(), &state, family)?));
-            }
-            // Over SSH a wrong rule locks the person out — and their shell with this very process. So the
-            // way back is arranged before anything changes, outside this session: a systemd timer.
-            let remote = host.env("SSH_CONNECTION").is_some() || host.env("SSH_TTY").is_some();
-            if remote {
-                let back: Vec<String> = saved
-                    .iter()
-                    .map(|(family, file)| {
-                        format!("{}-restore '{file}'", if *family == Family::V4 { "iptables" } else { "ip6tables" })
-                    })
-                    .collect();
-                let seconds = format!("--on-active={}s", FIREWALL_CONFIRM.as_secs() + 30);
-                let unit = format!("--unit={ROLLBACK_UNIT}");
-                let script = back.join("; ");
-                let timer = Cmd::new("systemd-run").args([
-                    "--quiet",
-                    "--collect",
-                    unit.as_str(),
-                    seconds.as_str(),
-                    "/bin/sh",
-                    "-c",
-                    script.as_str(),
-                ]);
-                let scheduled = host
-                    .run(&timer)
-                    .map_err(|e| Error::host("cannot schedule the automatic rollback (systemd-run)", e))?;
-                if scheduled.status != 0 {
-                    return Err(Error::Usage(format!(
-                        "not applying over SSH without a way back: systemd-run could not schedule the rollback ({}). Run this at the console instead",
-                        scheduled.stderr_str().trim()
-                    )));
-                }
-            }
-            let mut applied = Vec::new();
-            for family in Family::ALL {
-                match firewall::apply(host.as_ref(), config, &db, family, &config.firewall.chains) {
-                    Ok(done) => applied.push(done),
-                    Err(e) => {
-                        // one family must not stay applied alone: put back what was there
-                        for (family, file) in &saved {
-                            let _ = firewall::restore(host.as_ref(), *family, file);
-                        }
-                        if remote {
-                            let _ = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
-                        }
-                        return Err(e);
-                    }
-                }
-            }
             let log = Logger::new(Arc::clone(&host), "moi").with_masker(loaded.masker.clone());
+            let firewall::Guarded { applied, saved } = match firewall::apply_guarded(&host, config, &state, &db) {
+                Ok(done) => done,
+                Err(e) => {
+                    if matches!(&e, Error::Usage(why) if why.starts_with("not confirmed")) {
+                        log.warn("firewall: rules applied over SSH were not confirmed and have been rolled back", &[]);
+                    }
+                    return Err(e);
+                }
+            };
             let summary: Vec<String> =
                 applied.iter().map(|a| format!("{} rules ({})", a.rules, a.family.name())).collect();
-            if remote {
-                let prompt = format!(
-                    "Rules applied. If you can still read this, type yes within {} seconds to keep them; otherwise they are rolled back: ",
-                    FIREWALL_CONFIRM.as_secs()
-                );
-                let kept = host
-                    .ask(&prompt, FIREWALL_CONFIRM)
-                    .ok()
-                    .flatten()
-                    .is_some_and(|answer| answer.eq_ignore_ascii_case("yes"));
-                if !kept {
-                    // not confirmed: put everything back now rather than leave it to the timer
-                    for (family, file) in &saved {
-                        firewall::restore(host.as_ref(), *family, file)?;
-                    }
-                    let _ = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
-                    log.warn("firewall: rules applied over SSH were not confirmed and have been rolled back", &[]);
-                    return Err(Error::Usage("not confirmed: the previous rules are back in place".to_string()));
-                }
-                let stopped = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
-                if !stopped.is_ok_and(|o| o.status == 0) {
-                    return Err(Error::Usage(format!(
-                        "the rules are applied, but the rollback timer could not be stopped: run `systemctl stop {ROLLBACK_UNIT}.timer` now, or they are rolled back in a minute"
-                    )));
-                }
-            }
             log.info(
                 &format!("firewall: applied {} to {}", summary.join(", "), config.firewall.chains.join(", ")),
                 &[],
@@ -1487,6 +1414,44 @@ fn pull_with(
             pulled.dir
         );
         let _ = writeln!(out, "next: moi restore --bundle {} --dry-run", pulled.dir);
+    }
+    Ok(())
+}
+
+fn restore(cli: &Cli, args: &RestoreArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::restore::{self, Options, PHASES};
+    if args.list {
+        if cli.json {
+            let phases: Vec<_> = PHASES.iter().map(|(name, what)| json!({ "name": name, "what": what })).collect();
+            print_json(out, &json!({ "ok": true, "phases": phases }));
+        } else {
+            for (name, what) in PHASES {
+                let _ = writeln!(out, "{name:<14} {what}");
+            }
+        }
+        return Ok(());
+    }
+    let Some(bundle) = &args.bundle else {
+        return Err(Error::Usage(
+            "which bundle? `moi pull` downloads the latest one and prints its directory; then `moi restore --bundle DIR --dry-run`".to_string(),
+        ));
+    };
+    let options = Options {
+        dry_run: args.dry_run,
+        only: args.only.clone(),
+        from: args.from.clone(),
+        skip: args.skip.clone(),
+        yes: args.yes,
+        snapshot: args.snapshot.clone(),
+    };
+    if cli.json {
+        // the phases talk to a person as they go; a machine gets the transcript and the count
+        let mut transcript = Vec::new();
+        let warnings = restore::restore(&host, bundle, &options, &mut transcript)?;
+        let lines: Vec<String> = String::from_utf8_lossy(&transcript).lines().map(str::to_string).collect();
+        print_json(out, &json!({ "ok": true, "dry_run": args.dry_run, "warnings": warnings, "log": lines }));
+    } else {
+        restore::restore(&host, bundle, &options, out)?;
     }
     Ok(())
 }
