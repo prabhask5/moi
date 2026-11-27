@@ -69,6 +69,35 @@ impl Host for RealHost {
         fs::read(self.real(path, true)?)
     }
 
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read + Send>> {
+        Ok(Box::new(fs::File::open(self.real(path, true)?)?))
+    }
+
+    fn create(&self, path: &Path, mode: u32) -> io::Result<Box<dyn io::Write + Send>> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let file =
+            fs::OpenOptions::new().write(true).create(true).truncate(true).mode(mode).open(self.real(path, true)?)?;
+        file.set_permissions(std::os::unix::fs::PermissionsExt::from_mode(mode))?;
+        Ok(Box::new(file))
+    }
+
+    fn append(&self, path: &Path, data: &[u8], mode: u32) -> io::Result<()> {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+        fs::OpenOptions::new().append(true).create(true).mode(mode).open(self.real(path, true)?)?.write_all(data)
+    }
+
+    fn lock(&self, path: &Path) -> io::Result<Option<Box<dyn std::any::Any + Send>>> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let file =
+            fs::OpenOptions::new().write(true).create(true).truncate(false).mode(0o600).open(self.real(path, true)?)?;
+        match rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive) {
+            Ok(()) => Ok(Some(Box::new(file))),
+            Err(rustix::io::Errno::WOULDBLOCK) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
     fn metadata(&self, path: &Path) -> io::Result<Metadata> {
         Ok(rooted::to_metadata(&fs::metadata(self.real(path, true)?)?))
     }

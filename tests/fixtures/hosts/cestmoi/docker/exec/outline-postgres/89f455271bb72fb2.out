@@ -1,0 +1,9 @@
+--
+-- PostgreSQL database cluster dump
+--
+CREATE ROLE outline;
+\connect outline
+CREATE TABLE fixture_marker (id integer, note text);
+COPY fixture_marker (id, note) FROM stdin;
+1	dumped from outline-postgres
+\.

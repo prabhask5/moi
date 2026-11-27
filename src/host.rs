@@ -185,6 +185,20 @@ pub trait Host: fmt::Debug + Send + Sync {
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, format!("{} is not valid UTF-8", path.display())))
     }
 
+    /// Open a file for reading it piece by piece (archives and databases do not fit in memory).
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read + Send>>;
+
+    /// Create (or empty) a file and write it piece by piece. Not atomic: for files in a directory that
+    /// is itself new, or that nothing reads until they are complete.
+    fn create(&self, path: &Path, mode: u32) -> io::Result<Box<dyn io::Write + Send>>;
+
+    /// Add to the end of a file, creating it with `mode` if it is not there (log files).
+    fn append(&self, path: &Path, data: &[u8], mode: u32) -> io::Result<()>;
+
+    /// Take an exclusive lock that lasts until the returned guard is dropped (or the process ends).
+    /// `None` when someone else holds it.
+    fn lock(&self, path: &Path) -> io::Result<Option<Box<dyn std::any::Any + Send>>>;
+
     /// `stat`: follows symlinks.
     fn metadata(&self, path: &Path) -> io::Result<Metadata>;
 

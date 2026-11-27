@@ -16,6 +16,13 @@ pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
         Work::Check(check) => self::check(core, check),
         Work::Daily => daily(core).map(|message| ("ok".to_string(), message)),
         Work::Snapshot => snapshot(core).map(|message| ("ok".to_string(), message)),
+        Work::Backup => {
+            let db = core.state.open_db(core.host.as_ref())?;
+            let report =
+                crate::backup::run::run(&core.host, &core.config, &core.state, &db, &core.masker, &mut |_| {})?;
+            let message = report.error.clone().or(report.dir.clone()).unwrap_or_default();
+            Ok((if report.ok { "ok" } else { "failed" }.to_string(), message))
+        }
         Work::Boot => boot(core),
         Work::Firewall => firewall(core, &core.config.firewall.chains).map(|message| ("ok".to_string(), message)),
         Work::Heal(rule, why) => {

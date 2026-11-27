@@ -1,0 +1,41 @@
+databases (dumped through docker exec, compressed):
+  bookorbit-db                 postgres  user bookorbit
+  outline-postgres             postgres  user outline
+  supabase-db                  postgres  user supabase_admin
+  dokploy-postgres             postgres  user dokploy
+paths:
+  /etc/docker                                               86 B       1 files  backup.paths
+  /etc/dokploy                                             261 B       3 files  backup.paths
+  /etc/moi                                                8.6 KB       4 files  backup.paths
+  /etc/ssh/sshd_config.d                                    26 B       1 files  backup.paths
+  /etc/systemd/system                                     1.7 KB      14 files  backup.paths
+  /mnt/storage/database/db-config                            0 B       0 files  backup.paths
+  /mnt/storage/outline/data                                  0 B       0 files  backup.paths
+  /opt/scripts                                           34.7 KB      13 files  backup.paths
+  /opt/services                                          31.8 KB      21 files  backup.paths
+  /opt/yams                                               1.6 KB       4 files  backup.paths
+  /var/lib/docker/volumes/dokploy-docker-config/_data       14 B       1 files  volume dokploy-docker-config of service dokploy
+  /var/lib/docker/volumes/shortless-redis-m3n4-data/_data      18 B       1 files  volume shortless-redis-m3n4-data of service shortless-redis-m3n4
+  /var/lib/docker/volumes/stellar-data/_data                13 B       1 files  volume stellar-data of service stellar-planner-x7k2
+  /var/lib/moi                                            363 KB     423 files  moi's state
+not on this machine (skipped):
+  /etc/iptables
+  /mnt/storage/database/storage
+left out:
+  */Cache                                              backup.exclude
+  */cache                                              backup.exclude
+  */log                                                backup.exclude
+  */logs                                               backup.exclude
+  */transcodes                                         backup.exclude
+  /etc/dokploy/applications                            backup.exclude
+  /etc/dokploy/compose                                 backup.exclude
+  /etc/dokploy/logs                                    backup.exclude
+  /mnt/storage/database/db-data                        raw files of supabase-db (dumped instead)
+  /mnt/storage/media                                   fungible: media library — temporary, re-downloadable
+  /opt/services/outline/pgdata                         raw files of outline-postgres (dumped instead)
+  /opt/yams/config/bookorbit-db                        raw files of bookorbit-db (dumped instead)
+  /var/lib/docker/volumes/dokploy-postgres-database/_data raw files of dokploy-postgres (dumped instead)
+  /var/lib/incus                                       fungible: devbox VM — rebuilt from github.com/prabhask5/dotfiles
+guards:
+  ok   /mnt/storage is mounted
+  ok   local backups use 0 B of 20.0 GB allowed

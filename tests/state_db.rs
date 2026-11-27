@@ -59,6 +59,7 @@ fn a_new_database_gets_the_current_schema() {
     assert_eq!(
         tables(&db),
         [
+            "backup_runs",
             "check_results",
             "check_values",
             "context_shares",
