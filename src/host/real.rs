@@ -183,6 +183,24 @@ impl Host for RealHost {
         Ok(Box::new(UnixStream::connect(path)?))
     }
 
+    fn ask(&self, prompt: &str, timeout: Duration) -> io::Result<Option<String>> {
+        use std::io::{BufRead, Write};
+        if !self.is_system() {
+            return Err(self.refuse("ask at the terminal"));
+        }
+        let mut stderr = io::stderr();
+        write!(stderr, "{prompt}")?;
+        stderr.flush()?;
+        // reading a line cannot be interrupted: read on a thread and stop waiting
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::Builder::new().name("moi-ask".into()).spawn(move || {
+            let mut line = String::new();
+            let read = io::stdin().lock().read_line(&mut line);
+            let _ = tx.send(read.ok().filter(|n| *n > 0).map(|_| line.trim().to_string()));
+        })?;
+        Ok(rx.recv_timeout(timeout).ok().flatten())
+    }
+
     fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn super::Watch>> {
         // like file access, watching works inside a confined root: paths are mapped in and back out
         inotify::watch(self.root.clone(), dirs)

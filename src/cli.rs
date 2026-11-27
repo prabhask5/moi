@@ -334,7 +334,8 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             return crate::daemon::Daemon::new(host, loaded)?.run();
         }
         Command::Status => return status(cli, host, out),
-        Command::Firewall(_) | Command::Init(_) | Command::Uninstall { .. } => ("init & firewall", "M6"),
+        Command::Firewall(command) => return firewall(cli, command, host, out),
+        Command::Init(_) | Command::Uninstall { .. } => ("init & uninstall", "M6"),
         Command::Backup(_) | Command::Push { .. } | Command::Pull { .. } | Command::RecoveryCard => {
             ("backup & state bundle", "M7")
         }
@@ -985,4 +986,172 @@ fn status(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Err
         }
     }
     if down > 0 { Err(Error::ProblemsFound) } else { Ok(()) }
+}
+
+/// How long someone applying rules over SSH has to say they can still get in.
+const FIREWALL_CONFIRM: std::time::Duration = std::time::Duration::from_secs(60);
+const ROLLBACK_UNIT: &str = "moi-firewall-rollback";
+
+fn firewall(cli: &Cli, command: &FirewallCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::firewall::{self, Family, State};
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let config = &loaded.config;
+    let state = StateDir::new(PathBuf::from(&config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    if !config.firewall.manage {
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "managed": false }));
+        } else {
+            let _ = writeln!(out, "the firewall is not managed by moi (firewall.manage = false in moi.toml)");
+        }
+        return if matches!(command, FirewallCommand::Status) {
+            Ok(())
+        } else {
+            Err(Error::Usage("set firewall.manage = true and the rules files in moi.toml first".to_string()))
+        };
+    }
+    match command {
+        FirewallCommand::Status => {
+            let mut states = Vec::new();
+            for family in Family::ALL {
+                states.push((family, firewall::state(host.as_ref(), config, &db, family)?));
+            }
+            if cli.json {
+                let families: Vec<_> = states.iter().map(|(f, s)| json!({ "family": f, "state": s })).collect();
+                print_json(
+                    out,
+                    &json!({ "ok": true, "managed": true, "chains": config.firewall.chains, "families": families }),
+                );
+            } else {
+                let _ = writeln!(out, "managed chains: {}", config.firewall.chains.join(", "));
+                for (family, state) in &states {
+                    let _ = writeln!(out, "{}: {}", family.name(), state.describe());
+                }
+            }
+            if states.iter().all(|(_, s)| matches!(s, State::InSync | State::Unavailable)) {
+                Ok(())
+            } else {
+                Err(Error::ProblemsFound)
+            }
+        }
+        FirewallCommand::Diff => {
+            let mut all = String::new();
+            for family in Family::ALL {
+                all.push_str(&firewall::diff(host.as_ref(), config, &db, family)?);
+            }
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "differs": !all.is_empty(), "diff": all }));
+            } else if all.is_empty() {
+                let _ = writeln!(
+                    out,
+                    "no difference: the managed chains are what moi applied, and the rules files have not changed"
+                );
+            } else {
+                let _ = write!(out, "{all}");
+            }
+            if all.is_empty() { Ok(()) } else { Err(Error::ProblemsFound) }
+        }
+        FirewallCommand::Apply => {
+            // read both files first: a typo in one must not leave the other family applied alone
+            for family in Family::ALL {
+                firewall::rules(host.as_ref(), config, family)?;
+            }
+            let mut saved = Vec::new();
+            for family in Family::ALL {
+                saved.push((family, firewall::save(host.as_ref(), &state, family)?));
+            }
+            // Over SSH a wrong rule locks the person out — and their shell with this very process. So the
+            // way back is arranged before anything changes, outside this session: a systemd timer.
+            let remote = host.env("SSH_CONNECTION").is_some() || host.env("SSH_TTY").is_some();
+            if remote {
+                let back: Vec<String> = saved
+                    .iter()
+                    .map(|(family, file)| {
+                        format!("{}-restore '{file}'", if *family == Family::V4 { "iptables" } else { "ip6tables" })
+                    })
+                    .collect();
+                let seconds = format!("--on-active={}s", FIREWALL_CONFIRM.as_secs() + 30);
+                let unit = format!("--unit={ROLLBACK_UNIT}");
+                let script = back.join("; ");
+                let timer = Cmd::new("systemd-run").args([
+                    "--quiet",
+                    "--collect",
+                    unit.as_str(),
+                    seconds.as_str(),
+                    "/bin/sh",
+                    "-c",
+                    script.as_str(),
+                ]);
+                let scheduled = host
+                    .run(&timer)
+                    .map_err(|e| Error::host("cannot schedule the automatic rollback (systemd-run)", e))?;
+                if scheduled.status != 0 {
+                    return Err(Error::Usage(format!(
+                        "not applying over SSH without a way back: systemd-run could not schedule the rollback ({}). Run this at the console instead",
+                        scheduled.stderr_str().trim()
+                    )));
+                }
+            }
+            let mut applied = Vec::new();
+            for family in Family::ALL {
+                match firewall::apply(host.as_ref(), config, &db, family, &config.firewall.chains) {
+                    Ok(done) => applied.push(done),
+                    Err(e) => {
+                        // one family must not stay applied alone: put back what was there
+                        for (family, file) in &saved {
+                            let _ = firewall::restore(host.as_ref(), *family, file);
+                        }
+                        if remote {
+                            let _ = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
+                        }
+                        return Err(e);
+                    }
+                }
+            }
+            let log = Logger::new(Arc::clone(&host), "moi").with_masker(loaded.masker.clone());
+            let summary: Vec<String> =
+                applied.iter().map(|a| format!("{} rules ({})", a.rules, a.family.name())).collect();
+            if remote {
+                let prompt = format!(
+                    "Rules applied. If you can still read this, type yes within {} seconds to keep them; otherwise they are rolled back: ",
+                    FIREWALL_CONFIRM.as_secs()
+                );
+                let kept = host
+                    .ask(&prompt, FIREWALL_CONFIRM)
+                    .ok()
+                    .flatten()
+                    .is_some_and(|answer| answer.eq_ignore_ascii_case("yes"));
+                if !kept {
+                    // not confirmed: put everything back now rather than leave it to the timer
+                    for (family, file) in &saved {
+                        firewall::restore(host.as_ref(), *family, file)?;
+                    }
+                    let _ = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
+                    log.warn("firewall: rules applied over SSH were not confirmed and have been rolled back", &[]);
+                    return Err(Error::Usage("not confirmed: the previous rules are back in place".to_string()));
+                }
+                let stopped = host.run(&Cmd::new("systemctl").args(["stop", &format!("{ROLLBACK_UNIT}.timer")]));
+                if !stopped.is_ok_and(|o| o.status == 0) {
+                    return Err(Error::Usage(format!(
+                        "the rules are applied, but the rollback timer could not be stopped: run `systemctl stop {ROLLBACK_UNIT}.timer` now, or they are rolled back in a minute"
+                    )));
+                }
+            }
+            log.info(
+                &format!("firewall: applied {} to {}", summary.join(", "), config.firewall.chains.join(", ")),
+                &[],
+            );
+            if cli.json {
+                print_json(
+                    out,
+                    &json!({ "ok": true, "applied": applied, "saved": saved.iter().map(|(_, f)| f).collect::<Vec<_>>() }),
+                );
+            } else {
+                let _ = writeln!(out, "applied {} to {}", summary.join(", "), config.firewall.chains.join(", "));
+                let _ = writeln!(out, "previous rules saved in {}", state.archive().join("firewall").display());
+            }
+            Ok(())
+        }
+    }
 }
