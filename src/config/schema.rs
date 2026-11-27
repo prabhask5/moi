@@ -678,6 +678,8 @@ pub struct HealRule {
     pub report: Option<String>,
     /// Appended instead when the action was skipped because of the cooldown.
     pub report_cooldown: Option<String>,
+    /// Appended instead when the action failed.
+    pub report_failed: Option<String>,
     /// Use the action's stdout as the report.
     pub report_stdout: bool,
 }
@@ -757,6 +759,7 @@ fn read_heal(root: &mut Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Vec<HealRule> {
             cooldown: t.dur_opt(cx, "cooldown"),
             report: t.string_opt(cx, "report"),
             report_cooldown: t.string_opt(cx, "report_cooldown"),
+            report_failed: t.string_opt(cx, "report_failed"),
             report_stdout: t.bool_or(cx, "report_stdout", false),
         };
         t.finish(cx);

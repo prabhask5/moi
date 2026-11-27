@@ -1,0 +1,118 @@
+{
+ "Id": "46b2f89fbc0ab83c3690333c0ae9ff696fb81f4b59ad2a5092ec2132a187a068",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1025,
+  "Health": {
+   "Status": "unhealthy",
+   "FailingStreak": 3,
+   "Log": []
+  }
+ },
+ "Image": "sha256:9437a571336af9b5b3e391ee5465847913844eefcdb152330910270ec4b5444d",
+ "Name": "/jellyfin",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "homelab",
+  "PortBindings": {},
+  "RestartPolicy": {
+   "Name": "unless-stopped",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": [
+   {
+    "PathOnHost": "/dev/dri",
+    "PathInContainer": "/dev/dri",
+    "CgroupPermissions": "rwm"
+   }
+  ]
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/opt/yams/config/jellyfin",
+   "Destination": "/config",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/mnt/storage/media",
+   "Destination": "/data",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "46b2f89fbc0a",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "PUID=1000",
+   "PGID=1000",
+   "TZ=America/New_York"
+  ],
+  "Cmd": null,
+  "Image": "lscr.io/linuxserver/jellyfin:10.11.3",
+  "Entrypoint": null,
+  "Labels": {
+   "traefik.http.routers.jellyfin.rule": "Host(`jellyfin.home`)",
+   "traefik.http.services.jellyfin.loadbalancer.server.port": "8096",
+   "traefik.enable": "true",
+   "traefik.http.routers.jellyfin-public.rule": "Host(`media.example.com`) || Host(`tv.example.com`)",
+   "com.docker.compose.project": "yams",
+   "com.docker.compose.service": "jellyfin",
+   "com.docker.compose.project.working_dir": "/opt/yams",
+   "com.docker.compose.project.config_files": "/opt/yams/docker-compose.yml",
+   "com.docker.compose.version": "2.40.3"
+  },
+  "ExposedPorts": {}
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "homelab": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "jellyfin",
+     "jellyfin",
+     "46b2f89fbc0a"
+    ],
+    "NetworkID": "80397d8137d609e15523a26238f33a942b7f650a1ac144f2069b8570f54f84f9",
+    "EndpointID": "26f15ee6eb854bcf92ccaaff2e60e6d859b19b90d7037da87518fb982320d684",
+    "Gateway": "172.19.0.1",
+    "IPAddress": "172.19.0.36",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:24"
+   }
+  },
+  "Ports": {}
+ }
+}

@@ -9,6 +9,7 @@
 mod custom;
 mod push;
 mod resources;
+mod services;
 mod storage;
 
 use std::collections::BTreeMap;
@@ -138,6 +139,9 @@ pub struct Cx {
     pub host: Arc<dyn Host>,
     pub config: Arc<Config>,
     pub docker: Docker,
+    /// Where `moi.db` is (heal cooldowns are recorded the moment a rule acts).
+    pub state: crate::state::StateDir,
+    pub mode: Mode,
 }
 
 /// A health check.
@@ -167,6 +171,17 @@ pub fn enabled(config: &Config) -> Vec<Arc<dyn Check>> {
     }
     if config.checks.storage.common.enabled {
         checks.push(Arc::new(storage::Storage));
+    }
+    // the edge is part of the services message unless it reports to a monitor of its own
+    let edge = &config.checks.edge;
+    let own_edge = edge.enabled && (edge.monitor.is_some() || !config.checks.services.common.enabled);
+    if config.checks.services.common.enabled {
+        checks.push(Arc::new(services::Services {
+            part: if own_edge { services::Part::Internal } else { services::Part::All },
+        }));
+    }
+    if own_edge {
+        checks.push(Arc::new(services::Services { part: services::Part::Edge }));
     }
     for (index, custom) in config.checks.custom.iter().enumerate() {
         if custom.common.enabled {
@@ -224,7 +239,13 @@ pub fn run(
 ) -> Result<CheckResult, Error> {
     let name = check.name();
     let mut memory = Memory::load(db, &name)?;
-    let cx = Cx { host: Arc::clone(host), config: Arc::clone(config), docker: Docker::new(Arc::clone(host)) };
+    let cx = Cx {
+        host: Arc::clone(host),
+        config: Arc::clone(config),
+        docker: Docker::new(Arc::clone(host)),
+        state: crate::state::StateDir::new(config.state.dir.clone()),
+        mode,
+    };
     let timeout = check.timeout(config);
     let started = Instant::now();
     let worker = Arc::clone(check);

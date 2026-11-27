@@ -1,0 +1,121 @@
+{
+ "Id": "62dab2e5188e20148616fbae683846a3b04d52959315514b7060407804914320",
+ "Created": "2026-09-01T10:00:00.000000000Z",
+ "Path": "/init",
+ "Args": [],
+ "State": {
+  "Status": "running",
+  "Running": true,
+  "ExitCode": 0,
+  "StartedAt": "2026-11-21T09:00:12.123456789Z",
+  "Pid": 1034
+ },
+ "Image": "sha256:76d08e84df7f0b5a7c6051c8cebe4ee29aa2c7e4409db487a86a87fd7cf8a44e",
+ "Name": "/dokploy-traefik",
+ "RestartCount": 0,
+ "Driver": "overlayfs",
+ "Platform": "linux",
+ "HostConfig": {
+  "Binds": null,
+  "NetworkMode": "dokploy-network",
+  "PortBindings": {
+   "80/tcp": [
+    {
+     "HostIp": "",
+     "HostPort": "80"
+    }
+   ],
+   "443/tcp": [
+    {
+     "HostIp": "",
+     "HostPort": "443"
+    }
+   ]
+  },
+  "RestartPolicy": {
+   "Name": "always",
+   "MaximumRetryCount": 0
+  },
+  "Privileged": false,
+  "CapAdd": null,
+  "CapDrop": null,
+  "LogConfig": {
+   "Type": "json-file",
+   "Config": {
+    "max-file": "3",
+    "max-size": "10m"
+   }
+  },
+  "Memory": 0,
+  "NanoCpus": 0,
+  "ShmSize": 67108864,
+  "Runtime": "runc",
+  "ReadonlyRootfs": false,
+  "PidMode": "",
+  "IpcMode": "private",
+  "Devices": null
+ },
+ "Mounts": [
+  {
+   "Type": "bind",
+   "Source": "/etc/dokploy/traefik/traefik.yml",
+   "Destination": "/etc/traefik/traefik.yml",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/etc/dokploy/traefik/dynamic",
+   "Destination": "/etc/dokploy/traefik/dynamic",
+   "Mode": "",
+   "RW": true,
+   "Propagation": "rprivate"
+  },
+  {
+   "Type": "bind",
+   "Source": "/var/run/docker.sock",
+   "Destination": "/var/run/docker.sock",
+   "Mode": "ro",
+   "RW": false,
+   "Propagation": "rprivate"
+  }
+ ],
+ "Config": {
+  "Hostname": "62dab2e5188e",
+  "User": "",
+  "Env": [
+   "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "CF_DNS_API_TOKEN=FAKEcftraefikdnstoken0000"
+  ],
+  "Cmd": null,
+  "Image": "traefik:v3.6.1",
+  "Entrypoint": null,
+  "Labels": {
+   "org.opencontainers.image.title": "Traefik"
+  },
+  "ExposedPorts": {
+   "80/tcp": {},
+   "443/tcp": {}
+  }
+ },
+ "NetworkSettings": {
+  "Networks": {
+   "dokploy-network": {
+    "IPAMConfig": null,
+    "Aliases": [
+     "dokploy-traefik",
+     "dokploy-traefik",
+     "62dab2e5188e"
+    ],
+    "NetworkID": "dd05c6a854938b1dbb51186d506c67c03d7da99923fe93c01cb9e883974a615d",
+    "EndpointID": "4581c77beb7bf2084a2ded1d872d558455c4546c9572ec1611a119bec12dd9f4",
+    "Gateway": "10.0.0.1",
+    "IPAddress": "10.0.0.46",
+    "IPPrefixLen": 16,
+    "MacAddress": "02:42:ac:13:00:2e"
+   }
+  },
+  "Ports": {}
+ }
+}

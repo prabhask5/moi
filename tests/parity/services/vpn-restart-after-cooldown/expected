@@ -1,0 +1,2 @@
+down
+Failing: gluetun (exited) qbittorrent (no IP) sabnzbd (no IP) gluetun-portforward (no IP) [auto-restarted gluetun + qbittorrent sabnzbd; next check confirms the fix] 

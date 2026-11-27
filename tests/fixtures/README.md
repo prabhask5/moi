@@ -17,8 +17,8 @@ How `FixtureHost` behaves:
 
 - **Files** are read from `root/`; absolute symlinks and `..` resolve inside it. The fixture is read-only: a test that writes gives the host an overlay directory (`with_overlay`, under `CARGO_TARGET_TMPDIR`) that shadows `root/`.
 - **Commands** never run. The key of a command line (program and arguments joined by single spaces) is its 64-bit FNV-1a hash in hex, `FixtureHost::command_key`. Running a command with no canned output fails with the exact file name to add, so the easy way to add one is to run the test once. Put the command line in `<key>.cmd` so the directory stays readable. Tests can also can outputs in memory (`add_command`).
-- **Network**: none. `connect_tcp` is refused unless a test installs a handler (`set_http`) that answers raw HTTP requests itself. **Randomness** is a fixed sequence.
-- **Clock** is fixed and moves only with `advance`/`set_now`. **Environment** is empty unless set. **Journal** entries are collected in memory.
+- **Network**: what the `net` file says (below); without one, nothing resolves and every connection is refused. A test can instead install a handler (`set_http`) that answers every raw HTTP request itself. Fixture connections also play the TLS layer: `https://` works without certificates. **Randomness** is a fixed sequence.
+- **Clock** is fixed and moves with `advance`/`set_now` — and, per thread, with everything that "waits": `Host::sleep`, a `net` stage that takes time, a timeout that expires. Nothing really waits, so timings are exact. **Environment** is empty unless set. **Journal** entries are collected in memory.
 
 The fake Docker engine (`docker/`, absent = no Docker on this host):
 
@@ -26,13 +26,28 @@ The fake Docker engine (`docker/`, absent = no Docker on this host):
 - `GET /events` streams the lines of `events.jsonl` and closes.
 - `exec` is answered from `exec/<container name>/<key>.out` (+ `.err`, `.exit`; `.cmd` for humans), keyed like `commands/` by the command line.
 - `GET /containers/<c>/logs` returns `containers/<id>/logs.txt` as stdout and `logs.err` as stderr.
+- `GET /services?status=true` adds `ServiceStatus` to `services.json`: every wanted replica running, unless `service-status.json` (`{"name": "running/wanted"}`) says otherwise.
+- `fail` lists requests the engine refuses: `METHOD /path-prefix status message` per line.
 - Anything else (`POST`, `DELETE`) is accepted with 204 and changes nothing. Every request is recorded (`docker_requests()`), and a test can replace an answer with `set_docker(path, json)`.
+
+### `net`
+
+One line per fact; a case's lines replace the host's lines about the same thing.
+
+```
+dns  <name> <ip>|-|timeout [took=<s>]              # `-`: no such name
+tcp  <ip>:<port> ok|refused|timeout|tls-timeout|reset|silent|slow [connect=<s>] [tls=<s>] [first=<s>] [rest=<s>]
+tcp  <ip>:<port> tls-error <message to the end of the line>
+http <Host header><target> <status>[,<status>…] [body to the end of the line]      # `-` as status removes the line
+```
+
+`reset` drops the connection when asked something, `silent` never answers, `slow` starts an answer and never finishes it. `first` is the time until the response starts, `rest` until it is complete; seconds have up to six decimals. Several statuses are given in turn, the last one from then on (`502,200`: fails once). An address that only `http` lines mention accepts connections; a URL nobody listed answers 404.
 
 ### Cases
 
 `FixtureHost::with_case(dir)` layers a *case* over a fixture host: a directory with the same layout in which
 every part is optional. Files in its `root/`, `commands/` and `docker/` shadow the host's; lines in its `modes`,
-`mtimes` and `statvfs` override the host's; its `clock` replaces the host's. Three more files only make sense in
+`mtimes`, `statvfs` and `net` override the host's; its `clock` replaces the host's. Three more files only make sense in
 a case or need saying explicitly:
 
 - `statvfs` — `/mount blocks free available inodes inodes-free` per filesystem (what `statvfs` reports). In a case,

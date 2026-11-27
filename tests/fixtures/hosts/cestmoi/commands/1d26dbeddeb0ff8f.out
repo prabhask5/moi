@@ -1,0 +1,7 @@
+-N DOCKER-USER
+-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A DOCKER-USER -s 172.16.0.0/12 -d 172.16.0.0/12 -m comment --comment "Intra-network container traffic" -j ACCEPT
+-A DOCKER-USER -s 10.0.0.0/8 -o enp1s0 -m comment --comment "Swarm outbound Internet" -j ACCEPT
+-A DOCKER-USER -i incusbr0 -o enp1s0 -m comment --comment "devbox: VM to Internet" -j ACCEPT
+-A DOCKER-USER -i enp1s0 -p tcp -m multiport --dports 80,443 -m comment --comment "Public web" -j ACCEPT
+-A DOCKER-USER -j DROP

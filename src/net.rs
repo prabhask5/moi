@@ -5,6 +5,9 @@
 //! are compiled in, and a fixture can bring its own.
 
 pub(crate) mod http1;
+mod probe;
+
+pub use probe::{Failure, Probe, probe, seconds};
 
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -178,6 +181,22 @@ impl Client {
         Ok(Arc::new(config))
     }
 
+    /// Put TLS on a connection: the handshake is done here, so its failures are not mistaken for
+    /// failures of the request. (A fixture connection plays the TLS layer itself.)
+    pub(crate) fn secure(&self, mut conn: Box<dyn Conn>, server: &str) -> io::Result<Box<dyn Conn>> {
+        if let Some(outcome) = conn.fake_tls() {
+            return outcome.map(|()| conn);
+        }
+        let name = ServerName::try_from(server.to_string())
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))?;
+        let mut session =
+            rustls::ClientConnection::new(self.tls_config()?, name).map_err(|e| io::Error::other(e.to_string()))?;
+        while session.is_handshaking() {
+            session.complete_io(&mut conn)?;
+        }
+        Ok(Box::new(Tls { stream: rustls::StreamOwned::new(session, conn) }))
+    }
+
     /// Send one request and read the whole response. Redirects are not followed.
     pub fn send(
         &self,
@@ -186,18 +205,28 @@ impl Client {
         headers: &[(String, String)],
         body: Option<&[u8]>,
     ) -> io::Result<Response> {
+        self.send_as(method, url, None, headers, body)
+    }
+
+    /// Like [`Client::send`], naming another site in the `Host` header than the one connected to (asking
+    /// a reverse proxy on this machine for one of its sites).
+    pub fn send_as(
+        &self,
+        method: &str,
+        url: &str,
+        site: Option<&str>,
+        headers: &[(String, String)],
+        body: Option<&[u8]>,
+    ) -> io::Result<Response> {
         let url = Url::parse(url).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
         let mut conn = self.host.connect_tcp(&url.host, url.port, self.timeout)?;
         conn.set_timeout(Some(self.timeout))?;
         if url.https {
-            let name = ServerName::try_from(url.host.clone())
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e.to_string()))?;
-            let session =
-                rustls::ClientConnection::new(self.tls_config()?, name).map_err(|e| io::Error::other(e.to_string()))?;
-            conn = Box::new(Tls { stream: rustls::StreamOwned::new(session, conn) });
+            conn = self.secure(conn, &url.host)?;
         }
         let authority = url.authority();
-        let request = http1::Request { method, target: &url.target, host: &authority, headers, body, upgrade: false };
+        let host = site.unwrap_or(&authority);
+        let request = http1::Request { method, target: &url.target, host, headers, body, upgrade: false };
         let response = http1::request(conn, &request)?;
         let (status, headers) = (response.status, response.headers.clone());
         Ok(Response { status, headers, body: response.bytes()? })

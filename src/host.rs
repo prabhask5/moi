@@ -9,6 +9,7 @@
 //! can never escape it.
 
 mod fake_docker;
+mod fake_net;
 mod fixture;
 mod real;
 mod rooted;
@@ -151,6 +152,12 @@ impl CmdOutput {
 pub trait Conn: io::Read + io::Write + Send + fmt::Debug {
     /// Fail reads and writes that block longer than this; `None` waits forever.
     fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()>;
+
+    /// Fixture connections stand in for the TLS layer as well: `Some(outcome)` is how the handshake went,
+    /// and the connection then carries plain HTTP. A real socket returns `None` and gets a real handshake.
+    fn fake_tls(&mut self) -> Option<io::Result<()>> {
+        None
+    }
 }
 
 /// The operating system as moi sees it.
@@ -220,6 +227,16 @@ pub trait Host: fmt::Debug + Send + Sync {
     /// Connect to a TCP port (outbound HTTP: Uptime Kuma, the share bucket, probes). `timeout` bounds
     /// the connection attempt.
     fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>>;
+
+    /// Addresses of a host name from the system resolver, waiting at most `timeout`. An address literal
+    /// is returned as it is.
+    fn resolve(&self, name: &str, timeout: Duration) -> io::Result<Vec<std::net::IpAddr>>;
+
+    /// Wait.
+    fn sleep(&self, duration: Duration);
+
+    /// A clock that only moves forward, for measuring how long something took.
+    fn monotonic(&self) -> Duration;
 
     /// Bytes from the system's random source (object keys of shared links).
     fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>>;

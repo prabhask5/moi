@@ -1,0 +1,2 @@
+down
+Failing: firewall (missing: Intra-network container traffic) firewall (missing: Swarm outbound Internet) firewall (missing: devbox: VM to Internet) firewall (missing: -A DOCKER-USER -j DROP) 

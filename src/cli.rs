@@ -733,10 +733,6 @@ fn check(cli: &Cli, args: &CheckArgs, host: Arc<dyn Host>, out: &mut dyn Write) 
     let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
     let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
     let config = Arc::new(loaded.config);
-    // `services` (with its edge probes) is the last built-in still to come
-    if args.name.as_deref() == Some("services") {
-        return Err(Error::NotImplemented { what: "the services check", milestone: "M4" });
-    }
     let all = checks::enabled(&config);
     let selected: Vec<_> = match &args.name {
         None => all,
@@ -776,7 +772,7 @@ fn check(cli: &Cli, args: &CheckArgs, host: Arc<dyn Host>, out: &mut dyn Write) 
         if results.is_empty() {
             let _ = writeln!(
                 out,
-                "no checks are enabled: add [checks.resources], [checks.storage] or [[checks.custom]] to moi.toml"
+                "no checks are enabled: add [checks.resources], [checks.storage], [checks.services] or [[checks.custom]] to moi.toml"
             );
         }
         for r in &results {

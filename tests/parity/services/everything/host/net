@@ -1,0 +1,6 @@
+http 172.19.0.20:5055/api/v1/status 500
+http 172.19.0.37:8989/api/v3/health 401
+http jellyfin.home/ 404
+http notes.example.com/ 502
+http books.example.com/ 503,200
+dns compiler.example.com - took=0.004

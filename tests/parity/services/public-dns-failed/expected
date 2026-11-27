@@ -1,0 +1,2 @@
+down
+Failing: public:media.example.com/ (DNS lookup failed after 0.004000s; retry failed: DNS lookup failed after 0.004000s; DNS now: NOT RESOLVING) 

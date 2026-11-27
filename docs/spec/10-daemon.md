@@ -47,10 +47,11 @@ action = { network_connect = {…} } | { restart = [..], wait_healthy = {…}, t
 cooldown = "30m"
 report = "[…]"                 # appended to the services message when the action ran
 report_cooldown = "[…]"        # appended when the action was due but in cooldown
+report_failed = "…"            # appended when the action failed
 report_stdout = true           # use the action's stdout as the report (e.g. the traefik config guard)
 ```
 
-Heal rules with a `failing` trigger are evaluated at the end of each `services` run (exactly where service-check.sh section 5 ran); `container_on_network` rules are also evaluated at the start of each services run (section 4a). Every action is logged to the journal with what triggered it.
+Heal rules with a `failing` trigger are evaluated at the end of each `services` run (exactly where service-check.sh section 5 ran); `container_on_network` rules are also evaluated at the start of each services run (section 4a). Every action is logged to the journal with what triggered it (`heal {name}: {why}`, field `MOI_RULE`). The run is recorded in `moi.db` before the action starts, so a slow or failing action still counts for the cooldown. A manual `moi check` never runs an action (05). The rules the services check fires itself are implemented in `heal` since M4 (`network_connect`, `restart`/`wait_healthy`/`then_restart`, `run`); event and path triggers and `compose_up` come with the daemon.
 
 cestmoi's rules (see `examples/cestmoi.toml`) replace: `traefik-homelab.service` (docker event watcher), `traefik-config-guard.path` (path trigger, script kept as the action), and the VPN auto-restart in service-check.sh.
 

@@ -313,6 +313,23 @@ impl Docker {
         self.list("/services")
     }
 
+    /// Swarm services with `ServiceStatus` (tasks running and wanted), as `docker service ls` shows
+    /// them. Engines older than 20.10 leave the status out.
+    pub fn services_status(&self) -> Result<Vec<Value>> {
+        self.list("/services?status=true")
+    }
+
+    /// Restart a container (stop, then start), by id or name.
+    pub fn restart(&self, container: &str) -> Result<()> {
+        self.send("POST", &format!("/containers/{}/restart", http::encode(container)), None, false).map(|_| ())
+    }
+
+    /// Attach a container to a network.
+    pub fn network_connect(&self, network: &str, container: &str) -> Result<()> {
+        let path = format!("/networks/{}/connect", http::encode(network));
+        self.send("POST", &path, Some(&json!({ "Container": container })), false).map(|_| ())
+    }
+
     pub fn nodes(&self) -> Result<Vec<Value>> {
         self.list("/nodes")
     }

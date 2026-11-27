@@ -1,0 +1,2 @@
+down
+Failing: traefik (2 errors in 5m: docker logs dokploy-traefik) 

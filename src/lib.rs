@@ -15,6 +15,7 @@ pub mod context;
 pub mod daemon;
 pub mod docker;
 pub mod error;
+pub mod heal;
 pub mod host;
 pub mod log;
 pub mod migrate;

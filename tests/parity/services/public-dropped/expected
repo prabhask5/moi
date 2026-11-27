@@ -1,0 +1,2 @@
+down
+Failing: public:status.example.com/ (connection dropped by 203.0.113.14: Connection reset by peer after 0.066000s; retry failed: connection dropped by 203.0.113.14: Connection reset by peer after 0.066000s; DNS now: 203.0.113.14) 
