@@ -39,7 +39,7 @@ Content caps keep the file usable: tables ≤ 200 rows, code blocks ≤ 150 line
 ## Owner notes (`NOTES.md`, `moi notes`)
 
 - `## ` headings are stable keys: `Overview`, `Gotchas / do not touch`, `Planned changes / ideas`, plus generated stubs `Stack: <project>`, `Container: <standalone>`, `Service: <swarm service>`, `Instance: <incus>`, `Unit: <custom unit>`, `Script: <path called by cron/systemd>`.
-- Stubs are appended for new things; nothing the owner wrote is ever modified or deleted. A note whose text is only `TODO…` is ignored.
+- Stubs are appended for new things with the placeholder `_Not described yet — <hint>_`; nothing the owner wrote is ever modified or deleted. A note whose text is still only the placeholder is ignored. (The placeholder deliberately avoids `TODO`, which the release hygiene check forbids in the codebase.)
 - Notes render inline next to the thing they describe; leftovers go to section 22.
 - `moi notes` opens `$EDITOR`, then commits and regenerates.
 

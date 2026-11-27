@@ -2,7 +2,7 @@ name: Release
 
 # Tag vX.Y.Z on main -> static binaries, .deb/.rpm, checksums, attestations, GitHub Release,
 # crates.io (package `cestmoi`), Homebrew tap. Spec: docs/spec/12-distribution.md (milestone M10
-# finishes the packaging steps marked TODO).
+# finishes the packaging steps tagged for it below).
 
 on:
   push:
@@ -18,7 +18,16 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  hygiene:
+    name: release hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No scaffolding, TODOs or reference material in a release
+        run: scripts/check-hygiene.sh --release
+
   build:
+    needs: hygiene
     name: build (${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:

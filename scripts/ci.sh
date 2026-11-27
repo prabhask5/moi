@@ -7,6 +7,8 @@ step "tests live in tests/"
 scripts/check-tests-location.sh
 step "no secrets in the repo"
 scripts/check-secrets.sh
+step "repo hygiene"
+scripts/check-hygiene.sh
 step "rustfmt"
 cargo fmt --all -- --check
 step "clippy"

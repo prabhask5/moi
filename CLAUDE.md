@@ -102,7 +102,8 @@ MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-sta
 Milestones are in `docs/milestones.md` (also GitHub issues). One milestone ≈ one or a few PRs. For each:
 1. Read this file and the spec sections the milestone names. If the spec is ambiguous, decide, write the decision into the spec in the same PR.
 2. Write tests from the acceptance criteria first, then implement.
-3. `scripts/ci.sh` green, update `README.md`/spec if user-visible behaviour changed, tick the milestone checkbox.
+3. Cleanup pass: remove what the milestone superseded (stubs, `NotImplemented` arms), debug code, scratch files, unused fixtures and dependencies (`scripts/check-hygiene.sh`). The repo must be publishable after every milestone; M12 makes it public-ready (`check-hygiene.sh --release`).
+4. `scripts/ci.sh` green, update `README.md`/spec if user-visible behaviour changed, tick the milestone checkbox.
 
 The agent workflow (prompts, PR conventions) is in `docs/agent-workflow.md`.
 

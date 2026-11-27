@@ -41,6 +41,8 @@ jobs:
         run: scripts/check-tests-location.sh
       - name: No secrets committed
         run: scripts/check-secrets.sh
+      - name: Repo hygiene (no implementation leftovers)
+        run: scripts/check-hygiene.sh
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Links in the docs
