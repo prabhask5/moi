@@ -22,6 +22,9 @@ pub enum Error {
     #[error("{}", join_diagnostics(.0))]
     ConfigInvalid(Vec<Diagnostic>),
 
+    #[error(transparent)]
+    Docker(#[from] crate::docker::DockerError),
+
     #[error("state database: {0}")]
     Db(String),
 
@@ -43,7 +46,7 @@ impl Error {
         match self {
             Error::ProblemsFound => 1,
             Error::NotImplemented { .. } => 3,
-            Error::ConfigInvalid(_) | Error::Db(_) | Error::Host { .. } | Error::Io(_) => 2,
+            Error::ConfigInvalid(_) | Error::Docker(_) | Error::Db(_) | Error::Host { .. } | Error::Io(_) => 2,
         }
     }
 
@@ -54,6 +57,7 @@ impl Error {
             Error::ProblemsFound => "problems_found",
             Error::ConfigInvalid(_) => "config",
             Error::Db(_) => "state",
+            Error::Docker(_) => "docker",
             Error::Host { .. } | Error::Io(_) => "io",
         }
     }

@@ -1,0 +1,60 @@
+{
+  "Id": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+  "Created": "2026-02-20T10:00:00.000000000Z",
+  "Path": "exporter",
+  "Args": [],
+  "State": {
+    "Status": "exited",
+    "Running": false,
+    "ExitCode": 0,
+    "StartedAt": "2026-02-28T08:00:00Z",
+    "Pid": 0
+  },
+  "Image": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "Name": "/sidecar",
+  "RestartCount": 0,
+  "Driver": "overlayfs",
+  "Platform": "linux",
+  "HostConfig": {
+    "Binds": null,
+    "NetworkMode": "container:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+    "PortBindings": {},
+    "RestartPolicy": {
+      "Name": "no",
+      "MaximumRetryCount": 0
+    },
+    "Privileged": false,
+    "CapAdd": null,
+    "CapDrop": null,
+    "LogConfig": {
+      "Type": "json-file",
+      "Config": {}
+    },
+    "Memory": 0,
+    "NanoCpus": 0,
+    "ShmSize": 67108864,
+    "Runtime": "runc",
+    "ReadonlyRootfs": false,
+    "PidMode": "",
+    "IpcMode": "private"
+  },
+  "Mounts": [],
+  "Config": {
+    "Hostname": "c3c3c3c3c3c3",
+    "User": "",
+    "Env": [
+      "TARGET=localhost:8080"
+    ],
+    "Cmd": [
+      "exporter"
+    ],
+    "Image": "ghcr.io/example/exporter:2",
+    "Entrypoint": null,
+    "Labels": {},
+    "ExposedPorts": {}
+  },
+  "NetworkSettings": {
+    "Networks": {},
+    "Ports": {}
+  }
+}

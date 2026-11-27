@@ -1,0 +1,126 @@
+{
+  "Id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+  "Created": "2026-02-20T10:00:00.000000000Z",
+  "Path": "nginx",
+  "Args": [
+    "-g",
+    "daemon off;"
+  ],
+  "State": {
+    "Status": "running",
+    "Running": true,
+    "ExitCode": 0,
+    "StartedAt": "2026-02-28T08:00:00Z",
+    "Pid": 4242
+  },
+  "Image": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "Name": "/web",
+  "RestartCount": 0,
+  "Driver": "overlayfs",
+  "Platform": "linux",
+  "HostConfig": {
+    "Binds": null,
+    "NetworkMode": "homelab",
+    "PortBindings": {
+      "8080/tcp": [
+        {
+          "HostIp": "",
+          "HostPort": "8080"
+        }
+      ]
+    },
+    "RestartPolicy": {
+      "Name": "unless-stopped",
+      "MaximumRetryCount": 0
+    },
+    "Privileged": false,
+    "CapAdd": null,
+    "CapDrop": null,
+    "LogConfig": {
+      "Type": "json-file",
+      "Config": {}
+    },
+    "Memory": 0,
+    "NanoCpus": 0,
+    "ShmSize": 67108864,
+    "Runtime": "runc",
+    "ReadonlyRootfs": false,
+    "PidMode": "",
+    "IpcMode": "private"
+  },
+  "Mounts": [
+    {
+      "Type": "bind",
+      "Source": "/opt/shop/site",
+      "Destination": "/usr/share/nginx/html",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "volume",
+      "Name": "f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9",
+      "Source": "/var/lib/docker/volumes/f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9/_data",
+      "Destination": "/var/cache/nginx",
+      "Driver": "local",
+      "Mode": "",
+      "RW": true
+    }
+  ],
+  "Config": {
+    "Hostname": "a1a1a1a1a1a1",
+    "User": "",
+    "Env": [
+      "PATH=/usr/sbin:/usr/bin",
+      "NGINX_PORT=8080",
+      "API_TOKEN=FAKEwebtoken0001"
+    ],
+    "Cmd": [
+      "nginx",
+      "-g",
+      "daemon off;"
+    ],
+    "Image": "nginx:1.29",
+    "Entrypoint": null,
+    "Labels": {
+      "com.docker.compose.project": "shop",
+      "com.docker.compose.service": "web",
+      "com.docker.compose.project.working_dir": "/opt/shop",
+      "com.docker.compose.project.config_files": "/opt/shop/compose.yml",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "ExposedPorts": {
+      "8080/tcp": {}
+    },
+    "Healthcheck": {
+      "Test": [
+        "CMD",
+        "curl",
+        "-f",
+        "http://localhost:8080/"
+      ],
+      "Interval": 30000000000
+    }
+  },
+  "NetworkSettings": {
+    "Networks": {
+      "homelab": {
+        "IPAMConfig": {
+          "IPv4Address": "172.19.0.5"
+        },
+        "Aliases": [
+          "web",
+          "shop-web",
+          "a1a1a1a1a1a1"
+        ],
+        "NetworkID": "1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "EndpointID": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "Gateway": "172.19.0.1",
+        "IPAddress": "172.19.0.5",
+        "IPPrefixLen": 16,
+        "MacAddress": "02:42:ac:13:00:02"
+      }
+    },
+    "Ports": {}
+  }
+}

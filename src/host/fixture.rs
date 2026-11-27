@@ -15,11 +15,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use super::fake_docker::{self, DockerState, FakeConn};
 use super::rooted::{self, Resolved};
-use super::{Cmd, CmdOutput, Host, Metadata};
+use super::{Cmd, CmdOutput, Conn, Host, Metadata};
 
 /// 2026-01-01T00:00:00Z, used when the fixture has no `clock` file.
 const DEFAULT_CLOCK: u64 = 1_767_225_600;
@@ -31,6 +32,7 @@ pub struct FixtureHost {
     overlay: Option<PathBuf>,
     modes: BTreeMap<PathBuf, (u32, u32, u32)>,
     state: Mutex<State>,
+    docker: Arc<Mutex<DockerState>>,
 }
 
 #[derive(Debug)]
@@ -97,6 +99,7 @@ impl FixtureHost {
                 ran: Vec::new(),
                 journal: Vec::new(),
             }),
+            docker: Arc::default(),
         })
     }
 
@@ -145,6 +148,17 @@ impl FixtureHost {
     /// Journal entries sent so far, each a list of fields.
     pub fn journal_entries(&self) -> Vec<Vec<(String, String)>> {
         self.state().journal.clone()
+    }
+
+    /// Every request the fake Docker engine received, as `METHOD /path?query`.
+    pub fn docker_requests(&self) -> Vec<String> {
+        self.docker.lock().unwrap_or_else(PoisonError::into_inner).requests.clone()
+    }
+
+    /// Answer `GET <path>` (no query) with this JSON instead of the fixture's file: how a test changes
+    /// the engine's state between two snapshots.
+    pub fn set_docker(&self, path: &str, json: &str) {
+        self.docker.lock().unwrap_or_else(PoisonError::into_inner).overrides.insert(path.to_string(), json.to_string());
     }
 
     fn state(&self) -> MutexGuard<'_, State> {
@@ -325,6 +339,15 @@ impl Host for FixtureHost {
             Err(_) => 0,
         };
         Ok(CmdOutput { status, stdout, stderr: fs::read(file("err")).unwrap_or_default(), timed_out: false })
+    }
+
+    fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
+        match fake_docker::engine_dir(&self.dir) {
+            Some(dir) if path == Path::new(crate::docker::DEFAULT_SOCKET) => {
+                Ok(Box::new(FakeConn::new(dir, Arc::clone(&self.docker))))
+            }
+            _ => Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display()))),
+        }
     }
 
     fn now(&self) -> SystemTime {

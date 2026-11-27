@@ -63,6 +63,10 @@ One collector per area, run concurrently, each with its own timeout (default 60 
 | incus | `incus admin init --dump`, `incus config show <i>`, snapshot names (if `incus` exists and responds) | strip `volatile.*` |
 | monitoring | `kuma.db` read-only (located via the Kuma container's `/app/data` mount; open `mode=ro`, fall back to `immutable=1`), integrations scan (§ below) | push tokens kept in stable files (state dir is root-only) |
 
+### Docker client
+
+The Engine API is spoken directly over `/var/run/docker.sock` with unversioned paths (the engine's own current API version), one request per connection. Payloads are kept as JSON values and only the fields listed below are read, so an engine that adds or drops fields breaks nothing. An unreachable engine is "docker not available" (compose files on disk are still captured), never a failed snapshot. Reading state sends only `GET` requests; the only `POST`s moi ever sends while capturing or checking are `exec` create/start.
+
 ### Docker normalization (stable fields only)
 
 - Containers: name, image, image id, cmd, entrypoint, env (sorted), labels, user, hostname (dropped if it equals the short id), healthcheck, exposed ports, HostConfig subset (port bindings, restart policy, network mode, privileged, caps, devices, device requests, extra hosts, dns, log config, resources, tmpfs, sysctls, security opts, pid/ipc mode, init, ulimits, runtime), mounts (anonymous volumes reduced to `anonymous: true`), networks (aliases without ids, static IPs). **Swarm task containers are excluded** (their names change every deploy; the service represents them).

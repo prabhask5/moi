@@ -8,6 +8,7 @@
 //! wherever its root really is. Symlinks (also absolute ones) and `..` are resolved inside the root and
 //! can never escape it.
 
+mod fake_docker;
 mod fixture;
 mod real;
 mod rooted;
@@ -132,6 +133,12 @@ impl CmdOutput {
     }
 }
 
+/// A connected stream socket (the Docker engine's unix socket).
+pub trait Conn: io::Read + io::Write + Send + fmt::Debug {
+    /// Fail reads and writes that block longer than this; `None` waits forever.
+    fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()>;
+}
+
 /// The operating system as moi sees it.
 pub trait Host: fmt::Debug + Send + Sync {
     fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
@@ -175,6 +182,9 @@ pub trait Host: fmt::Debug + Send + Sync {
 
     /// Run an external command and wait for it. A non-zero exit is not an error; failing to start is.
     fn run(&self, cmd: &Cmd) -> io::Result<CmdOutput>;
+
+    /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
+    fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
 
     fn now(&self) -> SystemTime;
 

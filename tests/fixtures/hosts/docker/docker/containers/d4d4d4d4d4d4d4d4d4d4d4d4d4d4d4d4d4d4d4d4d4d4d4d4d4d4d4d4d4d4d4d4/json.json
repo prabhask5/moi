@@ -1,0 +1,76 @@
+{
+  "Id": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+  "Created": "2026-02-20T10:00:00.000000000Z",
+  "Path": "run",
+  "Args": [],
+  "State": {
+    "Status": "running",
+    "Running": true,
+    "ExitCode": 0,
+    "StartedAt": "2026-02-28T08:00:00Z",
+    "Pid": 4242
+  },
+  "Image": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+  "Name": "/api.1.k3x9q0v7m2p8w1z5",
+  "RestartCount": 0,
+  "Driver": "overlayfs",
+  "Platform": "linux",
+  "HostConfig": {
+    "Binds": null,
+    "NetworkMode": "app-net",
+    "PortBindings": {},
+    "RestartPolicy": {
+      "Name": "no",
+      "MaximumRetryCount": 0
+    },
+    "Privileged": false,
+    "CapAdd": null,
+    "CapDrop": null,
+    "LogConfig": {
+      "Type": "json-file",
+      "Config": {}
+    },
+    "Memory": 0,
+    "NanoCpus": 0,
+    "ShmSize": 67108864,
+    "Runtime": "runc",
+    "ReadonlyRootfs": false,
+    "PidMode": "",
+    "IpcMode": "private"
+  },
+  "Mounts": [],
+  "Config": {
+    "Hostname": "d4d4d4d4d4d4",
+    "User": "",
+    "Env": [
+      "PORT=3000"
+    ],
+    "Cmd": null,
+    "Image": "ghcr.io/example/api:7@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "Entrypoint": null,
+    "Labels": {
+      "com.docker.swarm.service.name": "api",
+      "com.docker.swarm.task.id": "k3x9q0v7m2p8w1z5",
+      "com.docker.swarm.node.id": "n0de"
+    },
+    "ExposedPorts": {}
+  },
+  "NetworkSettings": {
+    "Networks": {
+      "app-net": {
+        "IPAMConfig": null,
+        "Aliases": [
+          "api",
+          "d4d4d4d4d4d4"
+        ],
+        "NetworkID": "3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e",
+        "EndpointID": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "Gateway": "10.0.1.1",
+        "IPAddress": "10.0.1.7",
+        "IPPrefixLen": 16,
+        "MacAddress": "02:42:ac:13:00:02"
+      }
+    },
+    "Ports": {}
+  }
+}

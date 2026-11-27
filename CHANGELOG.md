@@ -12,5 +12,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - State directory layout and `moi.db` with versioned, forward-only schema migrations.
 - Logging to the systemd journal with structured `MOI_*` fields (stderr when run by hand), known secrets masked.
 
+- Docker Engine API client over the unix socket (containers, networks, volumes, swarm services/nodes/secrets/configs, events, exec, logs) with no HTTP dependency.
+
 ### Changed
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

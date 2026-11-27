@@ -4,6 +4,7 @@
 
 use std::fs;
 use std::io::{self, Read, Write};
+use std::os::unix::net::UnixStream;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -11,7 +12,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
 use super::rooted;
-use super::{Cmd, CmdOutput, Host, Metadata};
+use super::{Cmd, CmdOutput, Conn, Host, Metadata};
 
 const JOURNAL_SOCKET: &str = "/run/systemd/journal/socket";
 
@@ -154,6 +155,13 @@ impl Host for RealHost {
         })
     }
 
+    fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
+        if !self.is_system() {
+            return Err(self.refuse(&format!("connect to {}", path.display())));
+        }
+        Ok(Box::new(UnixStream::connect(path)?))
+    }
+
     fn now(&self) -> SystemTime {
         SystemTime::now()
     }
@@ -169,6 +177,13 @@ impl Host for RealHost {
         let socket = std::os::unix::net::UnixDatagram::unbound()?;
         socket.send_to(&crate::log::encode_journal(fields), JOURNAL_SOCKET)?;
         Ok(())
+    }
+}
+
+impl Conn for UnixStream {
+    fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
+        self.set_read_timeout(timeout)?;
+        self.set_write_timeout(timeout)
     }
 }
 

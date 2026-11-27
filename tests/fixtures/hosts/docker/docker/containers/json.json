@@ -1,0 +1,66 @@
+[
+  {
+    "Id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+    "Names": [
+      "/web"
+    ],
+    "Image": "nginx:1.29",
+    "ImageID": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "State": "running",
+    "Status": "Up 2 days",
+    "Labels": {
+      "com.docker.compose.project": "shop",
+      "com.docker.compose.service": "web",
+      "com.docker.compose.project.working_dir": "/opt/shop",
+      "com.docker.compose.project.config_files": "/opt/shop/compose.yml",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "Created": 1771581600
+  },
+  {
+    "Id": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+    "Names": [
+      "/db"
+    ],
+    "Image": "postgres:18",
+    "ImageID": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "State": "running",
+    "Status": "Up 2 days",
+    "Labels": {
+      "com.docker.compose.project": "shop",
+      "com.docker.compose.service": "db",
+      "com.docker.compose.project.working_dir": "/opt/shop",
+      "com.docker.compose.project.config_files": "/opt/shop/compose.yml",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "Created": 1771581600
+  },
+  {
+    "Id": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+    "Names": [
+      "/sidecar"
+    ],
+    "Image": "ghcr.io/example/exporter:2",
+    "ImageID": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "State": "exited",
+    "Status": "Exited (0) 3 hours ago",
+    "Labels": {},
+    "Created": 1771581600
+  },
+  {
+    "Id": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+    "Names": [
+      "/api.1.k3x9q0v7m2p8w1z5"
+    ],
+    "Image": "ghcr.io/example/api:7@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "ImageID": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "State": "running",
+    "Status": "Up 2 days",
+    "Labels": {
+      "com.docker.swarm.service.name": "api",
+      "com.docker.swarm.task.id": "k3x9q0v7m2p8w1z5",
+      "com.docker.swarm.node.id": "n0de"
+    },
+    "Created": 1771581600
+  }
+]

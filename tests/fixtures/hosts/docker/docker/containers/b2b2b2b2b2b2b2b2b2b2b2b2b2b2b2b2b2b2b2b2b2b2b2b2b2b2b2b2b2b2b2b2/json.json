@@ -1,0 +1,92 @@
+{
+  "Id": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+  "Created": "2026-02-20T10:00:00.000000000Z",
+  "Path": "run",
+  "Args": [],
+  "State": {
+    "Status": "running",
+    "Running": true,
+    "ExitCode": 0,
+    "StartedAt": "2026-02-28T08:00:00Z",
+    "Pid": 4242
+  },
+  "Image": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "Name": "/db",
+  "RestartCount": 0,
+  "Driver": "overlayfs",
+  "Platform": "linux",
+  "HostConfig": {
+    "Binds": null,
+    "NetworkMode": "homelab",
+    "PortBindings": {},
+    "RestartPolicy": {
+      "Name": "unless-stopped",
+      "MaximumRetryCount": 0
+    },
+    "Privileged": false,
+    "CapAdd": null,
+    "CapDrop": null,
+    "LogConfig": {
+      "Type": "json-file",
+      "Config": {}
+    },
+    "Memory": 0,
+    "NanoCpus": 0,
+    "ShmSize": 67108864,
+    "Runtime": "runc",
+    "ReadonlyRootfs": false,
+    "PidMode": "",
+    "IpcMode": "private"
+  },
+  "Mounts": [
+    {
+      "Type": "volume",
+      "Name": "shop_pgdata",
+      "Source": "/var/lib/docker/volumes/shop_pgdata/_data",
+      "Destination": "/var/lib/postgresql/data",
+      "Driver": "local",
+      "Mode": "z",
+      "RW": true
+    }
+  ],
+  "Config": {
+    "Hostname": "database",
+    "User": "",
+    "Env": [
+      "POSTGRES_PASSWORD=FAKEdbpassword01",
+      "POSTGRES_DB=shop",
+      "PGDATA=/var/lib/postgresql/data"
+    ],
+    "Cmd": null,
+    "Image": "postgres:18",
+    "Entrypoint": null,
+    "Labels": {
+      "com.docker.compose.project": "shop",
+      "com.docker.compose.service": "db",
+      "com.docker.compose.project.working_dir": "/opt/shop",
+      "com.docker.compose.project.config_files": "/opt/shop/compose.yml",
+      "com.docker.compose.version": "2.40.3"
+    },
+    "ExposedPorts": {
+      "5432/tcp": {}
+    }
+  },
+  "NetworkSettings": {
+    "Networks": {
+      "homelab": {
+        "IPAMConfig": null,
+        "Aliases": [
+          "db",
+          "b2b2b2b2b2b2"
+        ],
+        "NetworkID": "1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "EndpointID": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "Gateway": "172.19.0.1",
+        "IPAddress": "172.19.0.6",
+        "IPPrefixLen": 16,
+        "MacAddress": "02:42:ac:13:00:02"
+      }
+    },
+    "Ports": {}
+  }
+}
