@@ -350,7 +350,7 @@ fn drain(mut pipe: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>> {
 
 #[cfg(target_os = "linux")]
 mod inotify {
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, VecDeque};
     use std::io;
     use std::mem::MaybeUninit;
     use std::os::fd::OwnedFd;
@@ -365,6 +365,8 @@ mod inotify {
         root: PathBuf,
         /// Watch descriptor → the directory it watches, as the host names it.
         dirs: BTreeMap<i32, PathBuf>,
+        /// Changes already read from the kernel and not handed out yet.
+        queue: VecDeque<PathBuf>,
     }
 
     fn changes() -> WatchFlags {
@@ -387,21 +389,33 @@ mod inotify {
 
         fn next(&mut self) -> io::Result<PathBuf> {
             loop {
-                // one event at a time: the buffer holds the largest possible event (header + NAME_MAX + 1)
-                let mut buffer = [MaybeUninit::<u8>::uninit(); 16 + 256];
+                if let Some(path) = self.queue.pop_front() {
+                    return Ok(path);
+                }
+                // One read hands over every event the kernel has ready, as many as fit: all of them
+                // must be taken out of the buffer before it is dropped.
+                let mut buffer = [MaybeUninit::<u8>::uninit(); 4096];
                 let mut reader = Reader::new(&self.fd, &mut buffer);
-                let event = reader.next()?;
-                let Some(dir) = self.dirs.get(&event.wd()) else { continue };
-                return Ok(match event.file_name() {
-                    Some(name) => dir.join(name.to_string_lossy().as_ref()),
-                    None => dir.clone(),
-                });
+                let mut read: Vec<(i32, Option<String>)> = Vec::new();
+                loop {
+                    let event = reader.next()?;
+                    read.push((event.wd(), event.file_name().map(|name| name.to_string_lossy().into_owned())));
+                    if reader.is_buffer_empty() {
+                        break;
+                    }
+                }
+                for (wd, name) in read {
+                    if let Some(dir) = self.dirs.get(&wd) {
+                        self.queue.push_back(name.map_or_else(|| dir.clone(), |name| dir.join(name)));
+                    }
+                }
             }
         }
     }
 
     pub(super) fn watch(root: PathBuf, dirs: &[PathBuf]) -> io::Result<Box<dyn crate::host::Watch>> {
-        let mut watch = Inotify { fd: inotify::init(CreateFlags::CLOEXEC)?, root, dirs: BTreeMap::new() };
+        let mut watch =
+            Inotify { fd: inotify::init(CreateFlags::CLOEXEC)?, root, dirs: BTreeMap::new(), queue: VecDeque::new() };
         for dir in dirs {
             // a directory that is not there (or not a directory) is simply not watched
             let _ = crate::host::Watch::add(&mut watch, dir);
