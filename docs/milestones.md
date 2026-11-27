@@ -78,10 +78,10 @@ Specs: 07, 08
 ## M8 — Restore & verify
 Specs: 09
 - [x] Phases with dry-run/resume; interactive storage mapping; DB-first import
-- [ ] Swarm/Dokploy research spike → implementation; Incus preseed
+- [x] Swarm/Dokploy research spike → implementation; Incus preseed
 - [x] `moi verify`, expectations, guided reboot, post-boot verify every boot
-- [ ] Nightly VM end-to-end test
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Nightly VM end-to-end test
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M9 — Migration & cleanup (cestmoi)
 Specs: 11
