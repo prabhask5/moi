@@ -100,6 +100,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # first, while the checkout is clean: cargo refuses to package a tree with stray files
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The crate packages for crates.io
+        run: cargo package --locked --no-verify && cargo package --locked --list | grep -c .
       - uses: actions/download-artifact@v8
         with:
           path: dist
@@ -123,9 +127,6 @@ jobs:
           v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
           packaging/homebrew-formula.sh "$v" dist/SHA256SUMS > moi.rb
           ruby -c moi.rb
-      - uses: dtolnay/rust-toolchain@stable
-      - name: The crate packages for crates.io
-        run: cargo package --locked --no-verify && cargo package --locked --list | grep -c . 
 
   release:
     if: github.ref_type == 'tag'
