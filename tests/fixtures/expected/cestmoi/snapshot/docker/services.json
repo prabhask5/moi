@@ -3,7 +3,8 @@
     "image": "compiler-ui-a5b6:latest",
     "image_digest": "sha256:4bfb009b5b42ae524c236f2775536f67a83278f37c455bc924518706fce23a44",
     "labels": {
-      "traefik.enable": "true"
+      "traefik.enable": "true",
+      "traefik.http.routers.compiler-ui-a5b6.rule": "Host(`compiler.example.com`)"
     },
     "name": "compiler-ui-a5b6",
     "networks": [
@@ -118,7 +119,8 @@
     "image": "shortless-app-p9q1:latest",
     "image_digest": "sha256:66abf1bb2581aa371a1cf6999cd12a6ea16a4d7996aa160353a677ebca207cf8",
     "labels": {
-      "traefik.enable": "true"
+      "traefik.enable": "true",
+      "traefik.http.routers.shortless-app-p9q1.rule": "Host(`shortless.example.com`)"
     },
     "name": "shortless-app-p9q1",
     "networks": [
@@ -165,7 +167,8 @@
     "image": "stellar-planner-x7k2:latest",
     "image_digest": "sha256:cf7aa89e9deb8727e43f2d4575976899f35060ba323ca2f201285658ce6b899c",
     "labels": {
-      "traefik.enable": "true"
+      "traefik.enable": "true",
+      "traefik.http.routers.stellar-planner-x7k2.rule": "Host(`stellar.example.com`)"
     },
     "mounts": [
       {

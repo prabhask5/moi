@@ -42,7 +42,7 @@ impl Server {
         let config = Arc::new(loaded.config);
         self.state.ensure(self.host.as_ref()).unwrap();
         let db = self.state.open_db(self.host.as_ref()).unwrap();
-        snapshot::capture(&self.host, &config, &self.state, &db).unwrap();
+        snapshot::capture(&self.host, &config, &self.state, &db, &loaded.masker).unwrap();
         audit::run(&self.host, &config, &self.state).unwrap()
     }
 
@@ -430,7 +430,22 @@ fn sizing_only_ever_runs_at_idle_priority_and_the_audit_changes_nothing() {
     assert!(sizing.iter().all(|c| c.starts_with("nice -n 19 ionice -c3 du -x -B1 -d 2 /")), "{sizing:#?}");
     assert!(!commands.iter().any(|c| c.starts_with("du ")), "du must never run at normal priority");
     assert!(s.fixture.docker_requests().iter().all(|r| r.starts_with("GET ")));
-    assert_eq!(std::fs::read_dir(&s.overlay).unwrap().count(), 1, "only the state dir may be written");
+    // written: the state dir, and the two things the configuration asks for — the context copy and the
+    // Claude Code pointers. Nothing else.
+    let mut written = Vec::new();
+    let mut stack = vec![s.overlay.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in std::fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            let rel = path.strip_prefix(&s.overlay).unwrap().to_string_lossy().into_owned();
+            if rel == "var/lib/moi" {
+                continue;
+            }
+            if path.is_dir() { stack.push(path) } else { written.push(rel) }
+        }
+    }
+    written.sort();
+    assert_eq!(written, ["home/prabhas/.claude/CLAUDE.md", "home/prabhas/SERVER_CONTEXT.md", "root/.claude/CLAUDE.md"]);
 }
 
 #[test]

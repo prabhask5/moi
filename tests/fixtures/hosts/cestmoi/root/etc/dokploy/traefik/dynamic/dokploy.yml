@@ -1,0 +1,5 @@
+http:
+  routers:
+    dokploy-router:
+      rule: Host(`dokploy.home`)
+      service: dokploy-service

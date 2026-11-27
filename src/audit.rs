@@ -204,7 +204,7 @@ pub(crate) struct Live {
 }
 
 /// Human-readable size: `1.5 GB`.
-pub(crate) fn human(bytes: u64) -> String {
+pub fn human(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
     let mut value = bytes as f64;
     let mut unit = 0;

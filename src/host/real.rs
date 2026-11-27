@@ -110,6 +110,10 @@ impl Host for RealHost {
         rooted::set_mode(&self.real(path, true)?, mode)
     }
 
+    fn set_owner(&self, path: &Path, uid: u32, gid: u32) -> io::Result<()> {
+        std::os::unix::fs::chown(self.real(path, true)?, Some(uid), Some(gid))
+    }
+
     fn real_path(&self, path: &Path) -> io::Result<PathBuf> {
         self.real(path, true)
     }

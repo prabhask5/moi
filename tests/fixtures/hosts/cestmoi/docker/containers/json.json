@@ -125,6 +125,9 @@
   "State": "running",
   "Status": "Up 5 days",
   "Labels": {
+   "traefik.http.routers.outline.rule": "Host(`notes.example.com`)",
+   "traefik.http.services.outline.loadbalancer.server.port": "3000",
+   "traefik.enable": "true",
    "com.docker.compose.project": "outline",
    "com.docker.compose.service": "outline",
    "com.docker.compose.project.working_dir": "/opt/services/outline",
@@ -489,6 +492,10 @@
   "State": "running",
   "Status": "Up 5 days",
   "Labels": {
+   "traefik.http.routers.jellyfin.rule": "Host(`jellyfin.home`)",
+   "traefik.http.services.jellyfin.loadbalancer.server.port": "8096",
+   "traefik.enable": "true",
+   "traefik.http.routers.jellyfin-public.rule": "Host(`media.example.com`) || Host(`tv.example.com`)",
    "com.docker.compose.project": "yams",
    "com.docker.compose.service": "jellyfin",
    "com.docker.compose.project.working_dir": "/opt/yams",

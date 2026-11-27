@@ -132,7 +132,8 @@
   "Spec": {
    "Name": "stellar-planner-x7k2",
    "Labels": {
-    "traefik.enable": "true"
+    "traefik.enable": "true",
+    "traefik.http.routers.stellar-planner-x7k2.rule": "Host(`stellar.example.com`)"
    },
    "TaskTemplate": {
     "ContainerSpec": {
@@ -185,7 +186,8 @@
   "Spec": {
    "Name": "shortless-app-p9q1",
    "Labels": {
-    "traefik.enable": "true"
+    "traefik.enable": "true",
+    "traefik.http.routers.shortless-app-p9q1.rule": "Host(`shortless.example.com`)"
    },
    "TaskTemplate": {
     "ContainerSpec": {
@@ -281,7 +283,8 @@
   "Spec": {
    "Name": "compiler-ui-a5b6",
    "Labels": {
-    "traefik.enable": "true"
+    "traefik.enable": "true",
+    "traefik.http.routers.compiler-ui-a5b6.rule": "Host(`compiler.example.com`)"
    },
    "TaskTemplate": {
     "ContainerSpec": {

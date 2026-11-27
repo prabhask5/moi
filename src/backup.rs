@@ -78,16 +78,29 @@ fn text(v: &Value) -> &str {
     v.as_str().unwrap_or_default()
 }
 
+/// Postgres or MySQL/MariaDB, recognised by the environment their images define or by the image's own
+/// name (`postgres`, `pgvector`, `supabase/postgres` — but not `postgrest` or `postgres-meta`).
 fn database_engine(image: &str, env: &Value) -> Option<&'static str> {
     let has = |key: &str| env.as_array().into_iter().flatten().filter_map(|e| e.as_str()).any(|e| e.starts_with(key));
-    let image = image.to_lowercase();
-    if has("PGDATA=") || has("POSTGRES_") || image.contains("postgres") || image.contains("pgvector") {
-        Some("postgres")
-    } else if has("MARIADB_ROOT_PASSWORD")
-        || has("MYSQL_ROOT_PASSWORD")
-        || image.contains("mariadb")
-        || image.contains("mysql")
+    let lower = image.to_lowercase();
+    let name = lower
+        .split('@')
+        .next()
+        .unwrap_or_default()
+        .rsplit('/')
+        .next()
+        .unwrap_or_default()
+        .split(':')
+        .next()
+        .unwrap_or_default();
+    if has("PGDATA=")
+        || has("POSTGRES_PASSWORD")
+        || has("POSTGRES_USER=")
+        || has("POSTGRES_DB=")
+        || ["postgres", "pgvector", "postgis", "timescaledb"].contains(&name)
     {
+        Some("postgres")
+    } else if has("MARIADB_ROOT_PASSWORD") || has("MYSQL_ROOT_PASSWORD") || ["mariadb", "mysql"].contains(&name) {
         Some("mysql")
     } else {
         None

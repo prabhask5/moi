@@ -45,6 +45,10 @@ struct State {
     commands: BTreeMap<String, CmdOutput>,
     ran: Vec<String>,
     journal: Vec<Vec<(String, String)>>,
+    /// Owners given to overlay files with `set_owner` (the test process cannot really chown).
+    owners: BTreeMap<PathBuf, (u32, u32)>,
+    /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
+    chmodded: BTreeSet<PathBuf>,
 }
 
 fn bad_fixture(msg: String) -> io::Error {
@@ -115,6 +119,8 @@ impl FixtureHost {
                 commands: BTreeMap::new(),
                 ran: Vec::new(),
                 journal: Vec::new(),
+                owners: BTreeMap::new(),
+                chmodded: BTreeSet::new(),
             }),
             docker: Arc::default(),
         })
@@ -195,7 +201,13 @@ impl FixtureHost {
         let mut md = rooted::to_metadata(&fs::symlink_metadata(&r.real)?);
         // Checked-out fixtures belong to whoever ran git; a server's files belong to root unless stated.
         (md.uid, md.gid) = (0, 0);
-        let in_overlay = self.overlay.is_some() && r.layer == Some(0);
+        let relative = r.logical.strip_prefix("/").unwrap_or(&r.logical);
+        // A fixture directory that merely got mirrored into the overlay (something was written below it)
+        // is still the fixture's directory, unless a test changed its mode there.
+        let mirrored = md.kind == super::FileKind::Dir
+            && self.base.join(relative).is_dir()
+            && !self.state().chmodded.contains(&r.logical);
+        let in_overlay = self.overlay.is_some() && r.layer == Some(0) && !mirrored;
         if !in_overlay {
             // …and their permission bits depend on the umask at checkout. Fixture files are 0644 (0755
             // when executable) and directories 0755 unless the modes manifest says otherwise.
@@ -209,6 +221,9 @@ impl FixtureHost {
             }
             // …and their timestamps are the time of the checkout.
             md.mtime = self.mtimes.get(&r.logical).copied().unwrap_or(self.default_mtime);
+        }
+        if let Some(&(uid, gid)) = self.state().owners.get(&r.logical) {
+            (md.uid, md.gid) = (uid, gid);
         }
         Ok(md)
     }
@@ -336,6 +351,9 @@ impl Host for FixtureHost {
         if self.overlay.is_none() {
             return Err(self.read_only(path));
         }
+        if r.real.is_dir() {
+            self.state().chmodded.insert(r.logical.clone());
+        }
         match r.layer {
             Some(0) => rooted::set_mode(&r.real, mode),
             Some(_) if r.real.is_dir() => {
@@ -347,6 +365,15 @@ impl Host for FixtureHost {
             }
             _ => self.overlay_only(path).map(|_| ()),
         }
+    }
+
+    fn set_owner(&self, path: &Path, uid: u32, gid: u32) -> io::Result<()> {
+        let r = self.resolve(path, true)?;
+        if self.overlay.is_none() || r.layer != Some(0) {
+            return self.overlay_only(path).map(|_| ());
+        }
+        self.state().owners.insert(r.logical, (uid, gid));
+        Ok(())
     }
 
     fn real_path(&self, path: &Path) -> io::Result<PathBuf> {
