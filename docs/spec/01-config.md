@@ -157,6 +157,7 @@ firewall_required = ["Intra-network container traffic", "Swarm outbound Internet
 
 [checks.backup]
 monitor = "Server Backup"        # pushed by the backup run itself (07)
+drill_monitor = "Server Backup Drill"   # optional: pushed by the restore drill (07)
 
 [[checks.custom]]
 name = "something"
@@ -216,6 +217,7 @@ databases = "auto"               # dump every running Postgres/MySQL/MariaDB con
 volumes = "auto"                 # every named volume that is not a DB data dir and not fungible
 special_users = { "supabase/postgres" = "supabase_admin" }   # image substring -> dump user
 log_file = "/var/log/server-backup.log"   # legacy-format log lines are also appended here (optional)
+drill = "Sun 05:30"              # optional: when the restore drill runs (07); unset = only `moi backup --drill`
 
 [backup.offsite]
 enabled = true

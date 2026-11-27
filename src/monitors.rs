@@ -71,6 +71,10 @@ pub fn desired(config: &Config, docker: &Docker) -> Vec<Desired> {
     if let Some(monitor) = &config.checks.backup.monitor {
         push("check:backup".to_string(), monitor, 25 * 3600);
     }
+    if let Some(monitor) = config.checks.backup.drill_monitor.as_ref().filter(|_| config.backup.drill.is_some()) {
+        // weekly at most: a day's grace on top
+        push("backup:drill".to_string(), monitor, 8 * 86_400);
+    }
     if kuma.freshness {
         push("freshness:snapshot".to_string(), &format!("{server}: snapshot"), 26 * 3600);
     }

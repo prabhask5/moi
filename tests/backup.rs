@@ -426,3 +426,145 @@ fn the_daemon_backs_up_at_the_configured_time() {
     assert_eq!((backup.status.as_str(), backup.message.as_str()), ("ok", "/mnt/storage/backups/2026-11-27_0330"));
     assert!(s.host.exists(Path::new("/mnt/storage/backups/2026-11-27_0330/configs.tar.gz")));
 }
+
+// ------------------------------------------------------------------ the restore drill
+
+/// The cestmoi fixture where throwaway containers answer the drill's questions.
+fn drill_server(test: &str, tables: &[(&str, &str, &str)]) -> Server {
+    let case = common::scratch(&format!("{test}-case"));
+    for (database, user, counted) in tables {
+        let exec = case.join(format!("docker/exec/moi-drill-{database}"));
+        std::fs::create_dir_all(&exec).unwrap();
+        let answer = |script: String, out: &str| {
+            let key = FixtureHost::command_key(&format!("sh -c {script}"));
+            std::fs::write(exec.join(format!("{key}.out")), out).unwrap();
+        };
+        answer(format!("pg_isready -q -U {user}"), "");
+        answer(
+            format!("gunzip -c /moi-drill/{database}.sql.gz | psql -q -U {user} -d postgres >/dev/null 2>&1; true"),
+            "",
+        );
+        answer(
+            format!(
+                "for d in $(psql -U {user} -d postgres -Atc \"SELECT datname FROM pg_database WHERE NOT datistemplate\"); do psql -U {user} -d \"$d\" -Atc \"SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')\"; done"
+            ),
+            counted,
+        );
+    }
+    let overlay = common::scratch(test);
+    let fixture = Arc::new(
+        FixtureHost::open(&common::fixture_dir("cestmoi"))
+            .unwrap()
+            .with_case(&case)
+            .unwrap()
+            .with_overlay(&overlay)
+            .unwrap(),
+    );
+    Server { host: fixture.clone(), fixture }
+}
+
+#[test]
+fn the_drill_restores_every_dump_into_a_throwaway_container_and_compares_files() {
+    let s = drill_server(
+        "backup-drill",
+        &[
+            ("outline-postgres", "outline", "0\n12\n"),
+            ("bookorbit-db", "bookorbit", "7\n"),
+            ("supabase-db", "supabase_admin", "0\n41\n"),
+            ("dokploy-postgres", "dokploy", "23\n"),
+        ],
+    );
+    // nothing to drill yet
+    assert_eq!(
+        s.moi(&["backup", "--drill"]),
+        (2, "there is no backup in /mnt/storage/backups yet: run `moi backup` first".to_string())
+    );
+    assert_eq!(s.moi(&["backup"]).0, 0);
+    let before = s.fixture.docker_requests().len();
+    let (code, out) = s.moi(&["backup", "--drill"]);
+    assert_eq!(code, 0, "{out}");
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], format!("drill of {RUN}"));
+    assert!(
+        lines.contains(&"  outline-postgres: restored into a fresh postgres:16-alpine: 12 tables")
+            || lines
+                .iter()
+                .any(|l| l.starts_with("  outline-postgres: restored into a fresh ") && l.ends_with(": 12 tables")),
+        "{out}"
+    );
+    assert!(
+        lines.iter().any(|l| l.starts_with("  supabase-db: restored into a fresh ") && l.ends_with(": 41 tables")),
+        "{out}"
+    );
+    assert!(
+        lines.iter().any(|l| l.starts_with("  dokploy-postgres: restored into a fresh ") && l.ends_with(": 23 tables")),
+        "the swarm service's dump too: {out}"
+    );
+    assert!(
+        lines.iter().any(|l| l.starts_with("  files: archive read to its end; ")
+            && l.contains(" sampled, ")
+            && l.ends_with(" identical to the disk")),
+        "{out}"
+    );
+    assert_eq!(*lines.last().unwrap(), "the backup can be restored");
+    // each throwaway container: no network, the dumps read-only, and removed again
+    let requests = s.fixture.docker_requests()[before..].to_vec();
+    let created: Vec<&String> =
+        requests.iter().filter(|r| r.starts_with("POST /containers/create?name=moi-drill-")).collect();
+    assert_eq!(created.len(), 4, "{requests:?}");
+    for name in ["bookorbit-db", "dokploy-postgres", "outline-postgres", "supabase-db"] {
+        assert!(requests.contains(&format!("POST /containers/moi-drill-{name}/start")), "{name} started");
+        assert_eq!(
+            requests.iter().filter(|r| **r == format!("DELETE /containers/moi-drill-{name}?force=true&v=true")).count(),
+            2,
+            "{name}: a leftover is cleared before, the container removed after"
+        );
+    }
+    // no container of the server itself was touched
+    assert!(
+        !requests.iter().any(|r| (r.starts_with("POST") || r.starts_with("DELETE")) && !r.contains("moi-drill-")),
+        "{requests:?}"
+    );
+}
+
+#[test]
+fn a_dump_that_restores_to_nothing_fails_the_drill() {
+    // the outline dump loads, and there is no table in what comes out
+    let s = drill_server(
+        "backup-drill-empty",
+        &[
+            ("outline-postgres", "outline", "0\n0\n"),
+            ("bookorbit-db", "bookorbit", "7\n"),
+            ("supabase-db", "supabase_admin", "41\n"),
+            ("dokploy-postgres", "dokploy", "23\n"),
+        ],
+    );
+    assert_eq!(s.moi(&["backup"]).0, 0);
+    let (code, out) = s.moi(&["backup", "--drill"]);
+    assert_eq!(code, 1);
+    assert!(out.contains("  outline-postgres: FAILED: restored, and there is not a single table in it\n"), "{out}");
+    assert!(out.ends_with("THE BACKUP COULD NOT BE RESTORED\n"));
+    assert!(
+        s.fixture
+            .docker_requests()
+            .contains(&"DELETE /containers/moi-drill-outline-postgres?force=true&v=true".to_string()),
+        "removed also when it failed"
+    );
+    // a damaged archive
+    let s = drill_server(
+        "backup-drill-archive",
+        &[
+            ("outline-postgres", "outline", "3\n"),
+            ("bookorbit-db", "bookorbit", "7\n"),
+            ("supabase-db", "supabase_admin", "41\n"),
+            ("dokploy-postgres", "dokploy", "23\n"),
+        ],
+    );
+    assert_eq!(s.moi(&["backup"]).0, 0);
+    let archive = format!("{RUN}/configs.tar.gz");
+    let whole = s.host.read(Path::new(&archive)).unwrap();
+    s.host.write(Path::new(&archive), &whole[..whole.len() / 2], 0o600).unwrap();
+    let (code, out) = s.moi(&["backup", "--drill"]);
+    assert_eq!(code, 1);
+    assert!(out.contains("  files: FAILED: the archive is damaged: "), "{out}");
+}

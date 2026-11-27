@@ -401,7 +401,10 @@ impl Checks {
         let services = ServicesCheck::read(t.table(cx, "services"), cx, default_interval, used);
         let edge = EdgeCheck::read(t.table(cx, "edge"), cx, used);
         let mut backup = t.table(cx, "backup");
-        let backup_check = BackupCheck { monitor: used.read(&mut backup, cx, "monitor") };
+        let backup_check = BackupCheck {
+            monitor: used.read(&mut backup, cx, "monitor"),
+            drill_monitor: used.read(&mut backup, cx, "drill_monitor"),
+        };
         backup.finish(cx);
 
         let mut custom: Vec<CustomCheck> = Vec::new();
@@ -653,6 +656,8 @@ impl EdgeCheck {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct BackupCheck {
     pub monitor: Option<String>,
+    /// Pushed by the restore drill.
+    pub drill_monitor: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -907,6 +912,8 @@ pub struct Backup {
     pub special_users: BTreeMap<String, String>,
     /// Legacy-format log lines are also appended here.
     pub log_file: Option<String>,
+    /// When the restore drill runs (`OnCalendar` syntax); unset: only by hand.
+    pub drill: Option<String>,
     pub offsite: Offsite,
 }
 
@@ -929,6 +936,7 @@ impl Backup {
             volumes: t.auto_or_list(cx, "volumes", |_| Ok(())),
             special_users: t.string_map(cx, "special_users").into_iter().map(|(k, v, _)| (k.value, v.value)).collect(),
             log_file: t.path_opt(cx, "log_file"),
+            drill: t.checked(cx, "drill", schedule),
             offsite: Offsite::read(t.table(cx, "offsite"), cx),
         };
         t.finish(cx);

@@ -131,6 +131,15 @@ impl FakeConn {
         match (method, segments.as_slice()) {
             ("GET", ["_ping"]) => respond("200 OK", "text/plain", b"OK"),
             ("GET", ["events"]) => self.events(),
+            // a created container is known by the name it was given
+            ("POST", ["containers", "create"]) => {
+                let name = target.split("name=").nth(1).unwrap_or("created").split('&').next().unwrap_or("created");
+                respond(
+                    "201 Created",
+                    "application/json",
+                    serde_json::json!({ "Id": name, "Warnings": [] }).to_string().as_bytes(),
+                )
+            }
             ("POST", ["containers", container, "exec"]) => self.exec_create(container, body),
             ("POST", ["exec", id, "start"]) => self.exec_start(id),
             ("GET", ["exec", id, "json"]) => {

@@ -63,9 +63,16 @@ Log line format (kept from backup.sh): `[%F %T] message`, off-site lines prefixe
 
 Optional, scheduled weekly: restore the latest dumps into throwaway database containers (same image), check they load and contain tables; restore a sample of files to a temp dir and compare hashes. Push result to an optional `drill_monitor`. Proves the backups are usable, not just present.
 
+### Decisions (M7, drill)
+
+- **`moi backup --drill`** drills the newest run directory under `local_dir`. Scheduled by the daemon when `backup.drill` (an `OnCalendar` schedule) is set; its result goes to `checks.backup.drill_monitor` when that is set (a push monitor expecting a heartbeat every 8 days).
+- **Dumps**: for each `db/<name>.sql.gz` whose database is running (its image is where the dump is restored into): a container `moi-drill-<name>` is created from that image with networking disabled and the run's `db/` directory mounted read-only at `/moi-drill`, started, waited for (up to 90 s), the dump piped into `psql` / `mysql` inside it, and the tables counted (Postgres: in every non-template database, outside the system schemas; MySQL: outside the system schemas). At least one table → `restored into a fresh <image>: N tables`; none → failed. A cluster dump recreates roles that exist, so the loader's exit code is not the measure. The container is removed, with its volumes, whatever happened; one left over by an interrupted drill is removed first. A dump whose database is not running is `skipped`.
+- **Files**: the archive is read to its end (which is what proves it is whole) and every seventh file, up to 25, is compared by SHA-256 with the file on disk: `N sampled, M identical to the disk[, K changed since the backup]`. Files that changed since are information; an unreadable archive is a failure.
+- Exit 1 and `THE BACKUP COULD NOT BE RESTORED` when anything failed.
+
 ## Acceptance
 
 - [x] On the cestmoi fixture, `--dry-run` lists: dumps for outline-postgres, bookorbit-db, supabase-db (user supabase_admin), dokploy-postgres (swarm); volumes stellar-data, shortless redis, dokploy; paths from config; excludes media and incus; raw DB dirs excluded.
 - [x] Each guard has a test: mount missing, size limit, rate limit skip, R2 usage over limit, R2 usage unreadable, restic failure + retry, exit 3 warning, Sunday prune/check.
 - [x] Failure push message = last ERROR line; success = `OK`; exactly one status/msg.
-- [ ] Integration test with a local restic repo and a Postgres container: backup, then drill restores and finds the table.
+- [x] Integration test with a local restic repo and a Postgres container: backup, then drill restores and finds the table.

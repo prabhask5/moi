@@ -23,6 +23,15 @@ pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
             let message = report.error.clone().or(report.dir.clone()).unwrap_or_default();
             Ok((if report.ok { "ok" } else { "failed" }.to_string(), message))
         }
+        Work::Drill => {
+            let db = core.state.open_db(core.host.as_ref())?;
+            let report = crate::backup::drill::run(&core.host, &core.config, &core.state, &db)?;
+            let failed = report.lines.iter().find(|l| l.contains("FAILED")).cloned();
+            Ok((
+                if report.ok { "ok" } else { "failed" }.to_string(),
+                failed.unwrap_or_else(|| format!("{} checks on {}", report.lines.len(), report.dir)),
+            ))
+        }
         Work::Boot => boot(core),
         Work::Firewall => firewall(core, &core.config.firewall.chains).map(|message| ("ok".to_string(), message)),
         Work::Heal(rule, why) => {

@@ -1309,14 +1309,28 @@ fn uninstall(cli: &Cli, purge: bool, host: Arc<dyn Host>, out: &mut dyn Write) -
 
 fn backup(cli: &Cli, args: &BackupArgs, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
     use crate::backup::{plan::Plan, run};
-    if args.drill {
-        return Err(Error::NotImplemented { what: "the restore drill", milestone: "M7" });
-    }
     let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
     let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
     state.ensure(host.as_ref())?;
     let db = state.open_db(host.as_ref())?;
     let config = Arc::new(loaded.config);
+    if args.drill {
+        let report = crate::backup::drill::run(&host, &config, &state, &db)?;
+        if cli.json {
+            print_json(out, &json!({ "ok": true, "drill": report }));
+        } else {
+            let _ = writeln!(out, "drill of {}", report.dir);
+            for line in &report.lines {
+                let _ = writeln!(out, "  {line}");
+            }
+            let _ = writeln!(
+                out,
+                "{}",
+                if report.ok { "the backup can be restored" } else { "THE BACKUP COULD NOT BE RESTORED" }
+            );
+        }
+        return if report.ok { Ok(()) } else { Err(Error::ProblemsFound) };
+    }
     if !args.dry_run {
         let json = cli.json;
         let report = run::run(&host, &config, &state, &db, &loaded.masker, &mut |line| {

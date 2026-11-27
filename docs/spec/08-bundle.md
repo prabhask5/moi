@@ -31,5 +31,5 @@ What the owner must keep outside the server (shown by `moi recovery-card`, which
 ## Acceptance
 
 - [x] Push is skipped when unchanged; `--force` pushes; daemon auto-push ≤ 1/hour.
-- [ ] Pull on an empty machine (integration test with a local restic repo) recreates the bundle dir byte for byte, including the git history.
+- [x] Pull on an empty machine (integration test with a local restic repo) recreates the bundle dir byte for byte, including the git history.
 - [x] `moi recovery-card` never prints a secret value.
