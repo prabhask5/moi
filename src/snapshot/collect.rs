@@ -144,10 +144,10 @@ pub fn walk_files(host: &dyn Host, root: &Path, walk: &Walk) -> Vec<PathBuf> {
                         stack.push((path, depth + 1));
                     }
                 }
-                Ok(FileKind::File | FileKind::Symlink) => {
-                    if !walk.skip_suffixes.iter().any(|s| name.ends_with(s.as_str())) {
-                        out.insert(path);
-                    }
+                Ok(FileKind::File | FileKind::Symlink)
+                    if !walk.skip_suffixes.iter().any(|s| name.ends_with(s.as_str())) =>
+                {
+                    out.insert(path);
                 }
                 _ => {}
             }

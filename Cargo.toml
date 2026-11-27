@@ -6,7 +6,6 @@ rust-version = "1.88"
 description = "moi — one binary that runs a Linux server: state capture, AI context, health checks, Uptime Kuma sync, backups and one-command rebuilds"
 license = "MIT"
 repository = "https://github.com/prabhask5/moi"
-homepage = "https://github.com/prabhask5/moi"
 readme = "README.md"
 keywords = ["server", "backup", "monitoring", "homelab", "uptime-kuma"]
 categories = ["command-line-utilities"]
