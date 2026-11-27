@@ -4,7 +4,7 @@
 mod common;
 
 use std::io::ErrorKind;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, UNIX_EPOCH};
 
 use cestmoi::host::{self, Cmd, FileKind, FixtureHost, Host, RealHost};
@@ -244,4 +244,49 @@ fn real_host_runs_commands_with_exit_code_output_stdin_and_timeout() {
     assert!(started.elapsed() < Duration::from_secs(5));
 
     assert_eq!(h.run(&Cmd::new("moi-no-such-program-xyz")).unwrap_err().kind(), ErrorKind::NotFound);
+}
+
+// ------------------------------------------------------------------ watching directories (inotify)
+
+#[test]
+fn a_fixture_watch_hears_what_the_test_says_changed() {
+    let h = common::minimal_rw("host-watch-fixture");
+    let mut watch = h.watch(&[PathBuf::from("/etc"), PathBuf::from("/opt/scripts")]).unwrap();
+    assert_eq!(h.watched(), [PathBuf::from("/etc"), PathBuf::from("/opt/scripts")]);
+    assert_eq!(h.file_changed(Path::new("/var/log/syslog")), 0, "nobody watches /var/log");
+    assert_eq!(h.file_changed(Path::new("/etc/hosts")), 1);
+    assert_eq!(watch.next().unwrap(), Path::new("/etc/hosts"));
+}
+
+/// The real thing, where the kernel has it: a confined host watching a scratch directory.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_real_watch_reports_created_written_renamed_and_deleted_files() {
+    let root = common::scratch("host-watch-real");
+    std::fs::create_dir_all(root.join("etc/sub")).unwrap();
+    let h = RealHost::with_root(&root);
+    let mut watch = h.watch(&[PathBuf::from("/etc"), PathBuf::from("/missing")]).unwrap();
+    // an atomic write is a temp file renamed into place: the last event names the file itself
+    h.write(Path::new("/etc/hosts"), b"127.0.0.1 localhost\n", 0o644).unwrap();
+    let mut seen = Vec::new();
+    while seen.last().is_none_or(|p: &PathBuf| p != Path::new("/etc/hosts")) {
+        seen.push(watch.next().unwrap());
+    }
+    assert!(seen.iter().all(|p| p.starts_with("/etc")), "paths are the host's, not this machine's: {seen:?}");
+    h.remove_file(Path::new("/etc/hosts")).unwrap();
+    assert_eq!(watch.next().unwrap(), Path::new("/etc/hosts"));
+    // subdirectories are not watched until added
+    std::fs::write(root.join("etc/sub/inner"), "x").unwrap();
+    std::fs::write(root.join("etc/marker"), "x").unwrap();
+    let mut next = watch.next().unwrap();
+    while next != Path::new("/etc/marker") {
+        assert!(!next.starts_with("/etc/sub/"), "{next:?}");
+        next = watch.next().unwrap();
+    }
+    watch.add(Path::new("/etc/sub")).unwrap();
+    std::fs::write(root.join("etc/sub/later"), "x").unwrap();
+    let mut next = watch.next().unwrap();
+    while next != Path::new("/etc/sub/later") {
+        next = watch.next().unwrap();
+    }
 }

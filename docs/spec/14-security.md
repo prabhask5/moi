@@ -29,6 +29,6 @@ Each dependency and why (keep this list current when adding one):
 | rusqlite (bundled SQLite) | `moi.db`; later read-only `kuma.db` and SQLite online backups. Bundled so behaviour does not depend on the distro's SQLite |
 | gix (`sha1`, `revision` features only) | state history without a git binary: object writing, commits, revision parsing and walking. No network, worktree, index-status or blob-diff features; tree comparison and the line diff are moi's own |
 | (planned) zbus | systemd over D-Bus |
-| (planned) notify | inotify watcher |
+| *(none)* for file watching | Decided in M6: inotify through `rustix` (`fs::inotify`, already a dependency, no `unsafe`), one watch per directory, instead of the `notify` crate and its cross-platform backends moi has no use for |
 | *(none)* for Uptime Kuma's API | Decided in M5: a socket.io v4 client over Engine.IO long-polling on moi's own HTTP client (`monitors::socket`) |
 | (planned) flate2 / zstd, tar | dumps and local archives |

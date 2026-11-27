@@ -5,7 +5,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::config::{Action, HealRule};
+use crate::config::{Action, HealCheck, HealRule};
 use crate::docker::Docker;
 use crate::host::{self, Cmd, Host};
 use crate::log::Logger;
@@ -122,8 +122,48 @@ impl Healer {
                 }
                 Ok(out.stdout_str().into_owned())
             }
-            Action::ComposeUp { .. } => Err("compose_up actions are run by the daemon".to_string()),
+            Action::ComposeUp { compose_up: dir } => {
+                // Compose has no API of its own: the `docker compose` plugin is the interface
+                let cmd = Cmd::new("docker")
+                    .args(["compose", "--project-directory", dir.as_str(), "up", "-d"])
+                    .timeout(RUN_TIMEOUT);
+                let out = self.host.run(&cmd).map_err(|e| format!("cannot run docker compose: {e}"))?;
+                if out.timed_out || out.status != 0 {
+                    let said = out.stderr_str();
+                    return Err(format!(
+                        "docker compose up in {dir} failed: {}",
+                        said.lines().last().unwrap_or("no output").trim()
+                    ));
+                }
+                Ok(String::new())
+            }
         }
+    }
+
+    /// Whether a rule's precondition says it must act: the container is not on the network (or gone).
+    /// A rule without a precondition always must.
+    pub fn needed(&self, rule: &HealRule) -> bool {
+        match &rule.check {
+            Some(HealCheck::ContainerOnNetwork(want)) => {
+                on_network(&self.docker, &want.container, Some(&want.network)).is_none()
+            }
+            None => true,
+        }
+    }
+
+    /// A rule fired outside a services run (a Docker event, a changed file): act, and keep the report
+    /// for the next services message.
+    pub fn fire_and_queue(&self, rule: &HealRule, why: &str) -> Option<String> {
+        let report = self.fire(rule, why)?;
+        if let Ok(db) = self.state.open_db(self.host.as_ref()) {
+            let mut waiting = pending(&db);
+            waiting.push(report.clone());
+            let _ = db.conn().execute(
+                "INSERT INTO settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (PENDING, serde_json::to_string(&waiting).unwrap_or_default()),
+            );
+        }
+        Some(report)
     }
 
     /// Healthy by its own health check; a container without one is healthy when it runs.
@@ -133,5 +173,32 @@ impl Healer {
             Some(status) => status == "healthy",
             None => c["State"]["Running"].as_bool().unwrap_or(false),
         }
+    }
+}
+
+const PENDING: &str = "heal.pending_reports";
+
+/// Reports of rules that fired since the last services run.
+pub fn pending(db: &crate::state::db::Db) -> Vec<String> {
+    db.conn()
+        .query_row("SELECT value FROM settings WHERE key = ?1", [PENDING], |r| r.get::<_, String>(0))
+        .ok()
+        .and_then(|json| serde_json::from_str(&json).ok())
+        .unwrap_or_default()
+}
+
+/// Forget the waiting reports (they went into a services message).
+pub fn clear_pending(db: &crate::state::db::Db) {
+    let _ = db.conn().execute("DELETE FROM settings WHERE key = ?1", [PENDING]);
+}
+
+/// The address of a container on a network (any of its networks when none is named).
+pub fn on_network(docker: &Docker, container: &str, network: Option<&str>) -> Option<String> {
+    let inspected = docker.container(container).ok()?;
+    let networks = inspected["NetworkSettings"]["Networks"].as_object()?;
+    let ip = |n: &serde_json::Value| n["IPAddress"].as_str().filter(|ip| !ip.is_empty()).map(str::to_string);
+    match network {
+        Some(name) => networks.get(name).and_then(ip),
+        None => networks.values().find_map(ip),
     }
 }

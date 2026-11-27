@@ -160,6 +160,16 @@ pub trait Conn: io::Read + io::Write + Send + fmt::Debug {
     }
 }
 
+/// A watch on directories: tells which path in one of them changed (inotify).
+pub trait Watch: Send + fmt::Debug {
+    /// Also watch this directory (one that appeared inside a watched one).
+    fn add(&mut self, dir: &Path) -> io::Result<()>;
+
+    /// Wait for the next change and return the path it happened to. A file being created, written,
+    /// renamed in or out, deleted or re-attributed counts; reading does not.
+    fn next(&mut self) -> io::Result<PathBuf>;
+}
+
 /// A listening unix socket (the daemon's `/run/moi.sock`).
 pub trait Listener: Send + fmt::Debug {
     /// Wait for the next connection.
@@ -225,6 +235,10 @@ pub trait Host: fmt::Debug + Send + Sync {
 
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
+
+    /// Watch directories (not their subdirectories) for changes. Directories that do not exist are
+    /// skipped. `Unsupported` where the kernel has no inotify.
+    fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn Watch>>;
 
     /// Listen on a unix stream socket at `path` with these permission bits, replacing a socket file a
     /// previous run left there.

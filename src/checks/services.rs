@@ -13,8 +13,8 @@ use std::time::Duration;
 
 use super::{Check, Cx, Memory, Mode, Outcome};
 use crate::config::{Config, EdgeCheck, ExecCheck, HealCheck, HttpCheck, When};
-use crate::docker::{Docker, ExecOptions, LogOptions};
-use crate::heal::Healer;
+use crate::docker::{ExecOptions, LogOptions};
+use crate::heal::{Healer, on_network as address};
 use crate::host::{self, Cmd, Host};
 use crate::net::{self, Client, Url};
 
@@ -76,17 +76,6 @@ fn status_ok(ok: &[String], code: &str) -> bool {
         Some(class) => code.len() == 3 && code.starts_with(class),
         None => want == code,
     })
-}
-
-/// The address of a container on a network (any of its networks when none is named).
-fn address(docker: &Docker, container: &str, network: Option<&str>) -> Option<String> {
-    let inspected = docker.container(container).ok()?;
-    let networks = inspected["NetworkSettings"]["Networks"].as_object()?;
-    let ip = |n: &serde_json::Value| n["IPAddress"].as_str().filter(|ip| !ip.is_empty()).map(str::to_string);
-    match network {
-        Some(name) => networks.get(name).and_then(ip),
-        None => networks.values().find_map(ip),
-    }
 }
 
 /// Why an app's HTTP check fails, if it does.
@@ -324,6 +313,16 @@ impl Check for Services {
             counted.push(format!("{} edge", edge.lan_hosts.len() + edge.public_urls.len()));
         }
         if self.part != Part::Edge {
+            // 4f. what rules that fired on their own since the last run have to report (the script ran
+            // its config guard here); a recorded run takes them, a manual one only shows them
+            if let Ok(db) = cx.state.open_db(cx.host.as_ref()) {
+                for report in crate::heal::pending(&db) {
+                    bad.report(Some(report));
+                }
+                if cx.mode == Mode::Record {
+                    crate::heal::clear_pending(&db);
+                }
+            }
             // 5. rules for named things failing (restart the VPN stack, …), in configured order
             for rule in &cx.config.heal {
                 if let When::Failing(names) = &rule.when

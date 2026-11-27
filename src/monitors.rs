@@ -521,3 +521,42 @@ pub fn push(
     }
     Err(format!("push failed: {last}"))
 }
+
+/// What the daemon does on its own when containers come and go (and nothing else): create the docker
+/// monitors of new containers, pause moi's monitors of containers that are gone. Returns what was done,
+/// or `None` when there was nothing to do or moi has no login.
+pub fn sync_containers(
+    host: &std::sync::Arc<dyn Host>,
+    config: &Config,
+    docker: &Docker,
+    state: &StateDir,
+    db: &Db,
+) -> Result<Option<apply::Report>, Error> {
+    let settings = &config.monitors.kuma;
+    if !settings.enabled || !settings.containers || settings.username.is_none() || settings.password.is_none() {
+        return Ok(None);
+    }
+    // Only once the owner has synced by hand, and never while migrating: the daemon keeps a set of
+    // monitors current, it does not introduce one.
+    if config.monitors.mode == MonitorMode::Shadow || bindings(db)?.is_empty() {
+        return Ok(None);
+    }
+    let own = |step: &Step| {
+        step.owner.as_deref().is_some_and(|o| o.starts_with("container:"))
+            && matches!(step.action, Action::Create | Action::Pause)
+    };
+    // look first without logging in: most changes on a server need no monitor change
+    if let Ok(local) = local_inventory(host.as_ref(), config, docker)
+        && !plan_for(host.as_ref(), config, docker, state, db, &local, Options::default())?.steps.iter().any(own)
+    {
+        return Ok(None);
+    }
+    let mut kuma = connect(host, config)?;
+    let live = kuma.inventory().map_err(Error::Monitors)?;
+    let mut plan = plan_for(host.as_ref(), config, docker, state, db, &live, Options::default())?;
+    plan.steps.retain(own);
+    if plan.steps.is_empty() {
+        return Ok(None);
+    }
+    apply::apply(host, config, docker, db, &mut kuma, &plan, &live).map(Some)
+}

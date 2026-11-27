@@ -15,6 +15,18 @@ pub(crate) fn run(core: &Arc<Core>, work: &Work) -> Outcome {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
         Work::Check(check) => self::check(core, check),
         Work::Daily => daily(core).map(|message| ("ok".to_string(), message)),
+        Work::Snapshot => snapshot(core).map(|message| ("ok".to_string(), message)),
+        Work::Heal(rule, why) => {
+            let healer = crate::heal::Healer {
+                host: Arc::clone(&core.host),
+                docker: crate::docker::Docker::new(Arc::clone(&core.host)),
+                state: core.state.clone(),
+                act: true,
+            };
+            // a rule with a precondition acts only when it does not hold (the proxy is still on its network: nothing to do)
+            let report = if healer.needed(rule) { healer.fire_and_queue(rule, why) } else { None };
+            Ok(("ok".to_string(), report.unwrap_or_else(|| "nothing to do".to_string())))
+        }
     }));
     let (status, message) = match result {
         Ok(Ok(done)) => done,
@@ -119,4 +131,29 @@ fn daily(core: &Arc<Core>) -> Result<String, Error> {
     };
     let _ = monitors::push(host, &core.config, &db, "freshness:snapshot", status, &message);
     done
+}
+
+/// The snapshot after a change, and the container monitors that follow from it.
+fn snapshot(core: &Arc<Core>) -> Result<String, Error> {
+    let host = &core.host;
+    let db = core.state.open_db(host.as_ref())?;
+    let (report, commit) = crate::snapshot::capture(host, &core.config, &core.state, &db, &core.masker)?;
+    let mut message = match &commit {
+        Some(entry) => format!("{} files changed: {}", report.changed.len(), entry.subject),
+        None => "nothing changed".to_string(),
+    };
+    let docker = crate::docker::Docker::new(Arc::clone(host));
+    match monitors::sync_containers(host, &core.config, &docker, &core.state, &db) {
+        Ok(Some(synced)) => {
+            let log = Logger::new(Arc::clone(host), "moi").with_masker(core.masker.clone());
+            log.info(&format!("container monitors: {}", synced.summary()), &[("job", "snapshot")]);
+            for failure in &synced.failed {
+                log.warn(&format!("container monitor {}: {}", failure.monitor, failure.error), &[("job", "snapshot")]);
+            }
+            message.push_str(&format!("; monitors: {}", synced.summary()));
+        }
+        Ok(None) => {}
+        Err(e) => message.push_str(&format!("; monitors not synced: {e}")),
+    }
+    Ok(message)
 }

@@ -65,6 +65,8 @@ struct State {
     owners: BTreeMap<PathBuf, (u32, u32)>,
     /// Fixture directories whose mode a test changed (their overlay shadow carries the mode).
     chmodded: BTreeSet<PathBuf>,
+    /// Watches handed out: the directories each covers, and where its events go.
+    watchers: Vec<(Vec<PathBuf>, std::sync::mpsc::Sender<PathBuf>)>,
     /// What was sent to the service manager (`READY=1`, …).
     notified: Vec<String>,
     /// How many random bytes were handed out (the fixture's "randomness" is a fixed sequence).
@@ -119,6 +121,22 @@ impl Conn for HandlerConn {
     }
 }
 
+/// A watch whose events the test sends.
+#[derive(Debug)]
+struct FixtureWatch {
+    rx: std::sync::mpsc::Receiver<PathBuf>,
+}
+
+impl super::Watch for FixtureWatch {
+    fn add(&mut self, _dir: &Path) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn next(&mut self) -> io::Result<PathBuf> {
+        self.rx.recv().map_err(|_| io::Error::new(io::ErrorKind::BrokenPipe, "the fixture host is gone"))
+    }
+}
+
 /// The fixed "now" of a fixture or case directory, if it has a `clock` file.
 fn read_clock(dir: &Path) -> io::Result<Option<SystemTime>> {
     match fs::read_to_string(dir.join("clock")) {
@@ -162,6 +180,7 @@ impl FixtureHost {
                 journal: Vec::new(),
                 owners: BTreeMap::new(),
                 chmodded: BTreeSet::new(),
+                watchers: Vec::new(),
                 notified: Vec::new(),
                 random_counter: 0,
             }),
@@ -307,6 +326,27 @@ impl FixtureHost {
     pub fn advance(&self, by: Duration) {
         let mut state = self.state();
         state.now += by;
+    }
+
+    /// Tell every watch that covers this path's directory that the path changed (the fixture's inotify).
+    /// Returns how many watches heard it.
+    pub fn file_changed(&self, path: &Path) -> usize {
+        let parent = path.parent().unwrap_or(Path::new("/"));
+        let state = self.state();
+        state
+            .watchers
+            .iter()
+            .filter(|(dirs, _)| dirs.iter().any(|d| d == parent))
+            .filter(|(_, tx)| tx.send(path.to_path_buf()).is_ok())
+            .count()
+    }
+
+    /// Every directory some watch covers.
+    pub fn watched(&self) -> Vec<PathBuf> {
+        let mut dirs: Vec<PathBuf> = self.state().watchers.iter().flat_map(|(dirs, _)| dirs.clone()).collect();
+        dirs.sort();
+        dirs.dedup();
+        dirs
     }
 
     /// Everything sent to the service manager so far.
@@ -629,6 +669,13 @@ impl Host for FixtureHost {
             return Err(io::Error::new(io::ErrorKind::NotFound, format!("no such socket: {}", path.display())));
         }
         Ok(Box::new(FakeConn::new(dirs, Arc::clone(&self.docker))))
+    }
+
+    fn watch(&self, dirs: &[PathBuf]) -> io::Result<Box<dyn super::Watch>> {
+        // fed by the test: `file_changed`
+        let (tx, rx) = std::sync::mpsc::channel();
+        self.state().watchers.push((dirs.to_vec(), tx));
+        Ok(Box::new(FixtureWatch { rx }))
     }
 
     fn listen_unix(&self, path: &Path, mode: u32) -> io::Result<Box<dyn super::Listener>> {
