@@ -24,6 +24,7 @@ path = "src/lib.rs"
 clap = { version = "4", features = ["derive", "env", "wrap_help"] }
 md-5 = "0.10"
 gix = { version = "0.90", default-features = false, features = ["sha1", "revision"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 rusqlite = { version = "0.43", features = ["bundled"] }
 sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }

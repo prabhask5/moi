@@ -79,10 +79,21 @@ moi context share --list       # active shares and their expiry
 - Cost: one PutObject per share (+ reads when opened); free-tier R2 handles thousands of shares a month. These operations are counted by the backup R2 guard like any other.
 - `notify = true`: a share pushes an informational message (`context shared, expires HH:MM`) so an unexpected share is noticed.
 
+### Decisions (M3)
+
+- Requests are path-style (`<endpoint>/<bucket>/<key>`) and signed with SigV4; the signing region is `context.share.region` (default `auto`, what R2 expects). The signer is checked against the examples in the AWS documentation.
+- The object key is `ctx/<32 hex digits>.md` from 16 bytes of the system's random source.
+- What moi shared is recorded in `moi.db` (`context_shares`). Expired copies are deleted at the start of every `share` and `--list` (and by the daemon once it exists, M6). `--revoke` does not trust the record: it lists `ctx/` in the bucket and deletes every object there, so links made from a lost state dir die too; nothing outside `ctx/` is touched.
+- The lifecycle rule (`moi-ctx-expire`: delete `ctx/` after 1 day) is added on the first share and remembered. A bucket that already has lifecycle rules keeps them untouched (setting a lifecycle configuration replaces the whole set) and moi says so; failing to set the rule is a warning, not an error — moi deletes expired copies itself.
+- `--ttl` is a duration (`30m`, `2h`); above `max_ttl` it is refused, and S3's own limit of 7 days applies. `--revoke` and `--list` take no `--ttl`.
+- Output: the URL on the first line, then `expires <time> UTC (in <ttl>)`. `--json`: `{ "ok": true, "share": { url, key, expires, ttl, lifecycle } }`, `{ "ok": true, "shares": [{key, created, expires}] }`, `{ "ok": true, "revoked": N }`.
+- `notify`: every share and revoke is written to the journal at notice level (`MOI_KEY=<object key>`). The push to the freshness monitor is added with the monitors (M5); R2 operation counting with the R2 guard (M7).
+- HTTPS uses the system's CA bundle read through the host (`/etc/ssl/certs/ca-certificates.crt` and the usual alternatives); no certificates are compiled in. Redirects are not followed.
+
 ## Acceptance
 
 - [x] Golden test: fixture `cestmoi` → `tests/fixtures/expected/cestmoi/CONTEXT.md`.
 - [x] No fixture secret leaks (env, URLs, push tokens, hc-ping key, API keys in scripts).
 - [x] Notes stubs appended once; owner text preserved byte for byte across 100 regenerations.
 - [x] Generation < 200 ms on the fixture (`context_ms` in `scripts/budgets.sh`).
-- [ ] `context share`: presigned URL verified against a local S3-compatible server in the integration job (MinIO); TTL above `max_ttl` refused; `--revoke` deletes every `ctx/` object; nothing but CONTEXT.md is uploaded; no secret appears in the uploaded file.
+- [x] `context share`: presigned URL verified against a local S3-compatible server in the integration job (Scality CloudServer; MinIO no longer publishes images); TTL above `max_ttl` refused; `--revoke` deletes every `ctx/` object; nothing but CONTEXT.md is uploaded; no secret appears in the uploaded file.

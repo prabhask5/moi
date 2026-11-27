@@ -34,13 +34,13 @@ Specs: 02
 - [x] Fixture host `cestmoi` built from the prototype's real output (redacted); golden snapshot test
 - [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
-## M3 — Context, notes, audit
+## M3 — Context, notes, audit ✅
 Specs: 03, 04
 - [x] CONTEXT.md generator with redaction; golden test; no-secret-leak test
 - [x] NOTES.md stubs + `moi notes`; Claude Code pointer block
-- [ ] `moi context share` (expiring presigned links from a private R2 bucket, `--revoke`, `--list`, lifecycle safety net)
+- [x] `moi context share` (expiring presigned links from a private R2 bucket, `--revoke`, `--list`, lifecycle safety net)
 - [x] Audit incl. reboot survival, coverage with fungible paths, restorability, placement (disk-audit parity), monitoring integrity
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M4 — Checks with exact legacy parity
 Specs: 05

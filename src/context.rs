@@ -8,6 +8,7 @@
 mod docker;
 mod pointer;
 mod sections;
+pub mod share;
 
 use std::collections::BTreeSet;
 use std::path::Path;

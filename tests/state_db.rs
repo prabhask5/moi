@@ -61,10 +61,12 @@ fn a_new_database_gets_the_current_schema() {
         [
             "check_results",
             "check_values",
+            "context_shares",
             "heal_cooldowns",
             "monitor_bindings",
             "schedule_runs",
             "schema_history",
+            "settings",
             "snapshot_files",
             "sustained"
         ]

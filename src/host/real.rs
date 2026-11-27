@@ -4,6 +4,7 @@
 
 use std::fs;
 use std::io::{self, Read, Write};
+use std::net::{TcpStream, ToSocketAddrs};
 use std::os::unix::net::UnixStream;
 use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
@@ -182,6 +183,26 @@ impl Host for RealHost {
         Ok(Box::new(UnixStream::connect(path)?))
     }
 
+    fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>> {
+        if !self.is_system() {
+            return Err(self.refuse(&format!("connect to {host}:{port}")));
+        }
+        let mut last = io::Error::new(io::ErrorKind::NotFound, format!("{host} does not resolve"));
+        for address in (host, port).to_socket_addrs()? {
+            match TcpStream::connect_timeout(&address, timeout) {
+                Ok(stream) => return Ok(Box::new(stream)),
+                Err(e) => last = e,
+            }
+        }
+        Err(last)
+    }
+
+    fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>> {
+        let mut buf = vec![0u8; count];
+        fs::File::open("/dev/urandom")?.read_exact(&mut buf)?;
+        Ok(buf)
+    }
+
     fn now(&self) -> SystemTime {
         SystemTime::now()
     }
@@ -197,6 +218,13 @@ impl Host for RealHost {
         let socket = std::os::unix::net::UnixDatagram::unbound()?;
         socket.send_to(&crate::log::encode_journal(fields), JOURNAL_SOCKET)?;
         Ok(())
+    }
+}
+
+impl Conn for TcpStream {
+    fn set_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
+        self.set_read_timeout(timeout)?;
+        self.set_write_timeout(timeout)
     }
 }
 

@@ -29,6 +29,9 @@ pub enum Error {
     #[error("{0}")]
     Usage(String),
 
+    #[error("context share: {0}")]
+    Share(String),
+
     #[error("history: {0}")]
     History(String),
 
@@ -58,6 +61,7 @@ impl Error {
             | Error::Db(_)
             | Error::History(_)
             | Error::Usage(_)
+            | Error::Share(_)
             | Error::Host { .. }
             | Error::Io(_) => 2,
         }
@@ -72,6 +76,7 @@ impl Error {
             Error::Db(_) | Error::History(_) => "state",
             Error::Docker(_) => "docker",
             Error::Usage(_) => "usage",
+            Error::Share(_) => "share",
             Error::Host { .. } | Error::Io(_) => "io",
         }
     }

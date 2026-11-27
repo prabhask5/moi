@@ -19,7 +19,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-pub use fixture::FixtureHost;
+pub use fixture::{FixtureHost, HttpHandler};
 pub use real::RealHost;
 pub use time::{format_rfc3339, parse_rfc3339, unix_seconds};
 
@@ -200,6 +200,13 @@ pub trait Host: fmt::Debug + Send + Sync {
 
     /// Connect to a unix stream socket (Docker's `/var/run/docker.sock`).
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>>;
+
+    /// Connect to a TCP port (outbound HTTP: Uptime Kuma, the share bucket, probes). `timeout` bounds
+    /// the connection attempt.
+    fn connect_tcp(&self, host: &str, port: u16, timeout: Duration) -> io::Result<Box<dyn Conn>>;
+
+    /// Bytes from the system's random source (object keys of shared links).
+    fn random_bytes(&self, count: usize) -> io::Result<Vec<u8>>;
 
     fn now(&self) -> SystemTime;
 

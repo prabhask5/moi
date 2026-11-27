@@ -60,11 +60,12 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `daemon` | tokio runtime: scheduler, watchers (docker events, inotify), heal executor, boot tasks, firewall apply, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |
 | `log` | Structured journal entries under systemd (native protocol via `Host`), stderr lines otherwise; masks known secrets |
+| `net` | Outbound HTTP(S): a blocking HTTP/1.1 client over connections from `Host`, TLS by rustls with the system CA bundle |
 | `redact` | One place for secret detection and masking (env keys, URLs with credentials, tokens, hc-ping keys) |
 
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
-- Async (tokio) only where it pays: daemon, outbound HTTP, Kuma. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
+- Async (tokio) only where it pays: the daemon and Kuma's socket.io. Plain outbound HTTP (`net`) is blocking. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
 - External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `iptables-save/restore` / `nft`, `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.

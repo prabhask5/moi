@@ -17,6 +17,7 @@ How `FixtureHost` behaves:
 
 - **Files** are read from `root/`; absolute symlinks and `..` resolve inside it. The fixture is read-only: a test that writes gives the host an overlay directory (`with_overlay`, under `CARGO_TARGET_TMPDIR`) that shadows `root/`.
 - **Commands** never run. The key of a command line (program and arguments joined by single spaces) is its 64-bit FNV-1a hash in hex, `FixtureHost::command_key`. Running a command with no canned output fails with the exact file name to add, so the easy way to add one is to run the test once. Put the command line in `<key>.cmd` so the directory stays readable. Tests can also can outputs in memory (`add_command`).
+- **Network**: none. `connect_tcp` is refused unless a test installs a handler (`set_http`) that answers raw HTTP requests itself. **Randomness** is a fixed sequence.
 - **Clock** is fixed and moves only with `advance`/`set_now`. **Environment** is empty unless set. **Journal** entries are collected in memory.
 
 The fake Docker engine (`docker/`, absent = no Docker on this host):
