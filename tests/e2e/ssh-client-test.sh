@@ -55,10 +55,11 @@ sudo moi config check > /dev/null
 MOI_IT=1 MOI_IT_SSH_HOST=$name cargo test --test ssh_it -- --ignored --nocapture
 
 # ---- a computer: another user with a home of its own and a key, as the script would make one
-sudo useradd -m -s /bin/bash laptop
-sudo -u laptop -H ssh-keygen -q -t ed25519 -N '' -f /home/laptop/.ssh/id_ed25519
+# (not under /home: the CI runner's default ACLs there make every new file group-readable, which
+# OpenSSH refuses for a private key)
+sudo useradd -m -d /srv/laptop -s /bin/bash laptop
+sudo -u laptop -H ssh-keygen -q -t ed25519 -N '' -f /srv/laptop/.ssh/id_ed25519
 
-sudo ls -la /home/laptop/.ssh
 sudo moi ssh connect | tee "$work/connect.txt"
 # the command is everything up to the first empty line
 sed '/^$/q' "$work/connect.txt" > "$work/command.sh"
@@ -71,17 +72,15 @@ if sudo -u laptop -H sh "$work/command.sh" > "$work/first.txt" 2>&1; then
   cat "$work/first.txt"; echo "the setup succeeded before the key was authorized" >&2; exit 1
 fi
 cat "$work/first.txt"
-sudo ls -la /home/laptop/.ssh
 grep -q "not authorized on $name yet" "$work/first.txt"
 grep -q "On the server, run: sudo moi ssh authorize" "$work/first.txt"
-grep -q "$(sudo cut -d' ' -f2 /home/laptop/.ssh/id_ed25519.pub)" "$work/first.txt"
+grep -q "$(sudo cut -d' ' -f2 /srv/laptop/.ssh/id_ed25519.pub)" "$work/first.txt"
 
 # on the server: allow it, with the line the script showed
-sudo SUDO_USER="$me" moi ssh authorize "$(sudo cat /home/laptop/.ssh/id_ed25519.pub)" --name e2e-laptop
+sudo SUDO_USER="$me" moi ssh authorize "$(sudo cat /srv/laptop/.ssh/id_ed25519.pub)" --name e2e-laptop
 grep -q "e2e-laptop" "$HOME/.ssh/authorized_keys"
 test "$(stat -c '%a %U' "$HOME/.ssh/authorized_keys")" = "600 $me"
 
-sudo ls -la /home/laptop/.ssh
 # again: everything is in place, and the test connection of the script goes through
 sudo -u laptop -H sh "$work/command.sh" | tee "$work/second.txt"
 grep -q "Done. Connect with: ssh e2e" "$work/second.txt"
@@ -89,11 +88,11 @@ grep -q "Done. Connect with: ssh e2e" "$work/second.txt"
 # the real client, through devbox-ssh, the WebSocket and sshd — with the host key moi printed pinned
 test "$(sudo -u laptop -H ssh -o BatchMode=yes e2e 'echo through-the-tunnel; id -un')" = "through-the-tunnel
 $me"
-sudo -u laptop -H grep -q "StrictHostKeyChecking yes" /home/laptop/.ssh/config.d/e2e
+sudo -u laptop -H grep -q "StrictHostKeyChecking yes" /srv/laptop/.ssh/config.d/e2e
 # a file both ways
 head -c 3000000 /dev/urandom > "$work/blob"
-sudo -u laptop -H scp -q -o BatchMode=yes "e2e:$work/blob" /home/laptop/blob
-sudo cmp "$work/blob" /home/laptop/blob
+sudo -u laptop -H scp -q -o BatchMode=yes "e2e:$work/blob" /srv/laptop/blob
+sudo cmp "$work/blob" /srv/laptop/blob
 
 # moi's view of it
 sudo SUDO_USER="$me" moi ssh status | tee "$work/status.txt"
