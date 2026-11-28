@@ -58,6 +58,7 @@ MOI_IT=1 MOI_IT_SSH_HOST=$name cargo test --test ssh_it -- --ignored --nocapture
 sudo useradd -m -s /bin/bash laptop
 sudo -u laptop -H ssh-keygen -q -t ed25519 -N '' -f /home/laptop/.ssh/id_ed25519
 
+sudo ls -la /home/laptop/.ssh
 sudo moi ssh connect | tee "$work/connect.txt"
 # the command is everything up to the first empty line
 sed '/^$/q' "$work/connect.txt" > "$work/command.sh"
@@ -70,6 +71,7 @@ if sudo -u laptop -H sh "$work/command.sh" > "$work/first.txt" 2>&1; then
   cat "$work/first.txt"; echo "the setup succeeded before the key was authorized" >&2; exit 1
 fi
 cat "$work/first.txt"
+sudo ls -la /home/laptop/.ssh
 grep -q "not authorized on $name yet" "$work/first.txt"
 grep -q "On the server, run: sudo moi ssh authorize" "$work/first.txt"
 grep -q "$(sudo cut -d' ' -f2 /home/laptop/.ssh/id_ed25519.pub)" "$work/first.txt"
@@ -79,6 +81,7 @@ sudo SUDO_USER="$me" moi ssh authorize "$(sudo cat /home/laptop/.ssh/id_ed25519.
 grep -q "e2e-laptop" "$HOME/.ssh/authorized_keys"
 test "$(stat -c '%a %U' "$HOME/.ssh/authorized_keys")" = "600 $me"
 
+sudo ls -la /home/laptop/.ssh
 # again: everything is in place, and the test connection of the script goes through
 sudo -u laptop -H sh "$work/command.sh" | tee "$work/second.txt"
 grep -q "Done. Connect with: ssh e2e" "$work/second.txt"
