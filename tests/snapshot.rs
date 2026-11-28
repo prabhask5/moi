@@ -1027,3 +1027,18 @@ fn golden_snapshot_of_the_cestmoi_fixture() {
     golden.sort();
     assert_eq!(golden, actual, "the set of snapshot files differs from the golden tree");
 }
+
+#[test]
+fn the_raw_files_of_a_database_are_never_captured_whatever_its_directory_is_called() {
+    // bookorbit-db keeps /var/lib/mysql in a directory of its stack that no prune name matches
+    let s = server("snap-raw-database");
+    s.host.create_dir_all(Path::new("/opt/yams/config/bookorbit-db/mysql"), 0o755).unwrap();
+    s.write("/opt/yams/config/bookorbit-db/mariadb_upgrade_info", "11.8.2-MariaDB\n");
+    s.write("/opt/yams/config/bookorbit-db/mysql/db.opt", "default-character-set=utf8mb4\n");
+    // … next to a file of the stack that is configuration
+    s.write("/opt/yams/config/notes.conf", "kept = true\n");
+    s.snapshot();
+    assert!(s.has("snapshot/files/opt/yams/config/notes.conf"));
+    assert!(!s.has("snapshot/files/opt/yams/config/bookorbit-db"));
+    assert_eq!(s.manifest_line("/opt/yams/config/bookorbit-db/mariadb_upgrade_info"), None);
+}

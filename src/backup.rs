@@ -113,7 +113,7 @@ pub(crate) fn database_engine(image: &str, env: &Value) -> Option<&'static str> 
     }
 }
 
-fn database_dir(destination: &str) -> bool {
+pub(crate) fn database_dir(destination: &str) -> bool {
     ["/var/lib/postgresql", "/var/lib/mysql", "/var/lib/mariadb"].iter().any(|d| under(destination, d))
 }
 
