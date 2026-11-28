@@ -18,6 +18,7 @@ moi keeps Uptime Kuma in sync with what runs on the server. **Pillar 2 governs e
 | backup | `checks.backup.monitor` | push | interval = 25 h (90000 s) |
 | freshness (`freshness = true`) | `<server>: snapshot` | push | pushed after each daily snapshot+audit; interval 26 h; message `snapshot OK, N changes today` |
 | boot verify (`boot.verify_monitor`) | configured name | push | pushed once per boot; interval 0 (no heartbeat expectation) → use `upside_down=false`, long interval 30 d |
+| ssh check (`ssh.monitor`, 16) | default `SSH tunnel` | push | interval = check interval + 20 %, retries 1 |
 | devbox (`devbox.monitor`, 15) | default `Devbox` | http | URL `https://<code host>/__devbox/health`, interval 60 s, retries 2; asleep is healthy |
 | containers (`containers = true`) | `<server>: <container>` | docker | one per non-swarm container with a restart policy; docker host = `monitors.kuma.docker_host` (created as socket `/var/run/docker.sock` if missing and the Kuma container mounts the socket); interval 60 s |
 

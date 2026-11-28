@@ -117,7 +117,7 @@ Specs: 13, 14
 - [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M13 — Public release readiness (v1.0.0)
-Specs: all; this milestone removes every development artifact
+Specs: all; this milestone removes every development artifact. Its last boxes (release `v1.0.0`) wait for M11 and M14.
 - [x] `reference/` deleted: legacy script semantics fully captured in `tests/parity/` (inputs + expected messages) and spec 05; prototype behaviour captured in specs and tests; all links to `reference/` updated (git history keeps the originals)
 - [ ] No scaffolding: `Error::NotImplemented` and exit code 3 removed from code, docs and tests; no `TODO(M…)` left; `scripts/check-hygiene.sh --release` green (and made the default in CI)
 - [ ] Dead code and unused deps removed (`cargo machete`, `cargo +nightly udeps` if available); minimal crate features; `cargo deny` clean; MSRV verified
@@ -127,3 +127,15 @@ Specs: all; this milestone removes every development artifact
 - [ ] Repo settings: description, topics, website, branch protection on `required`, Dependabot (cargo + actions), Actions pinned by SHA
 - [ ] Release `v1.0.0` through `release.yml`; installer and deb/rpm verified on clean Ubuntu, Debian and Fedora VMs; crates.io `cestmoi` and Homebrew tap published
 - [ ] cestmoi fully on moi: `moi migrate finish` done, serverstate uninstalled, legacy scripts/cron/units gone
+
+## M14 — SSH from anywhere
+Specs: 16 (and the `ssh` rows in 01, 02, 03, 05, 06, 09, 14). Can start now; it doesn't depend on M11. The printed client command uses devbox's `ssh-v0.1.0` release (devbox M10). Until that release exists, the golden test uses the pinned tag, and only the last box waits.
+- [ ] `[ssh]` config + validation + `moi init` detection of a cloudflared container/service; `src/ssh/` with the `ssh::Provider` trait and providers `cloudflare` and `none`
+- [ ] Fake Cloudflare API (`tests/fakes/cloudflare`); tunnel discovery (container env/args, unit token, local `config.yml`, secret); permission check naming what is missing
+- [ ] `moi ssh up` plan/confirm/apply: connector as a host service (apt repo with pinned key, `cloudflared service install`, metrics drop-in, `/ready` wait), container connector retired (orchestrated ones reported, never stopped), ingress merge by hostname, DNS adopt/create/refuse, sshd read-only checks, public WebSocket handshake verify; archive + `down` byte-identical restore; cestmoi fixture plan golden
+- [ ] Safety over the tunnel: rollback timer armed first, apply in a transient unit, `moi ssh confirm` from a new connection, restore on no confirm, nothing changed if the timer can't be scheduled
+- [ ] `moi ssh connect` (golden), `moi ssh authorize`, `moi ssh status [--json]`
+- [ ] `ssh` check + messages (golden), monitor row, snapshot collector, context "SSH access" block with the devbox path and rescue line, audit Attention for sshd password/root login, restore phase `ssh`
+- [ ] README command row out of "planned", spec 14 updated
+- [ ] Once devbox `ssh-v0.1.0` is published: CI runs the printed command against a fake HOME and a fake tunnel origin and connects with the real OpenSSH client
+- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
