@@ -54,7 +54,7 @@ timezone = "America/New_York"    # default: system timezone (informational)
 
 [state]
 dir = "/var/lib/moi"             # state root (state/, moi.db, archive/)
-history_keep = "365d"            # prune git history older than this (squash), default keep all — accepted, not applied before M11
+history_keep = "365d"            # fold history older than this into one commit (after the daily snapshot); default: keep all
 
 # ---------------------------------------------------------------- capture (02-snapshot)
 [capture]
