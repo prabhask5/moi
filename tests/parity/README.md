@@ -10,7 +10,7 @@ parity/<check>/<case>/
   prev.json    # what the previous run left: {"values": {...}, "sustained": {condition: runs}, "heal": {rule: seconds ago}}
   expected     # two lines: status (up|down), then the exact message the legacy script would push
                # (the message may end in a space; only the file's final newline is not part of it)
-  README.md    # which branch of reference/cestmoi/scripts/<script> this covers
+  README.md    # which branch of tests/fixtures/hosts/cestmoi/root/opt/scripts/<script> this covers
 ```
 
 Rule: every branch (`if`/`case` arm that changes `bad`, `info` or the message) of `resource-check.sh`,

@@ -6,7 +6,7 @@ Context for agents and maintainers. This file, `docs/spec/` and the code are the
 
 **moi** is a single Rust binary that runs a Linux server's infrastructure: it watches everything on the machine, keeps a versioned record of the whole setup, writes an always-current description of the server for AI assistants, runs the health checks, keeps Uptime Kuma in sync, backs up what matters off-site, and rebuilds the whole server on new hardware with one command, proving afterwards that the rebuild survives a reboot.
 
-It replaces the pile of cron jobs, shell scripts and one-off systemd units that self-hosted servers accumulate. The first real user is a homelab called **cestmoi** (see `reference/cestmoi/`); every feature must work on *any* Linux server with systemd, configured only through `moi.toml`.
+It replaces the pile of cron jobs, shell scripts and one-off systemd units that self-hosted servers accumulate. The first real user is a homelab called **cestmoi** (its redacted shape is the fixture `tests/fixtures/hosts/cestmoi/`); every feature must work on *any* Linux server with systemd, configured only through `moi.toml`.
 
 Crate: `cestmoi` (crates.io). Binary: `moi`. License: MIT. Rust stable, edition 2024.
 
@@ -103,9 +103,9 @@ MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-sta
 
 - **Tests live in `tests/`** (CI fails on test files elsewhere; small `#[cfg(test)]` unit tests inside modules are allowed for pure functions). Fixture hosts: `tests/fixtures/hosts/<name>/` (a fake root: `proc/`, `sys/`, `etc/`, `docker/` API responses, `commands/` canned outputs).
 - **`MOI_ROOT=<fixture dir>`** makes the binary use `FixtureHost` instead of the real machine: files from `<dir>/root`, canned commands, fixed clock, no journal, only `MOI_*` environment. It is read-only unless `MOI_ROOT_OVERLAY=<dir>` gives it somewhere to write. A `MOI_ROOT` that is not a fixture is an error, never a fallback to the real system.
-- **Parity tests**: `tests/parity/` holds inputs and the exact Kuma messages the legacy scripts in `reference/cestmoi/scripts/` produce; built-in checks must reproduce them byte for byte (see `docs/spec/05-checks.md`).
+- **Parity tests**: `tests/parity/` holds inputs and the exact Kuma messages the legacy scripts in `tests/fixtures/hosts/cestmoi/root/opt/scripts/` produce; built-in checks must reproduce them byte for byte (see `docs/spec/05-checks.md`).
 - **Integration tests that need services** (Uptime Kuma 1.23.17 and 2.x, Postgres, an S3 server, restic with a local repo) run in CI service containers and are `#[ignore]` locally unless `MOI_IT=1`.
-- Never run moi against the development machine's real system in tests. Never commit secrets: `reference/` is redacted; fixtures use fake tokens (`FAKE…`).
+- Never run moi against the development machine's real system in tests. Never commit secrets: the fixture server is redacted and fixtures use fake tokens (`FAKE…`).
 - Formatting `rustfmt` (config in `rustfmt.toml`), lints `clippy -D warnings` with the lint set in `Cargo.toml`, dependency policy `cargo deny` (`deny.toml`: permissive licenses only, no duplicate majors without reason, no git deps).
 - Keep dependencies few and justified; add a line to `docs/spec/14-security.md#dependencies` when adding one.
 

@@ -4,14 +4,14 @@
 #   scripts/check-hygiene.sh --release  release mode (M13 and every release): zero scaffolding allowed
 #
 # Normal mode allows TODOs only when tagged with the milestone or issue that removes them: TODO(M10), TODO(#12).
-# Release mode allows none, and also forbids the NotImplemented scaffolding and the reference/ directory.
+# Release mode allows none, and also forbids a reference/ directory coming back.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 release=0; [[ ${1:-} == --release ]] && release=1
 fail=0
 problem() { echo "✗ $*"; fail=1; }
 files=$(git ls-files)
-src=$(echo "$files" | grep -E '\.(rs|sh|py|toml|yml|yaml)$' | grep -v '^scripts/check-hygiene.sh$' | grep -v '^reference/' || true)   # reference/ is read-only input, removed in M12
+src=$(echo "$files" | grep -E '\.(rs|sh|py|toml|yml|yaml)$' | grep -v '^scripts/check-hygiene.sh$' | grep -v '^reference/' || true)
 
 # 1. debug and placeholder code
 hits=$(echo "$src" | grep '\.rs$' | xargs -r grep -nE '\b(dbg!|todo!|unimplemented!)\(' || true)

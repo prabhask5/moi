@@ -1,6 +1,6 @@
 # 07 — Backup
 
-`moi backup` (scheduled by the daemon) backs up the server's **identity and data** — configs, databases, app state, moi's own state — locally and off-site, and **never anything fungible**. It replaces `reference/cestmoi/scripts/backup.sh` + `offsite-backup.sh` and must be at least as safe: every guard in those scripts is kept.
+`moi backup` (scheduled by the daemon) backs up the server's **identity and data** — configs, databases, app state, moi's own state — locally and off-site, and **never anything fungible**. It replaces `tests/fixtures/hosts/cestmoi/root/opt/scripts/backup.sh` + `offsite-backup.sh` and must be at least as safe: every guard in those scripts is kept.
 
 ## What is backed up
 

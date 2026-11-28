@@ -1,6 +1,6 @@
 # 04 — Audit
 
-`moi audit` answers "what would I lose or forget?". It writes `state/audit.md`, feeds the ⚠ list in CONTEXT.md, and is run by the daemon daily (after the snapshot) and after `moi backup`. Read-only. Reference: `reference/serverstate/sshelper.py` (`audit`) and `reference/cestmoi/scripts/disk-audit.sh`.
+`moi audit` answers "what would I lose or forget?". It writes `state/audit.md`, feeds the ⚠ list in CONTEXT.md, and is run by the daemon daily (after the snapshot) and after `moi backup`. Read-only. It grew out of the serverstate prototype's audit and the legacy `disk-audit.sh` (kept in the fixture: `tests/fixtures/hosts/cestmoi/root/opt/scripts/disk-audit.sh`).
 
 Findings are `✗` (gap), `review` (decide), `✓` (verified OK, shown for reboot items so the owner sees *why* it is fine), or `fungible` (declared, shown once, never a gap).
 

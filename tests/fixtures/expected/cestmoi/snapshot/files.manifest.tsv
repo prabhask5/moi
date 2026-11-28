@@ -19,7 +19,7 @@
 644	root	root	/etc/machine-id	33	6ed6653dba3d6aee8110c6e23de37f15c609b8a6e29aa164d1acace604e5cb7e
 644	root	root	/etc/moi/firewall/rules4.txt	244	908904f2ccf0a9fd044d0e61860e0a45abd3684df94d796df68782c1b69db318
 644	root	root	/etc/moi/firewall/rules6.txt	42	828c18c9df2f18e1e2b77ee70bd750950873c0e8309e76ca61bbe3203200b787
-644	root	root	/etc/moi/moi.toml	8057	7ecfe0a9bde57161b96aef24b3583418c978731d22f42417cfc89e8ce17cd2fe
+644	root	root	/etc/moi/moi.toml	8077	fe239451c04e75e3de19191075773c22b4862e8476ac689b66c875603fa7b0c6
 600	root	root	/etc/moi/secrets.toml	643	06485da957caf8af688413357a5bb4bc6ecd91a564668801fa41080b9233f92d
 644	root	root	/etc/os-release	117	fed9a2e4a314d6a8f57e3df2dddcbaad4072aa6c541a111ae54cee88d32a4503
 644	root	root	/etc/passwd	353	84d866a60770d2a8977c512d840be3be5bb88152a8f6407cf6198b61e227d868

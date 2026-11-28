@@ -1,6 +1,6 @@
 # 02 — Snapshot & history
 
-`moi snapshot` captures the complete state of the server into `/var/lib/moi/state/` and commits the stable part to a local git history. The daemon snapshots after changes (10 § Watcher), daily, and before every backup. The working prototype is `reference/serverstate/` (bash + Python); moi keeps its layout and semantics, implemented natively and in parallel.
+`moi snapshot` captures the complete state of the server into `/var/lib/moi/state/` and commits the stable part to a local git history. The daemon snapshots after changes (10 § Watcher), daily, and before every backup. It grew out of a working prototype, serverstate (bash + Python); moi keeps its layout and semantics, implemented natively and in parallel.
 
 ## Layout
 
@@ -142,7 +142,7 @@ Incremental: keep a cache of `(path, size, mtime, inode) → sha256` in `moi.db`
 
 ## Acceptance
 
-- [x] Fixture host `cestmoi` → snapshot identical to `tests/fixtures/expected/cestmoi/snapshot/` (every generated file byte for byte; the verbatim copies under `files/` are pinned by the manifest's hashes). The fixture and its golden tree are built from the redacted profile and scripts in `reference/cestmoi/`, not from a dump of the machine: the first run on the real cestmoi should be diffed against the prototype's output there.
+- [x] Fixture host `cestmoi` → snapshot identical to `tests/fixtures/expected/cestmoi/snapshot/` (every generated file byte for byte; the verbatim copies under `files/` are pinned by the manifest's hashes). The fixture and its golden tree are built from a redacted profile of the server and its redacted legacy scripts, not from a dump of the machine: the first run on the real cestmoi should be diffed against the prototype's output there.
 - [x] Two snapshots with no change → one commit total.
 - [x] Changing a container's env, adding a cron line, editing a file in /etc, creating a swarm service → one commit each, subject/body as specified.
 - [x] Swarm task containers never appear in containers.json; `container:<id>` network modes are rewritten to names.

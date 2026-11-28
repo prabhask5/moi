@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails if anything that looks like a real secret is committed (reference/ and fixtures must stay redacted).
+# Fails if anything that looks like a real secret is committed (fixtures must stay redacted).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 files=$(git ls-files 2>/dev/null || find . -type f -not -path './target/*' -not -path './.git/*')

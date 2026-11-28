@@ -1,5 +1,5 @@
 # moi.toml for cestmoi — the first real deployment (redacted: domains -> example.com, all secrets are secret: refs).
-# It reproduces the legacy scripts in reference/cestmoi/scripts/ exactly (spec 05 parity) and replaces
+# It reproduces the legacy scripts in tests/fixtures/hosts/cestmoi/root/opt/scripts/ exactly (spec 05 parity) and replaces
 # every legacy cron job, script and helper unit (spec 11).
 
 [server]

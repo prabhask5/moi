@@ -2,7 +2,7 @@
 //! afterwards — and after every boot — that everything that should run does.
 //!
 //! Spec: docs/spec/09-restore-verify.md. The phases are a port of the prototype's `restore_*`
-//! functions (`reference/serverstate/serverstate`) and keep its safety rules: every phase asks first,
+//! functions (serverstate, the tool moi grew out of) and keep its safety rules: every phase asks first,
 //! every file that is overwritten is kept as `*.pre-moi`, an error is a warning and the next thing is
 //! tried, a disk is formatted only for someone who types `FORMAT /dev/…`, and a dry run prints every
 //! action without doing any.
