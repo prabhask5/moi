@@ -7,6 +7,8 @@ moi verify
 
 # the row came back through the dump
 test "$(docker exec app-db psql -At -U postgres -c 'SELECT v FROM e2e')" = "survives"
+# … and so did the MariaDB one, through its own dump and the client the image has
+test "$(docker exec app-maria mariadb -uroot -pfake-e2e-maria-password -N -e 'SELECT v FROM e2e.t')" = "survives too"
 # the stack, the swarm service, the unit, the person, the firewall
 test "$(curl -fsS http://127.0.0.1:8080/)" = "moi e2e"
 curl -fsS http://127.0.0.1:8081/ | grep -q Hostname

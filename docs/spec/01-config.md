@@ -291,7 +291,7 @@ expect_watchdog = true
 - `backup`: proposes `paths` from compose stack dirs and bind-mount sources that are not fungible-looking (media/downloads/movies/tv/music/torrents are proposed as `data.fungible`), detects an existing restic env file and repository and proposes adopting it (07 § Adoption).
 - Existing legacy setup (serverstate state dir, cron health scripts, backup units) is detected and reported with a pointer to `moi migrate plan`.
 
-Re-running `moi init` never overwrites an existing config; it prints a diff of suggested additions.
+Re-running `moi init` never overwrites an existing config; it prints a diff of suggested additions. A config that has no `moi.service` yet (written by hand, or brought back by a restore) gets the service installed and a first snapshot taken, unless `--observe` is given.
 
 ### Decisions (M6)
 

@@ -82,7 +82,8 @@ fn restore_dump(host: &dyn Host, docker: &Docker, job: &Dump, image: &str, dumps
         let ready = if postgres {
             format!("pg_isready -q -U {}", job.user)
         } else {
-            format!("mysqladmin ping --silent -uroot -p{password}")
+            // MariaDB's images no longer carry the `mysql*` names: whichever client the image has
+            format!("$(command -v mariadb-admin || command -v mysqladmin) ping --silent -uroot -p{password}")
         };
         let mut waited = 0;
         while !sh(&ready).is_ok_and(|out| out.success()) {
@@ -104,9 +105,11 @@ fn restore_dump(host: &dyn Host, docker: &Docker, job: &Dump, image: &str, dumps
             )
         } else {
             (
-                format!("gunzip -c {file} | mysql -uroot -p{password} >/dev/null 2>&1; true"),
                 format!(
-                    "mysql -uroot -p{password} -N -e \"SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('mysql','sys','information_schema','performance_schema')\""
+                    "gunzip -c {file} | $(command -v mariadb || command -v mysql) -uroot -p{password} >/dev/null 2>&1; true"
+                ),
+                format!(
+                    "$(command -v mariadb || command -v mysql) -uroot -p{password} -N -e \"SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('mysql','sys','information_schema','performance_schema')\""
                 ),
             )
         };

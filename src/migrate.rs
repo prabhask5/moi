@@ -203,7 +203,16 @@ pub fn plan(host: &dyn Host, config: &Config, state: &StateDir) -> Plan {
         let mut legacy = Vec::new();
         for unit in &units {
             let script = unit.script(host).unwrap_or_default();
-            let starts = |text: &str| text.contains("compose up") || text.contains("docker-compose up");
+            // `compose … up` on one line: options may stand between the two words
+            let starts = |text: &str| {
+                text.lines().any(|line| {
+                    let words: Vec<&str> = line.split_whitespace().collect();
+                    words
+                        .iter()
+                        .position(|w| *w == "compose" || w.ends_with("docker-compose"))
+                        .is_some_and(|at| words[at + 1..].contains(&"up"))
+                })
+            };
             if unit.exec.iter().any(|e| starts(e)) || (!script.is_empty() && starts(&read(&script))) {
                 legacy.extend(family(unit.stem()));
                 with_script(unit, &mut legacy);

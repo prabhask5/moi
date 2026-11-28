@@ -161,7 +161,7 @@ pub fn handshake(host: &Arc<dyn Host>, hostname: &str) -> Result<u64, crate::net
     let started = host.monotonic();
     let first = Client::new(Arc::clone(host))
         .with_timeout(Duration::from_secs(15))
-        .websocket_first_message(&format!("https://{hostname}/"))?;
+        .websocket_first_bytes(&format!("https://{hostname}/"), 8)?;
     if !first.starts_with(b"SSH-2.0-") {
         let shown: String = String::from_utf8_lossy(&first).chars().take(40).filter(|c| !c.is_control()).collect();
         return Err(crate::net::HandshakeError {

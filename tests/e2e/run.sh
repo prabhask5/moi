@@ -41,6 +41,8 @@ fi
 launch moi-e2e-old
 run_in moi-e2e-old old-server.sh
 sudo incus exec moi-e2e-old -- tar -C /srv -cf - repo > "$work/repo.tar"
+# with the backup safe: what only a real systemd, cron and kernel can show
+run_in moi-e2e-old old-extras.sh
 sudo incus delete --force moi-e2e-old
 
 # ---- the new one: only the repository and the binary
@@ -56,6 +58,9 @@ sudo incus exec moi-e2e-new -- systemctl is-system-running --wait || true
 # containers start, health checks settle, the daemon's own verification runs (boot.verify_after = 1m)
 sleep 120
 run_in moi-e2e-new verify-rebuilt.sh
+# on the rebuilt machine: `moi ssh up` against the real package repository and the real cloudflared
+sudo incus file push "$here/fake-cloudflare.py" moi-e2e-new/root/fake-cloudflare.py --mode 0755
+run_in moi-e2e-new ssh-up-test.sh
 
 sudo incus delete --force moi-e2e-new
 rm -rf "$work"

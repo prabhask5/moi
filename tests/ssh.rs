@@ -240,6 +240,19 @@ fn the_tunnel_is_found_in_a_container_a_unit_a_local_config_or_the_secrets() {
     );
     assert_eq!(find(&s, None).unwrap().source, Source::Unit(cf::UNIT.to_string()));
 
+    // … or, as cloudflared installs it since 2026.7.2, the file its --token-file names
+    for exec in ["--token-file /etc/cloudflared/token", "--token-file=/etc/cloudflared/token"] {
+        let s = fresh("ssh-discover-unit-file");
+        s.write(
+            cf::UNIT,
+            &format!("[Service]\nExecStart=/usr/bin/cloudflared --no-autoupdate tunnel run {exec}\n"),
+            0o644,
+        );
+        assert!(find(&s, None).is_err(), "no token file yet");
+        s.write("/etc/cloudflared/token", &format!("{}\n", cloudflare::tunnel_token()), 0o600);
+        assert_eq!(find(&s, None).unwrap().source, Source::Unit(cf::UNIT.to_string()));
+    }
+
     // a locally managed tunnel
     let s = fresh("ssh-discover-local");
     s.write("/etc/cloudflared/config.yml", "tunnel: FAKEtunn-local\ncredentials-file: /etc/cloudflared/creds.json\ningress:\n  - service: http_status:404\n", 0o644);

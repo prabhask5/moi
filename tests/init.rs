@@ -279,8 +279,26 @@ fn an_existing_configuration_is_never_overwritten_only_compared() {
     ] {
         assert!(out.contains(&format!("{line}\n")), "missing {line:?} in:\n{out}");
     }
-    assert!(!s.host.exists(Path::new("/etc/systemd/system/moi.service")), "nothing is installed on a re-run");
-    assert_eq!(s.systemctl(), Vec::<String>::new());
+    // the configuration is the owner's and stays; the service it never had is installed for it
+    assert!(out.ends_with("moi.service installed and started (/usr/local/bin/moi daemon)\n"), "{out}");
+    assert!(s.host.exists(Path::new("/etc/systemd/system/moi.service")));
+    assert_eq!(s.systemctl(), ["systemctl daemon-reload", "systemctl enable --now moi.service"]);
+    assert!(
+        s.host.exists(Path::new("/var/lib/moi/state/snapshot/meta/hostname")),
+        "with a first snapshot for the daemon to find"
+    );
+    // again: nothing more to do
+    let (code, out) = s.moi(&["init"]);
+    assert_eq!(code, 0, "{out}");
+    assert!(!out.contains("installed and started"), "{out}");
+    assert_eq!(s.systemctl().len(), 2);
+    // and with --observe, or where the binary is not in a place a service can start, none is installed
+    let other = fresh("init-rerun-observe");
+    other.host.create_dir_all(Path::new("/etc/moi"), 0o755).unwrap();
+    other.host.write(Path::new("/etc/moi/moi.toml"), mine.as_bytes(), 0o644).unwrap();
+    assert_eq!(other.moi(&["init", "--observe"]).0, 0);
+    assert!(!other.host.exists(Path::new("/etc/systemd/system/moi.service")));
+    assert_eq!(other.systemctl(), Vec::<String>::new());
 }
 
 #[test]

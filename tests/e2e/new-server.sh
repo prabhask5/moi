@@ -20,4 +20,5 @@ if command -v docker; then exit 1; fi
 
 # the real one. `--yes` takes the phase questions; the firewall takes a typed yes of its own
 echo yes | moi restore --bundle "$bundle" --yes
+ls -la /opt/services/app/mysqldata | head -30
 tail -5 /var/lib/moi/restore/restore.log

@@ -421,9 +421,10 @@ impl Provider for Cloudflare {
         let unit = host.read_to_string(Path::new(cloudflare::UNIT)).unwrap_or_default();
         let serves_this = match tunnel.local_config() {
             Some(_) => !unit.is_empty(),
-            None => unit.lines().filter_map(|l| l.trim().strip_prefix("ExecStart=")).any(|exec| {
-                exec.split_whitespace().filter_map(cloudflare::decode_token).any(|(_, id)| id == tunnel.id)
-            }),
+            None => cloudflare::unit_token(host.as_ref(), &unit)
+                .as_deref()
+                .and_then(cloudflare::decode_token)
+                .is_some_and(|(_, id)| id == tunnel.id),
         };
         let active = serves_this
             && host

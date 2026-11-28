@@ -813,12 +813,21 @@ impl Collector for Docker {
         out.stable("docker/compose-projects.json", dump(&projects));
         let mut prune = cx.config.capture.prune_dirs.clone();
         prune.extend(LIGHT_PRUNE.iter().map(ToString::to_string));
+        // a database's raw files are not configuration, whatever its directory is called: what a
+        // container mounts as its data directory is never entered
+        let raw: Vec<String> = containers
+            .iter()
+            .flat_map(|c| c["mounts"].as_array().into_iter().flatten())
+            .filter(|m| crate::backup::database_dir(text(&m["destination"])) && text(&m["type"]) != "volume")
+            .map(|m| text(&m["source"]).to_string())
+            .filter(|source| !source.is_empty())
+            .collect();
         let tree = Walk {
             max_depth: 4,
             prune_names: prune,
+            skip_paths: raw,
             skip_suffixes: DATA_SUFFIXES.iter().map(ToString::to_string).collect(),
             limit: 2000,
-            ..Walk::default()
         };
         for p in &projects {
             let workdir = text(&p["workdir"]);

@@ -47,4 +47,15 @@ for image in fedora:latest; do
     test ! -e /usr/bin/moi
   "
 done
+# the other architecture, emulated: the package installs and the binary runs
+arm_deb=$(basename "$(ls "$dist"/*arm64.deb)")
+docker run --privileged --rm tonistiigi/binfmt --install arm64 >/dev/null
+echo "=== $arm_deb on debian:13 (arm64, emulated)"
+docker run --rm --platform linux/arm64 -v "$dist:/dist:ro" debian:13 sh -c "
+  set -e
+  dpkg -i /dist/$arm_deb
+  test \"\$(uname -m)\" = aarch64
+  moi --version | grep -q aarch64-unknown-linux-musl
+  moi restore --list | grep -q '^preflight'
+"
 echo "packages: ok"

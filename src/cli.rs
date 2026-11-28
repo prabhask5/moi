@@ -1336,6 +1336,21 @@ fn init(cli: &Cli, args: &InitArgs, host: Arc<dyn Host>, out: &mut dyn Write) ->
                 }
             }
         }
+        // a configuration that was written by hand, or came back with a restore, still wants its
+        // service: installed here when there is none yet
+        // (only where the binary is installed where a service can start it)
+        if !args.observe && !host.exists(Path::new(init::UNIT_PATH)) && init::binary(host.as_ref()).is_ok() {
+            let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+            state.ensure(host.as_ref())?;
+            if !host.exists(&state.snapshot()) {
+                let db = state.open_db(host.as_ref())?;
+                crate::snapshot::capture(&host, &Arc::new(loaded.config.clone()), &state, &db, &loaded.masker)?;
+            }
+            let binary = init::install_service(host.as_ref())?;
+            if !cli.json {
+                let _ = writeln!(out, "moi.service installed and started ({binary} daemon)");
+            }
+        }
         return Ok(());
     }
     // nothing is written if the service could not be installed afterwards
