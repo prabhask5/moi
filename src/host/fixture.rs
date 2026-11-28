@@ -29,6 +29,11 @@ const DEFAULT_CLOCK: u64 = 1_767_225_600;
 /// The fixture's whole network: gets `(host:port, raw HTTP request)` and returns the raw response.
 pub type HttpHandler = Arc<dyn Fn(&str, &[u8]) -> Vec<u8> + Send + Sync>;
 
+/// Programs a test answers itself: a command no canned output matches is put to it first.
+pub type Programs = Arc<dyn Fn(&Cmd) -> Option<CmdOutput> + Send + Sync>;
+/// Something that answers on a unix socket of the fixture (a fake Incus, say).
+pub type UnixConnector = Arc<dyn Fn() -> io::Result<Box<dyn Conn>> + Send + Sync>;
+
 /// Something a test wants done when a command runs.
 pub type CommandHook = Arc<dyn Fn() + Send + Sync>;
 
@@ -55,6 +60,8 @@ pub struct FixtureHost {
     http: Mutex<Option<HttpHandler>>,
     /// Handlers for single `host:port`s; everything else stays with `http` or the `net` file.
     http_at: Mutex<BTreeMap<String, HttpHandler>>,
+    programs: Mutex<Option<Programs>>,
+    unix: Mutex<BTreeMap<PathBuf, UnixConnector>>,
     /// The fake network described by `net` files.
     net: Arc<Net>,
 }
@@ -215,6 +222,8 @@ impl FixtureHost {
             }),
             http: Mutex::new(None),
             http_at: Mutex::new(BTreeMap::new()),
+            programs: Mutex::new(None),
+            unix: Mutex::new(BTreeMap::new()),
             net: Arc::default(),
             docker: Arc::default(),
         };
@@ -436,6 +445,17 @@ impl FixtureHost {
     /// Answer connections to one `host:port` with `handler`; the rest of the network stays as it is.
     pub fn set_http_at(&self, authority: &str, handler: HttpHandler) {
         self.http_at.lock().unwrap_or_else(PoisonError::into_inner).insert(authority.to_string(), handler);
+    }
+
+    /// Let `programs` answer commands that no canned output matches (another project's fake machine,
+    /// for instance), before the fixture's `commands/` directory is looked at.
+    pub fn set_programs(&self, programs: Programs) {
+        *self.programs.lock().unwrap_or_else(PoisonError::into_inner) = Some(programs);
+    }
+
+    /// Answer connections to the unix socket at `path` with what `connector` returns.
+    pub fn set_unix(&self, path: &Path, connector: UnixConnector) {
+        self.unix.lock().unwrap_or_else(PoisonError::into_inner).insert(path.to_path_buf(), connector);
     }
 
     /// Every request the fake Docker engine received, as `METHOD /path?query`.
@@ -785,6 +805,10 @@ impl Host for FixtureHost {
             return Ok(out);
         }
         drop(state);
+        let programs = self.programs.lock().unwrap_or_else(PoisonError::into_inner).clone();
+        if let Some(out) = programs.and_then(|programs| programs(cmd)) {
+            return Ok(out);
+        }
         let dirs = self.fixture_dirs("commands");
         // a `.cmd` file ending in `...` answers every command line that starts like it
         let exact = Self::command_key(&line);
@@ -838,6 +862,10 @@ impl Host for FixtureHost {
     }
 
     fn connect_unix(&self, path: &Path) -> io::Result<Box<dyn Conn>> {
+        let connector = self.unix.lock().unwrap_or_else(PoisonError::into_inner).get(path).cloned();
+        if let Some(connector) = connector {
+            return connector();
+        }
         if path != Path::new(crate::docker::DEFAULT_SOCKET) {
             // a socket something listens on in the overlay (the daemon under test)
             let resolved = self.resolve(path, true)?;

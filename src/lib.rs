@@ -13,6 +13,7 @@ pub mod cli;
 pub mod config;
 pub mod context;
 pub mod daemon;
+pub mod devbox;
 pub mod docker;
 pub mod error;
 pub mod firewall;

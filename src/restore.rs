@@ -23,7 +23,7 @@ use crate::error::Error;
 use crate::host::{self, Cmd, CmdOutput, FileKind, Host};
 
 /// The phases, in order, with what each does.
-pub const PHASES: [(&str, &str); 19] = [
+pub const PHASES: [(&str, &str); 20] = [
     ("preflight", "compare the old machine with this one; install base tools"),
     ("packages", "apt repositories and keys, manually installed packages, holds, snaps, pipx, npm"),
     ("users", "groups and users with the same ids, password hashes, group memberships"),
@@ -40,6 +40,7 @@ pub const PHASES: [(&str, &str); 19] = [
     ("moi", "moi's own configuration and history; the service"),
     ("systemd", "remaining custom units; units that were enabled"),
     ("cron", "crontabs and /etc/cron.*"),
+    ("devbox", "the devbox VM rebuilt from the restored /etc/devbox, or adopted when its disk came along"),
     ("firewall", "the managed firewall chains, with the way back arranged first"),
     ("monitors", "Uptime Kuma: every monitor must be found again, none created"),
     ("verify", "check everything against the old server; the reboot that proves it"),
@@ -401,6 +402,7 @@ pub fn restore(host: &Arc<dyn Host>, bundle: &Path, options: &Options, out: &mut
             "moi" => apps::moi(&mut run),
             "systemd" => system::systemd(&mut run),
             "cron" => system::cron(&mut run),
+            "devbox" => apps::devbox(&mut run),
             "firewall" => apps::firewall(&mut run),
             "monitors" => apps::monitors(&mut run),
             "verify" => apps::verify(&mut run),

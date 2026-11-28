@@ -426,6 +426,7 @@ pub(super) fn incus(doc: &mut Doc<'_>) {
         "_Pools, networks and profiles are in `{}` (restorable with `incus admin init --preseed`)._",
         v.state().snapshot().join("incus/preseed.yaml").display()
     ));
+    devbox(doc);
 }
 
 /// `https://hc-ping.com/<key>/<slug>` → `https://hc-ping.com/… (key hidden)`.
@@ -572,4 +573,96 @@ pub(super) fn monitoring(doc: &mut Doc<'_>) {
             doc.warn(format!("{} pushes to a Kuma token ({}) that matches no monitor", feeder(i), mask_token(token)));
         }
     }
+}
+
+/// The devbox block (15 § Context): what the VM is for, how it is reached, how it sleeps and how it is.
+fn devbox(doc: &mut Doc<'_>) {
+    let v = doc.view;
+    let status = v.json("devbox/status.json");
+    let Some(instance) = status["instance"].as_str() else { return };
+    let state: Value = serde_json::from_str(&v.volatile("devbox/state.json")).unwrap_or(Value::Null);
+    let text = |value: &Value| value.as_str().unwrap_or("?").to_string();
+    doc.heading(3, "devbox");
+    doc.line(format!(
+        "The instance **{instance}** is a devbox: the owner's development machine (VS Code in the browser, coding agents, their repositories), user `{}`. It sleeps when idle and wakes when someone opens it; a gateway container on this host does the waking.",
+        text(&status["vm"]["user"])
+    ));
+    doc.line(format!(
+        "- **URLs:** editor `https://{}`, agents app `https://{}`.",
+        text(&status["hosts"]["code"]),
+        text(&status["hosts"]["agents"])
+    ));
+    doc.line(format!(
+        "- **Sleep:** after {} idle, {} (its memory is {}).",
+        text(&status["sleep"]["idle"]),
+        text(&status["sleep"]["mode"]),
+        if status["sleep"]["mode"] == "stateful" {
+            "saved to disk when it sleeps and restored when it wakes"
+        } else {
+            "not kept across a sleep"
+        }
+    ));
+    if state["asked"] == true {
+        let mut now = format!(
+            "- **Now:** VM {}, gateway {} (phase {})",
+            text(&state["vm_state"]),
+            text(&state["gateway_container"]),
+            text(&state["phase"])
+        );
+        let stop = &state["last_stop"];
+        if let Some(at) = stop["at"].as_i64() {
+            let when = crate::host::format_rfc3339(
+                std::time::UNIX_EPOCH + std::time::Duration::from_millis(u64::try_from(at).unwrap_or(0)),
+            );
+            now.push_str(&format!(
+                "; last put to sleep {} ({}",
+                crate::state::history::display_time(&when),
+                text(&stop["reason"])
+            ));
+            if let Some(ms) = stop["ms"].as_u64() {
+                now.push_str(&format!(", took {:.1} s", ms as f64 / 1000.0));
+            }
+            now.push(')');
+        }
+        if let Some(ms) = state["last_wake"]["ms"].as_u64() {
+            now.push_str(&format!("; last wake took {:.1} s", ms as f64 / 1000.0));
+        }
+        doc.line(format!("{now}."));
+        let problems: Vec<String> =
+            state["problems"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_string).collect();
+        doc.line(format!(
+            "- **Health:** {}{}",
+            text(&state["health"]),
+            if problems.is_empty() { String::new() } else { format!(" — {}", problems.join("; ")) }
+        ));
+        for problem in &problems {
+            doc.warn(format!("devbox: {problem}"));
+        }
+        if state["health"].as_str().is_some_and(|h| h != "ok") && problems.is_empty() {
+            doc.warn(format!("devbox reports its health as {}", text(&state["health"])));
+        }
+    } else {
+        doc.line("- **Now:** devbox could not be asked at the last snapshot (`moi devbox status`).");
+    }
+    for failure in state["doctor_failures"].as_array().into_iter().flatten() {
+        doc.warn(format!(
+            "devbox doctor: {} — {}",
+            text(&failure["title"]),
+            failure["fix"].as_str().unwrap_or("see `moi devbox doctor`")
+        ));
+    }
+    doc.line(format!(
+        "- **Deployed:** gateway `{}` ({}).",
+        text(&status["gateway_version"]),
+        status["gateway"]["image"].as_str().unwrap_or("its container was not found")
+    ));
+    match status["dotfiles"].as_str() {
+        Some(repo) => doc.line(format!("- **The owner's developer context** (shell, editor and agent setup, and what agents should know about how they work) lives in the dotfiles repository `{repo}`, cloned into the VM.")),
+        None => doc.line("- **The owner's developer context:** no dotfiles repository is configured (`moi devbox up --dotfiles <git url>`)."),
+    }
+    doc.line(format!(
+        "- **Rebuild:** the VM's disk is not backed up; `/etc/devbox` is. `moi devbox up` recreates and provisions the VM from it. Firewall: the gateway reaches the VM through a marked block in moi's rules file (`# devbox: begin … end`), managed by `{}`.",
+        text(&status["firewall"])
+    ));
+    doc.line("- **Commands:** `moi devbox status`, `moi devbox doctor`, `moi devbox connect`; change it with `moi devbox up` (never by editing `/etc/devbox` by hand).");
 }

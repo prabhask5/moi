@@ -587,6 +587,11 @@ impl Docker {
         self.send("POST", "/services/create", Some(spec), false).map(|_| ())
     }
 
+    /// The host this client talks through.
+    pub fn host(&self) -> &Arc<dyn Host> {
+        &self.host
+    }
+
     /// A container's log output so far, as (stdout, stderr). TTY containers have everything in stdout.
     pub fn logs(&self, container: &str, options: &LogOptions) -> Result<(Vec<u8>, Vec<u8>)> {
         let mut path = format!("/containers/{}/logs?stdout=true&stderr=true", http::encode(container));

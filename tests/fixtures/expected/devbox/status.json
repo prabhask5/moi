@@ -1,0 +1,37 @@
+{
+  "domain": "example.com",
+  "dotfiles": null,
+  "gateway": {
+    "container": "running",
+    "health": "ok",
+    "lastStop": {
+      "at": 1789990000000,
+      "mode": "stateful",
+      "ms": 4200,
+      "reason": "idle"
+    },
+    "phase": "idle",
+    "problems": [],
+    "version": "3f9c2d1"
+  },
+  "hosts": {
+    "agents": "agents.example.com",
+    "code": "code.example.com"
+  },
+  "routing": {
+    "file": "/etc/dokploy/traefik/dynamic/devbox.yml",
+    "provider": "traefik-file"
+  },
+  "sleep": {
+    "idle": "15m",
+    "mode": "stateful"
+  },
+  "v": 1,
+  "vm": {
+    "address": "10.77.0.10",
+    "memorySaved": false,
+    "name": "devbox",
+    "state": "running",
+    "user": "dev"
+  }
+}

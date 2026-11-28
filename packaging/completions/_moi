@@ -891,6 +891,184 @@ esac
     ;;
 esac
 ;;
+(devbox)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__devbox_commands" \
+"*::: :->devbox" \
+&& ret=0
+
+    case $state in
+    (devbox)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-devbox-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+'--domain=[The domain\: the editor is at code.<domain>, the agents app at agents.<domain>]:DOMAIN:_default' \
+'--code-host=[The editor'\''s host, when it is not code.<domain>]:HOST:_default' \
+'--agents-host=[The agents app'\''s host, when it is not agents.<domain>]:HOST:_default' \
+'--instance=[The Incus instance \[default\: devbox\]]:NAME:_default' \
+'--cpu=[vCPUs of a new VM \[default\: 3\]]:CPU:_default' \
+'--memory=[Memory of a new VM \[default\: 5GiB\]]:MEMORY:_default' \
+'--disk=[Disk of a new VM \[default\: 60GiB\]]:DISK:_default' \
+'--image=[Image of a new VM \[default\: images\:ubuntu/26.04/cloud\]]:IMAGE:_default' \
+'--user=[The user in the VM \[default\: the user who ran sudo\]]:USER:_default' \
+'--dotfiles=[Your dotfiles repository, cloned into the VM and applied]:GIT URL:_default' \
+'--idle=[Idle time before the VM sleeps \[default\: 15m\]]:DURATION:_default' \
+'*--no-agents=[Agents not to install (claude, codex, opencode)]:AGENTS:_default' \
+'--routing=[How the hosts are routed to the gateway \[default\: traefik-file\]]:ROUTING:((traefik-file\:"Write a Traefik dynamic configuration file"
+none\:"Route the hosts yourself"))' \
+'--traefik-file=[The Traefik dynamic configuration file to write]:PATH:_files' \
+'--github-token-from=[Give the VM this host'\''s GitHub token\: from gh, or from the environment]:SOURCE:(gh env)' \
+'--ssh-keys=[SSH public keys for a new VM'\''s user \[default\: the keys you log in with\]]:FILE:_files' \
+'--wake-password-file=[A file with the password that wakes the VM]:FILE:_files' \
+'--app-password-file=[A file with the password of the agents app]:FILE:_files' \
+'--binaries=[A directory with devbox-hub and devbox built for the VM, instead of a release]:DIR:_files' \
+'--release=[The release to install into the VM \[default\: the latest\]]:TAG:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--adopt[Use an instance that exists already; its disk and data are kept]' \
+'--dry-run[Show what would change and change nothing]' \
+'--yes[Do not ask before applying (never supplies a password)]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'(--destroy)--keep-vm[Keep the VM (the default; here so that the choice can be written out)]' \
+'--destroy[Also delete the VM, if \`devbox up\` created it]' \
+'--dry-run[Show what would be undone and change nothing]' \
+'--yes[Do not ask before undoing]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(doctor)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(password)
+_arguments "${_arguments_options[@]}" : \
+'--password-file=[A file with the new password, instead of being asked for it]:FILE:_files' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':which -- Which password to rotate:((wake\:"The password that wakes the VM"
+app\:"The agents app password"))' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__devbox__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-devbox-help-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(doctor)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(password)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (completions)
 _arguments "${_arguments_options[@]}" : \
 '--config=[Config file]:CONFIG:_files' \
@@ -1170,6 +1348,46 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
+(devbox)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__devbox_commands" \
+"*::: :->devbox" \
+&& ret=0
+
+    case $state in
+    (devbox)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-devbox-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(doctor)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(password)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (completions)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -1216,6 +1434,7 @@ _moi_commands() {
 'daemon:Run the daemon (used by moi.service)' \
 'uninstall:Remove moi and restore anything it replaced' \
 'ssh:SSH to this server from anywhere, through a tunnel' \
+'devbox:Set up and run a devbox VM (devbox'\''s own commands, with moi'\''s firewall and records)' \
 'completions:Print a shell completion script (bash, zsh, fish)' \
 'man:Print the man page (roff)' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -1321,6 +1540,97 @@ _moi__subcmd__daemon_commands() {
     local commands; commands=()
     _describe -t commands 'moi daemon commands' commands "$@"
 }
+(( $+functions[_moi__subcmd__devbox_commands] )) ||
+_moi__subcmd__devbox_commands() {
+    local commands; commands=(
+'up:Set up or adopt the VM, the gateway'\''s config, routing and the firewall rule' \
+'down:Undo routing, firewall and config changes, restoring what was there' \
+'status:Show the VM, gateway, routing, hub and health on one screen' \
+'doctor:Run every check and print the fix for each failure' \
+'connect:Print the URLs, an SSH config snippet and how to install the phone app' \
+'password:Rotate a password' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi devbox commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__connect_commands] )) ||
+_moi__subcmd__devbox__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__doctor_commands] )) ||
+_moi__subcmd__devbox__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox doctor commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__down_commands] )) ||
+_moi__subcmd__devbox__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help_commands] )) ||
+_moi__subcmd__devbox__subcmd__help_commands() {
+    local commands; commands=(
+'up:Set up or adopt the VM, the gateway'\''s config, routing and the firewall rule' \
+'down:Undo routing, firewall and config changes, restoring what was there' \
+'status:Show the VM, gateway, routing, hub and health on one screen' \
+'doctor:Run every check and print the fix for each failure' \
+'connect:Print the URLs, an SSH config snippet and how to install the phone app' \
+'password:Rotate a password' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi devbox help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__connect_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__doctor_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help doctor commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__down_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__password_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__password_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help password commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__status_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__help__subcmd__up_commands] )) ||
+_moi__subcmd__devbox__subcmd__help__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox help up commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__password_commands] )) ||
+_moi__subcmd__devbox__subcmd__password_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox password commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__status_commands] )) ||
+_moi__subcmd__devbox__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__devbox__subcmd__up_commands] )) ||
+_moi__subcmd__devbox__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi devbox up commands' commands "$@"
+}
 (( $+functions[_moi__subcmd__diff_commands] )) ||
 _moi__subcmd__diff_commands() {
     local commands; commands=()
@@ -1406,6 +1716,7 @@ _moi__subcmd__help_commands() {
 'daemon:Run the daemon (used by moi.service)' \
 'uninstall:Remove moi and restore anything it replaced' \
 'ssh:SSH to this server from anywhere, through a tunnel' \
+'devbox:Set up and run a devbox VM (devbox'\''s own commands, with moi'\''s firewall and records)' \
 'completions:Print a shell completion script (bash, zsh, fish)' \
 'man:Print the man page (roff)' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -1466,6 +1777,48 @@ _moi__subcmd__help__subcmd__context__subcmd__share_commands() {
 _moi__subcmd__help__subcmd__daemon_commands() {
     local commands; commands=()
     _describe -t commands 'moi help daemon commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox_commands] )) ||
+_moi__subcmd__help__subcmd__devbox_commands() {
+    local commands; commands=(
+'up:Set up or adopt the VM, the gateway'\''s config, routing and the firewall rule' \
+'down:Undo routing, firewall and config changes, restoring what was there' \
+'status:Show the VM, gateway, routing, hub and health on one screen' \
+'doctor:Run every check and print the fix for each failure' \
+'connect:Print the URLs, an SSH config snippet and how to install the phone app' \
+'password:Rotate a password' \
+    )
+    _describe -t commands 'moi help devbox commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__connect_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__doctor_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__doctor_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox doctor commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__down_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__password_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__password_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox password commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__status_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__devbox__subcmd__up_commands] )) ||
+_moi__subcmd__help__subcmd__devbox__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help devbox up commands' commands "$@"
 }
 (( $+functions[_moi__subcmd__help__subcmd__diff_commands] )) ||
 _moi__subcmd__help__subcmd__diff_commands() {

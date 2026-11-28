@@ -228,7 +228,15 @@ fn a_container_without_a_restart_policy_gets_no_monitor() {
 // ------------------------------------------------------------------ the planner
 
 fn push(owner: &str, name: &str, interval: u64) -> Desired {
-    Desired { owner: owner.into(), name: name.into(), kind: Kind::Push, interval, retries: 1, container: None }
+    Desired {
+        owner: owner.into(),
+        name: name.into(),
+        kind: Kind::Push,
+        interval,
+        retries: 1,
+        container: None,
+        url: None,
+    }
 }
 
 fn container(name: &str) -> Desired {
@@ -239,6 +247,7 @@ fn container(name: &str) -> Desired {
         interval: 60,
         retries: 1,
         container: Some(name.into()),
+        url: None,
     }
 }
 

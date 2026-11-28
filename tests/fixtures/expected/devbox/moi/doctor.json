@@ -1,0 +1,168 @@
+{
+  "checks": [
+    {
+      "detail": "Incus 6.0.5",
+      "id": "incus",
+      "result": "ok",
+      "title": "Incus answers"
+    },
+    {
+      "detail": "/etc/devbox/devbox.toml",
+      "id": "config",
+      "result": "ok",
+      "title": "The host config is valid"
+    },
+    {
+      "detail": "/etc/devbox/secrets.toml",
+      "id": "secrets",
+      "result": "ok",
+      "title": "The secrets are valid and private"
+    },
+    {
+      "detail": "devbox, running",
+      "id": "instance",
+      "result": "ok",
+      "title": "The VM exists"
+    },
+    {
+      "detail": "migration.stateful = true",
+      "id": "stateful",
+      "result": "ok",
+      "title": "Its memory is saved when it sleeps"
+    },
+    {
+      "detail": "boot.autostart = false",
+      "id": "autostart",
+      "result": "ok",
+      "title": "It does not start with the host"
+    },
+    {
+      "detail": "size.state = 6GiB for 5GiB of memory",
+      "id": "state-size",
+      "result": "ok",
+      "title": "There is room on disk for its memory"
+    },
+    {
+      "detail": "moi: containers → 10.77.0.10 tcp 22,8080,8090 in /etc/moi/firewall/rules4.txt, applied with `moi firewall apply`",
+      "id": "firewall",
+      "result": "ok",
+      "title": "The firewall lets the gateway reach the VM"
+    },
+    {
+      "detail": "devbox-gateway: running",
+      "id": "gateway",
+      "result": "ok",
+      "title": "The gateway container runs"
+    },
+    {
+      "detail": "/etc/dokploy/traefik/dynamic/devbox.yml",
+      "id": "routing",
+      "result": "ok",
+      "title": "Both hosts are routed to the gateway"
+    },
+    {
+      "detail": "203.0.113.7",
+      "id": "dns-code",
+      "result": "ok",
+      "title": "code.example.com resolves"
+    },
+    {
+      "detail": "203.0.113.7",
+      "id": "dns-agents",
+      "result": "ok",
+      "title": "agents.example.com resolves"
+    },
+    {
+      "detail": "ok",
+      "id": "health",
+      "result": "ok",
+      "title": "The gateway is healthy, asked through the public host"
+    },
+    {
+      "detail": "active",
+      "id": "code-server",
+      "result": "ok",
+      "title": "code-server runs"
+    },
+    {
+      "detail": "active",
+      "id": "hub",
+      "result": "ok",
+      "title": "The agents hub runs"
+    },
+    {
+      "detail": "active",
+      "id": "tmux",
+      "result": "ok",
+      "title": "The tmux server for agent sessions runs"
+    },
+    {
+      "detail": "active",
+      "id": "context-timer",
+      "result": "ok",
+      "title": "The developer context is refreshed on a timer"
+    },
+    {
+      "detail": "active",
+      "id": "update-timer",
+      "result": "ok",
+      "title": "New builds of the hub are looked for on a timer"
+    },
+    {
+      "detail": "yes",
+      "id": "agent-claude",
+      "result": "ok",
+      "title": "claude is installed"
+    },
+    {
+      "detail": "yes",
+      "id": "hooks-claude",
+      "result": "ok",
+      "title": "claude reports to the hub"
+    },
+    {
+      "detail": "yes",
+      "id": "agent-codex",
+      "result": "ok",
+      "title": "codex is installed"
+    },
+    {
+      "detail": "yes",
+      "id": "hooks-codex",
+      "result": "ok",
+      "title": "codex reports to the hub"
+    },
+    {
+      "detail": "yes",
+      "id": "agent-opencode",
+      "result": "ok",
+      "title": "opencode is installed"
+    },
+    {
+      "detail": "yes",
+      "id": "hooks-opencode",
+      "result": "ok",
+      "title": "opencode reports to the hub"
+    },
+    {
+      "detail": "2026-09-21T14:00:00Z",
+      "id": "sync",
+      "result": "ok",
+      "title": "The repositories have been synced"
+    },
+    {
+      "detail": "2026-09-21T12:00:00Z",
+      "id": "context",
+      "result": "ok",
+      "title": "The developer context has been written"
+    },
+    {
+      "detail": "0 uncommitted file(s), 0 unpushed commit(s)",
+      "id": "dotfiles",
+      "result": "ok",
+      "title": "The dotfiles are committed and pushed"
+    }
+  ],
+  "ok": true,
+  "v": 1
+}

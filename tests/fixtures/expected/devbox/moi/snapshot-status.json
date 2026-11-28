@@ -1,0 +1,34 @@
+{
+  "domain": "example.com",
+  "dotfiles": null,
+  "firewall": "moi",
+  "gateway": null,
+  "gateway_ssh": ":2222",
+  "gateway_version": "3f9c2d1",
+  "hosts": {
+    "agents": "agents.example.com",
+    "code": "code.example.com"
+  },
+  "instance": "devbox",
+  "routing": {
+    "file": "/etc/dokploy/traefik/dynamic/devbox.yml",
+    "provider": "traefik-file"
+  },
+  "secrets": {
+    "gid": 65532,
+    "mode": "0600",
+    "uid": 65532
+  },
+  "sleep": {
+    "idle": "15m",
+    "min_up": "5m",
+    "mode": "stateful"
+  },
+  "vm": {
+    "address": "10.77.0.10",
+    "code_port": 8080,
+    "hub_port": 8090,
+    "ssh_port": 22,
+    "user": "dev"
+  }
+}

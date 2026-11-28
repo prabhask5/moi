@@ -1,0 +1,16 @@
+Your devbox
+
+  Editor       https://code.example.com
+  Agents app   https://agents.example.com
+
+On your phone: open https://agents.example.com in Safari, Share → Add to Home Screen, open it from
+there, then Settings → Enable notifications.
+
+SSH goes through the gateway, which wakes the VM: it listens on port 2222 of this server's
+loopback. In ~/.ssh/config on your own machine:
+
+  Host devbox
+    HostName 127.0.0.1
+    Port 2222
+    User dev
+    ProxyJump <this server>

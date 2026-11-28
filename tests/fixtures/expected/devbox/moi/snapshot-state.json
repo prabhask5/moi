@@ -1,0 +1,17 @@
+{
+  "asked": true,
+  "doctor_failures": [],
+  "gateway_container": "running",
+  "health": "ok",
+  "last_stop": {
+    "at": 1789990000000,
+    "mode": "stateful",
+    "ms": 4200,
+    "reason": "idle"
+  },
+  "last_wake": null,
+  "memory_saved": false,
+  "phase": "idle",
+  "problems": [],
+  "vm_state": "running"
+}

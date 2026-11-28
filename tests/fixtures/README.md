@@ -110,3 +110,12 @@ switched off. It refuses an ingress without a last catch-all, as the real API do
 to delete a tunnel. Connector tokens are built at run time (`tunnel_token()`), so nothing token-shaped is committed.
 `fixtures/ssh/cloudflare-main.gpg` is Cloudflare's *public* package signing key, as published — the apply checks
 its hash, so the test needs the real file. `fixtures/expected/ssh/` holds the plan, `connect` and record goldens.
+
+## `expected/devbox/`
+
+Golden files of devbox itself, copied from its `crates-v0.1.0` tag (`tests/fixtures/setup/` there): `moi devbox`
+must print what `devbox` prints. `expected/devbox/moi/` holds what is moi's own (the plan with moi's firewall step,
+`doctor` with the firewall check that a moi host runs, the snapshot, context and audit pieces). The tests put
+devbox's own fakes (`devbox_core::fake`: programs and an Incus in memory) behind a fixture host with
+`FixtureHost::set_programs` and `set_unix`; the files stay the fixture host's.
+

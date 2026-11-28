@@ -1,0 +1,47 @@
+# Written by `devbox up`. The gateway picks up changes to this file by itself;
+# run `devbox up` again after changing what it set up (hosts, the VM's address, routing).
+domain = "example.com"
+instance = "devbox"
+version = 1
+
+[deploy]
+hub_environment = "agents-hub"
+wake_to_deploy = false
+
+[firewall]
+manager = "none"
+
+[gateway]
+listen = ":8080"
+ssh_listen = ":2222"
+sync_wait = "90s"
+
+[hosts]
+agents = "agents.example.com"
+code = "code.example.com"
+
+[provision]
+agents = ["claude","codex","opencode"]
+cpu = 3
+disk = "60GiB"
+image = "images:ubuntu/26.04/cloud"
+memory = "5GiB"
+user = "dev"
+
+[routing]
+entrypoint = "websecure"
+file = "/etc/dokploy/traefik/dynamic/devbox.yml"
+provider = "traefik-file"
+service_url = "http://devbox-gateway:8080"
+
+[sleep]
+activity_bytes_per_min = 4096
+idle = "15m"
+min_up = "5m"
+mode = "stateful"
+
+[vm]
+address = "10.77.0.10"
+code_port = 8080
+hub_port = 8090
+ssh_port = 22

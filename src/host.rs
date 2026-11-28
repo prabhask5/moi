@@ -20,7 +20,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-pub use fixture::{FixtureHost, HttpHandler};
+pub use fixture::{FixtureHost, HttpHandler, Programs, UnixConnector};
 pub use real::RealHost;
 pub use time::{civil_from_days, days_from_civil, format_rfc3339, parse_rfc3339, unix_seconds};
 
