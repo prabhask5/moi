@@ -28,8 +28,15 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 
 sudo cp "$work/cert.pem" /usr/local/share/ca-certificates/moi-e2e.crt
 sudo update-ca-certificates
 echo "127.0.0.1 $name" | sudo tee -a /etc/hosts
-sudo "$(command -v python3)" "$here/ws-bridge.py" "$work/cert.pem" "$work/key.pem" 443 2222 &
-for _ in $(seq 30); do curl -sk -o /dev/null "https://$name/" && break; sleep 1; done
+sudo sysctl -q net.ipv4.ip_unprivileged_port_start=443
+python3 "$here/ws-bridge.py" "$work/cert.pem" "$work/key.pem" 443 2222 > "$work/bridge.log" 2>&1 &
+up=""
+for _ in $(seq 30); do
+  # any HTTP answer will do: a plain GET is not a WebSocket handshake
+  if [ "$(curl -s -o /dev/null -w '%{http_code}' "https://$name/")" != 000 ]; then up=1; break; fi
+  sleep 1
+done
+if [ -z "$up" ]; then cat "$work/bridge.log"; echo "the WebSocket origin did not come up" >&2; exit 1; fi
 
 # ---- moi on the server
 sudo install -m 755 "$moi" /usr/local/bin/moi

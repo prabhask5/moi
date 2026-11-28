@@ -11,10 +11,8 @@ use cestmoi::net::Client;
 #[test]
 #[ignore = "needs MOI_IT=1 and MOI_IT_SSH_HOST: a name whose https:// answers WebSocket with an SSH server behind it"]
 fn the_public_handshake_reads_the_banner_of_a_real_ssh_server() {
-    if std::env::var("MOI_IT").is_err() {
-        return;
-    }
-    let name = std::env::var("MOI_IT_SSH_HOST").expect("MOI_IT_SSH_HOST");
+    // only where tests/e2e/ssh-client-test.sh has set such an origin up
+    let Ok(name) = std::env::var("MOI_IT_SSH_HOST") else { return };
     let host: Arc<dyn Host> = Arc::new(RealHost::new());
     let ms = cestmoi::ssh::apply::handshake(&host, &name).unwrap_or_else(|e| panic!("{}: {}", e.stage, e.error));
     assert!(ms < 5000, "{ms} ms");
