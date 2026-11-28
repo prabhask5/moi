@@ -137,5 +137,5 @@ Specs: 16 (and the `ssh` rows in 01, 02, 03, 05, 06, 09, 14). Can start now; it 
 - [x] `moi ssh connect` (golden), `moi ssh authorize`, `moi ssh status [--json]`
 - [x] `ssh` check + messages (golden), monitor row, snapshot collector, context "SSH access" block with the devbox path and rescue line, audit Attention for sshd password/root login, restore phase `ssh` — the devbox path (`ssh devbox` via devbox's SSH host) is added with M11, where devbox's host config is read; the rescue line for every Incus instance is there now
 - [x] README command row out of "planned", spec 14 updated
-- [ ] Once devbox `ssh-v0.1.0` is published: CI runs the printed command against a fake HOME and a fake tunnel origin and connects with the real OpenSSH client
+- [x] Once devbox `ssh-v0.1.0` is published: CI runs the printed command against a fake HOME and a fake tunnel origin and connects with the real OpenSSH client
 - [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
