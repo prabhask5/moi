@@ -1,0 +1,15 @@
+# Full-history secret scan (the `readiness` job of the nightly workflow).
+# Everything secret-shaped in this repository is a fixture: the fixtures' rule is that such values
+# start with FAKE (scripts/check-secrets.sh checks the working tree for the same thing).
+title = "moi"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "fixture values are marked FAKE; goldens and fixture hosts hold nothing else"
+regexes = ['''FAKE''', '''fake-''', '''example\.com''']
+paths = [
+  '''^tests/fixtures/ssh/cloudflare-main\.gpg$''',   # Cloudflare's public package key
+  '''^Cargo\.lock$''',
+]
