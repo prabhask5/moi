@@ -51,6 +51,10 @@ assets = [
 [package.metadata.generate-rpm.recommends]
 restic = "*"
 
+# `md-5` is used under its library name `md5`, which cargo-machete does not connect to the package.
+[package.metadata.cargo-machete]
+ignored = ["md-5"]
+
 [[bin]]
 name = "moi"
 path = "src/main.rs"

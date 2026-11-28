@@ -11,6 +11,8 @@ on:
     paths:
       - "tests/e2e/**"
       - ".github/workflows/nightly.yml"
+      - ".gitleaks.toml"
+      - "Cargo.toml"
       - "src/restore.rs"
       - "src/restore/**"
 
@@ -47,3 +49,23 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Back up, rebuild, reboot, verify
         run: tests/e2e/run.sh target/x86_64-unknown-linux-musl/release/moi
+
+  readiness:
+    name: release readiness (history scan, unused dependencies)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: No secret anywhere in the history
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --redact --no-banner --verbose
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: taiki-e/install-action@073e1fd0bc889c9aee68dbaaa927cde1b5653a83 # v2
+        with:
+          tool: cargo-machete
+      - name: No dependency that nothing uses
+        run: cargo machete
+

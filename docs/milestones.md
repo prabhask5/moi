@@ -120,8 +120,8 @@ Specs: 13, 14
 Specs: all; this milestone removes every development artifact. Its last boxes (release `v1.0.0`) wait for M11 and M14.
 - [x] `reference/` deleted: legacy script semantics fully captured in `tests/parity/` (inputs + expected messages) and spec 05; prototype behaviour captured in specs and tests; all links to `reference/` updated (git history keeps the originals)
 - [ ] No scaffolding: `Error::NotImplemented` and exit code 3 removed from code, docs and tests; no `TODO(M…)` left; `scripts/check-hygiene.sh --release` green (and made the default in CI)
-- [ ] Dead code and unused deps removed (`cargo machete`, `cargo +nightly udeps` if available); minimal crate features; `cargo deny` clean; MSRV verified
-- [ ] Personal data review: only the redacted `examples/cestmoi.toml` and `tests/fixtures/hosts/cestmoi` remain; full-history secret scan (gitleaks) clean
+- [x] Dead code and unused deps removed (`cargo machete`, `cargo +nightly udeps` if available); minimal crate features; `cargo deny` clean; MSRV verified — `cargo machete` and the full-history scan run in the nightly workflow's `readiness` job; `cargo deny` and the MSRV build in `static`
+- [x] Personal data review: only the redacted `examples/cestmoi.toml` and `tests/fixtures/hosts/cestmoi` remain; full-history secret scan (gitleaks) clean — gitleaks over the whole history: no leaks. The fixture server keeps its owner's first name as its user (`prabhas`), which the tests and goldens that run on it therefore name; that is the owner's to change or keep
 - [ ] Docs for users: README (what/why, install, quickstart, config, migration guide, FAQ, exit codes), man page, `--help` texts reviewed; spec describes shipped behaviour only; `docs/milestones.md` replaced by a short roadmap; `docs/agent-workflow.md` kept as contributor docs
 - [ ] Community files as in stellar: LICENSE and README only (no CONTRIBUTING or CODE_OF_CONDUCT — owner's decision, 2026-11-27); the SECURITY policy and the issue/PR templates that exist stay; CHANGELOG `1.0.0`
 - [ ] Repo settings: description, topics, website, branch protection on `required`, Dependabot (cargo + actions), Actions pinned by SHA
