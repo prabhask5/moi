@@ -118,12 +118,12 @@ Specs: 13, 14
 
 ## M13 — Public release readiness (v1.0.0)
 Specs: all; this milestone removes every development artifact
-- [ ] `reference/` deleted: legacy script semantics fully captured in `tests/parity/` (inputs + expected messages) and spec 05; prototype behaviour captured in specs and tests; all links to `reference/` updated (git history keeps the originals)
+- [x] `reference/` deleted: legacy script semantics fully captured in `tests/parity/` (inputs + expected messages) and spec 05; prototype behaviour captured in specs and tests; all links to `reference/` updated (git history keeps the originals)
 - [ ] No scaffolding: `Error::NotImplemented` and exit code 3 removed from code, docs and tests; no `TODO(M…)` left; `scripts/check-hygiene.sh --release` green (and made the default in CI)
 - [ ] Dead code and unused deps removed (`cargo machete`, `cargo +nightly udeps` if available); minimal crate features; `cargo deny` clean; MSRV verified
 - [ ] Personal data review: only the redacted `examples/cestmoi.toml` and `tests/fixtures/hosts/cestmoi` remain; full-history secret scan (gitleaks) clean
 - [ ] Docs for users: README (what/why, install, quickstart, config, migration guide, FAQ, exit codes), man page, `--help` texts reviewed; spec describes shipped behaviour only; `docs/milestones.md` replaced by a short roadmap; `docs/agent-workflow.md` kept as contributor docs
-- [ ] Community files: CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, issue/PR templates, CHANGELOG `1.0.0`
+- [ ] Community files as in stellar: LICENSE and README only (no CONTRIBUTING or CODE_OF_CONDUCT — owner's decision, 2026-11-27); the SECURITY policy and the issue/PR templates that exist stay; CHANGELOG `1.0.0`
 - [ ] Repo settings: description, topics, website, branch protection on `required`, Dependabot (cargo + actions), Actions pinned by SHA
 - [ ] Release `v1.0.0` through `release.yml`; installer and deb/rpm verified on clean Ubuntu, Debian and Fedora VMs; crates.io `cestmoi` and Homebrew tap published
 - [ ] cestmoi fully on moi: `moi migrate finish` done, serverstate uninstalled, legacy scripts/cron/units gone

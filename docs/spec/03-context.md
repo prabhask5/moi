@@ -1,6 +1,6 @@
 # 03 — Context for AI assistants (`CONTEXT.md`) and owner notes
 
-`CONTEXT.md` is a single Markdown file describing the server as observed, written so an AI assistant (Claude Code on the server, or an upload to a chat) can make correct changes without breaking anything. It is regenerated after every snapshot and audit. The prototype's generator (`reference/serverstate/sshelper.py`, function `context`) is the reference for content and order; moi reproduces it and the improvements listed below.
+`CONTEXT.md` is a single Markdown file describing the server as observed, written so an AI assistant (Claude Code on the server, or an upload to a chat) can make correct changes without breaking anything. It is regenerated after every snapshot and audit. The serverstate prototype's generator was the reference for content and order; moi reproduces it and the improvements listed below.
 
 ## Sections, in order
 

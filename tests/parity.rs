@@ -231,18 +231,15 @@ fn expected_files_are_never_empty_and_name_a_status() {
 
 // ------------------------------------------------------------------ the legacy script itself as the judge
 
-/// Runs `reference/cestmoi/scripts/resource-check.sh` — the real script, with its absolute paths pointed
+/// Runs the cestmoi fixture's `/opt/scripts/resource-check.sh` — the real legacy script, with its absolute paths pointed
 /// into a sandbox and `journalctl`, `docker` and `curl` replaced by stubs that serve the case's data —
 /// and checks that it prints exactly what the case's `expected` file says. This is what makes the
 /// `expected` files evidence rather than a transcription of the implementation. (The storage script
 /// parses smartctl's text output, which the cases do not carry, so its files are derived by hand.)
 #[test]
 fn the_legacy_resource_script_prints_what_the_expected_files_say() {
-    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/cestmoi/scripts/resource-check.sh");
-    let Ok(source) = std::fs::read_to_string(&script) else {
-        eprintln!("reference/ is gone (after M13): the expected files stand on their own");
-        return;
-    };
+    let script = common::fixture_dir("cestmoi").join("root/opt/scripts/resource-check.sh");
+    let source = std::fs::read_to_string(&script).expect("the fixture server keeps its legacy scripts");
     if std::process::Command::new("bash").arg("--version").output().is_err() {
         eprintln!("bash is not installed: skipping");
         return;
@@ -367,18 +364,15 @@ fn the_legacy_resource_script_prints_what_the_expected_files_say() {
     );
 }
 
-/// Runs `reference/cestmoi/scripts/service-check.sh` itself on every services case. `docker`, `curl`,
+/// Runs the cestmoi fixture's `/opt/scripts/service-check.sh` itself on every services case. `docker`, `curl`,
 /// `getent` and `iptables` are `tests/parity/legacy/stub.py`, which answers from the case's files the way
 /// FixtureHost does; `sleep`, `systemctl` and the Traefik config guard do nothing (section 4f of the script
 /// is the daemon's business in moi, see spec 05 § Deviations). The script's paths for its log and its
 /// heal stamp point into a sandbox and `IGNORE` is taken from the case's config; nothing else is changed.
 #[test]
 fn the_legacy_service_script_prints_what_the_expected_files_say() {
-    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("reference/cestmoi/scripts/service-check.sh");
-    let Ok(source) = std::fs::read_to_string(&script) else {
-        eprintln!("reference/ is gone (after M13): the expected files stand on their own");
-        return;
-    };
+    let script = common::fixture_dir("cestmoi").join("root/opt/scripts/service-check.sh");
+    let source = std::fs::read_to_string(&script).expect("the fixture server keeps its legacy scripts");
     let have = |tool: &str| std::process::Command::new(tool).arg("--version").output().is_ok();
     if !have("bash") || !have("python3") {
         eprintln!("bash or python3 is not installed: skipping");

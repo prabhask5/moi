@@ -4,7 +4,7 @@ moi is built milestone by milestone by an AI coding agent (Claude Code), reviewe
 
 ## Every session
 
-1. Read `CLAUDE.md`, `docs/milestones.md`, and the spec files the current milestone names. Skim `reference/` only for the parts you are porting.
+1. Read `CLAUDE.md`, `docs/milestones.md`, and the spec files the current milestone names. The legacy scripts whose behaviour checks must reproduce are in the cestmoi fixture (`tests/fixtures/hosts/cestmoi/root/opt/scripts/`).
 2. Work on **one milestone (or one checkbox of it) per branch**: `m<N>-<short-name>`.
 3. Tests first: turn the spec's acceptance criteria into failing tests in `tests/`, then implement until they pass.
 4. Run `scripts/ci.sh` before every commit; never push red.
@@ -16,7 +16,7 @@ moi is built milestone by milestone by an AI coding agent (Claude Code), reviewe
 
 - Never run moi, tests or scripts against the real system of the machine you are on (no real `/etc`, Docker socket, `systemctl`, `iptables`). Use `FixtureHost` and the fixtures. Integration tests run in CI containers.
 - Never weaken a parity test to make it pass; parity output is a contract (05).
-- Never add secrets to the repo; fixtures use `FAKE…` tokens. `reference/` is redacted — keep it that way.
+- Never add secrets to the repo; fixtures use `FAKE…` tokens. The fixture server is redacted — keep it that way.
 - Never add a dependency without a line in `docs/spec/14-security.md#dependencies`.
 - Keep `README.md` user-facing and current for shipped commands only.
 - Leave nothing behind: no commented-out code, no `*.bak`/scratch dirs, no notes files, no unexplained `#[ignore]`.

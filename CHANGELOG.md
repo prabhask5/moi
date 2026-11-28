@@ -35,5 +35,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - `state.history_keep` folds history older than the limit into one commit and frees its space. Daemon jobs have time limits: a warning at the limit, a restart of the service at twice the limit.
 
 ### Changed
+- The minimum Rust version is 1.89 (what the dependencies need; 1.88 was declared and did not build). CI checks it.
+- `reference/` (the prototype and the legacy scripts) is gone from the tree; the legacy scripts the parity tests run are the cestmoi fixture's.
 - Exit code 3 ("not implemented yet") no longer exists: every command is implemented.
 - `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.

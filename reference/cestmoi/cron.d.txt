@@ -1,5 +1,0 @@
-# /etc/cron.d entries on cestmoi (legacy, replaced by moi checks)
-*/5 * * * * root flock -n /run/resource-check.lock /opt/scripts/resource-check.sh 2>&1 | systemd-cat -t resource-check
-*/5 * * * * root flock -n /run/service-check.lock /opt/scripts/service-check.sh 2>&1 | systemd-cat -t service-check
-*/5 * * * * root flock -n /run/storage-check.lock /opt/scripts/storage-check.sh 2>&1 | systemd-cat -t storage-check
-# server-backup.timer: OnCalendar=*-*-* 03:30:00 Persistent=true -> server-backup.service: ExecStart=/usr/bin/flock -n /run/server-backup.lock /opt/scripts/backup.sh

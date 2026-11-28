@@ -8,9 +8,9 @@ The built-ins replace these scripts on cestmoi, which today feed Kuma monitors w
 
 | Built-in | Replaces | Kuma monitor (cestmoi) |
 |---|---|---|
-| `resources` | `reference/cestmoi/scripts/resource-check.sh` | Server Resources |
-| `storage` | `reference/cestmoi/scripts/storage-check.sh` | Server Storage |
-| `services` (+ `edge`, heal) | `reference/cestmoi/scripts/service-check.sh` | Server Internal Services |
+| `resources` | `tests/fixtures/hosts/cestmoi/root/opt/scripts/resource-check.sh` | Server Resources |
+| `storage` | `tests/fixtures/hosts/cestmoi/root/opt/scripts/storage-check.sh` | Server Storage |
+| `services` (+ `edge`, heal) | `tests/fixtures/hosts/cestmoi/root/opt/scripts/service-check.sh` | Server Internal Services |
 | `backup` | push at the end of `backup.sh` | Server Backup |
 
 **For the same machine state, the message must be byte-identical to what the script prints** (`echo "$status: $msg"` minus the `status: ` prefix), including separators, trailing spaces and ordering. The scripts are the specification for semantics too (thresholds, sustain logic, retry rules). `tests/parity/<check>/<case>/` holds a fixture host state and the expected `status` + `msg`; add a case for every branch of the script. Deliberate deviations (bugs fixed) are listed in § Deviations and nowhere else.

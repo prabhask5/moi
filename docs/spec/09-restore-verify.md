@@ -1,6 +1,6 @@
 # 09 — Restore & verify
 
-`moi restore --bundle DIR` rebuilds a server on fresh hardware from a state bundle (08) plus the data backup (07). It is phased, interactive, resumable and dry-runnable. The prototype's restore (`reference/serverstate/serverstate`, `restore_*` functions) is the reference; moi keeps its safety rules and adds the items below.
+`moi restore --bundle DIR` rebuilds a server on fresh hardware from a state bundle (08) plus the data backup (07). It is phased, interactive, resumable and dry-runnable. The serverstate prototype's restore (its `restore_*` functions) was the reference; moi keeps its safety rules and adds the items below.
 
 ```
 moi restore --bundle DIR [--dry-run] [--only a,b] [--from phase] [--skip a,b] [--yes] [--snapshot ID]

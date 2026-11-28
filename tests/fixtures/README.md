@@ -73,7 +73,7 @@ A small Docker host for the client tests: a compose stack (`web`, `db`), a stopp
 
 ## `cestmoi`
 
-The first real server, rebuilt from its non-secret profile (`reference/cestmoi/PROFILE.md`) and its redacted legacy
+The first real server, rebuilt from a non-secret profile of it and its redacted legacy
 scripts — **not** from a dump of the machine: every token, key, password and domain is fake (`FAKE…`, `example.com`).
 It has the filesystem (`/etc` with the custom units, cron jobs and firewall rule files, dpkg state, the legacy
 scripts with fake push tokens that match the Kuma database, a stale `backup.sh.bak` holding another token, a

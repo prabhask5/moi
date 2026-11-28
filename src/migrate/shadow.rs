@@ -68,7 +68,7 @@ pub fn end(db: &Db) {
 }
 
 /// Take over what the legacy scripts remembered, so that deltas and cooldowns go on from where they
-/// are: the formats of the reference scripts (`reference/cestmoi/scripts`), found in the state
+/// are: the formats of the legacy scripts of the cestmoi fixture (`/opt/scripts`), found in the state
 /// directories the plan names. Returns what was taken; anything in another format is left where it is.
 pub fn import(host: &dyn Host, config: &Config, db: &Db, plan: &[Item]) -> Result<Vec<String>, Error> {
     let mut done = Vec::new();

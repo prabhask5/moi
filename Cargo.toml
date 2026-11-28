@@ -2,14 +2,14 @@
 name = "cestmoi"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.89"
 description = "moi — one binary that runs a Linux server: state capture, AI context, health checks, Uptime Kuma sync, backups and one-command rebuilds"
 license = "MIT"
 repository = "https://github.com/prabhask5/moi"
 readme = "README.md"
 keywords = ["server", "backup", "monitoring", "homelab", "uptime-kuma"]
 categories = ["command-line-utilities"]
-exclude = ["reference/", "tests/fixtures/", ".github/"]
+exclude = ["tests/fixtures/", ".github/"]
 default-run = "moi"
 
 # The packages carry what the tarball carries, in the places a distribution expects them. The unit is
