@@ -1,0 +1,8 @@
+curl -fsSL https://github.com/prabhask5/devbox/releases/download/ssh-v0.1.0/devbox-ssh-setup.sh | sh -s -- add \
+  --alias cestmoi --url https://ssh.example.com --user owner \
+  --host-key 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAKEhostkeyFAKEhostkeyFAKEhostkeyFAKEhostkey0' --authorize-hint 'On the server, run: sudo moi ssh authorize'
+
+Run this on each computer (macOS or Linux) that should reach the server with `ssh cestmoi`.
+It installs devbox's client `devbox-ssh` and writes one block of SSH configuration; both come from
+devbox's release ssh-v0.1.0. The same script with `remove --alias cestmoi` undoes it.
+If the computer's key is not allowed yet, the script prints it: on the server, run `sudo moi ssh authorize '<that line>'`.

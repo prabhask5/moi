@@ -36,6 +36,7 @@ pub struct Config {
     pub backup: Backup,
     pub restore: Restore,
     pub migrate: Migrate,
+    pub ssh: Ssh,
     pub monitors: Monitors,
 }
 
@@ -57,6 +58,7 @@ impl Config {
             backup: Backup::read(root.table(cx, "backup"), cx),
             restore: Restore::read(root.table(cx, "restore"), cx),
             migrate: Migrate::read(root.table(cx, "migrate"), cx),
+            ssh: Ssh::read(root.table(cx, "ssh"), cx, &mut used),
             monitors,
         };
         used.report(cx);
@@ -1068,6 +1070,90 @@ impl Restore {
         let this = Self {
             etc_paths: t.paths_or(cx, "etc_paths", &[]),
             restore_modified_conffiles: t.bool_or(cx, "restore_modified_conffiles", true),
+        };
+        t.finish(cx);
+        this
+    }
+}
+
+/// How the server is reached from outside (16).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SshProvider {
+    /// A Cloudflare Tunnel connector on the host.
+    Cloudflare,
+    /// The server is reachable already: only checks, records and the client command.
+    None,
+}
+
+/// SSH from anywhere (16): on when the section is present; written by `moi ssh up`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Ssh {
+    pub enabled: bool,
+    pub provider: SshProvider,
+    /// The public name the tunnel answers SSH on.
+    pub hostname: Option<String>,
+    /// What `ssh <alias>` is on a computer; default `server.name`.
+    pub alias: Option<String>,
+    /// The login the printed command uses.
+    pub user: Option<String>,
+    pub api_token: Option<Secret>,
+    pub tunnel_token: Option<Secret>,
+    /// Where cloudflared's metrics listen (moi's drop-in adds it).
+    pub metrics: String,
+    /// devbox release of the client and its setup script.
+    pub client_release: String,
+    /// Push monitor of the `ssh` check; `None` for none.
+    pub monitor: Option<String>,
+}
+
+/// The devbox client release this version was tested with.
+pub const SSH_CLIENT_RELEASE: &str = "ssh-v0.1.0";
+pub const SSH_METRICS: &str = "127.0.0.1:20241";
+pub const SSH_MONITOR: &str = "SSH tunnel";
+
+impl Ssh {
+    fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>, used: &mut MonitorNames) -> Self {
+        let enabled = t.bool_or(cx, "enabled", t.present());
+        let provider = match t.string(cx, "provider") {
+            None => SshProvider::Cloudflare,
+            Some(s) if s.value == "cloudflare" => SshProvider::Cloudflare,
+            Some(s) if s.value == "none" => SshProvider::None,
+            Some(s) => {
+                cx.err(&s.span, &t.key("provider"), "must be \"cloudflare\" or \"none\"");
+                SshProvider::Cloudflare
+            }
+        };
+        let hostname = t.checked(cx, "hostname", |s| {
+            let label = |l: &str| !l.is_empty() && l.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+            if s.contains('.') && s.split('.').all(label) {
+                Ok(())
+            } else {
+                Err("must be a host name like ssh.example.com (no scheme, no path)".to_string())
+            }
+        });
+        // a name that is written down is checked like every other monitor; the default is not a claim
+        let monitor = if t.has("monitor") {
+            used.read(&mut t, cx, "monitor").filter(|m| !m.is_empty())
+        } else {
+            enabled.then(|| SSH_MONITOR.to_string())
+        };
+        let this = Self {
+            enabled,
+            provider,
+            hostname,
+            alias: t.string_opt(cx, "alias"),
+            user: t.string_opt(cx, "user"),
+            api_token: t.secret(cx, "api_token", true),
+            tunnel_token: t.secret(cx, "tunnel_token", true),
+            metrics: t
+                .checked(cx, "metrics", |s| match s.rsplit_once(':') {
+                    Some((host, port)) if !host.is_empty() && port.parse::<u16>().is_ok() => Ok(()),
+                    _ => Err("must be address:port, like 127.0.0.1:20241".to_string()),
+                })
+                .unwrap_or_else(|| SSH_METRICS.to_string()),
+            client_release: t.string_or(cx, "client_release", SSH_CLIENT_RELEASE),
+            monitor,
         };
         t.finish(cx);
         this

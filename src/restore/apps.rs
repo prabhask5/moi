@@ -644,6 +644,66 @@ pub(super) fn docker(run: &mut Run<'_>) {
     }
 }
 
+/// SSH from anywhere (16): the connector as a host service again, from the old server's `[ssh]` and
+/// secrets. The ingress rule and the DNS record are Cloudflare's to remember: they are confirmed, and
+/// only changed if they are not what they were.
+pub(super) fn ssh(run: &mut Run<'_>) {
+    let Some(old) = run.old.clone() else {
+        run.info("the bundle's moi.toml does not load: `moi ssh up` by hand once moi is configured");
+        return;
+    };
+    let Some(settings) = crate::ssh::settings_of(run.host.as_ref(), &old.config) else {
+        run.info("the old server had no [ssh]");
+        return;
+    };
+    let provider = crate::ssh::provider(settings.provider);
+    let plan = provider.plan(run.host, settings);
+    for line in crate::ssh::render(&plan).lines().filter(|l| l.starts_with("  ")) {
+        run.say(&format!("  {line}"));
+    }
+    if let Some(stop) = plan.stopped() {
+        run.warn(&format!("SSH from anywhere was not set up ({}): `moi ssh up` when that is solved", stop.name));
+        return;
+    }
+    if run.dry() {
+        run.say("    [dry-run] moi ssh up --yes; then the SSH handshake through the public name");
+        return;
+    }
+    let state = StateDir::new(old.config.state.dir.clone());
+    let done = state
+        .ensure(run.host.as_ref())
+        .and_then(|()| state.open_db(run.host.as_ref()))
+        .map_err(|e| e.to_string())
+        .and_then(|db| {
+            let cx = crate::ssh::apply::Cx { host: run.host, loaded: &old, state: &state, db: &db };
+            let archive = crate::ssh::apply::new_archive(run.host.as_ref(), &state);
+            provider.apply(&cx, &plan, &archive)
+        });
+    match done {
+        Ok(lines) => {
+            for line in lines {
+                run.info(&line);
+            }
+        }
+        Err(why) => {
+            run.warn(&format!("SSH from anywhere: {why}"));
+            return;
+        }
+    }
+    if plan.tunnel.is_some() {
+        match crate::ssh::apply::handshake(run.host, &plan.settings.hostname) {
+            Ok(ms) => run.ok(&format!(
+                "an SSH server answers at https://{}/ ({ms} ms): `ssh {}` works again",
+                plan.settings.hostname, plan.settings.alias
+            )),
+            Err(e) => run.warn(&format!(
+                "the public SSH handshake failed ({}: {}): `moi ssh status` after the restore",
+                e.stage, e.error
+            )),
+        }
+    }
+}
+
 pub(super) fn moi(run: &mut Run<'_>) {
     // the configuration and the secrets as they were (a configuration already here is kept next to them)
     let etc = run.etc_moi.clone();

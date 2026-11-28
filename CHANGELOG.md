@@ -33,6 +33,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - `moi migrate plan|shadow|compare|switch|rollback|finish`: moves a server from legacy scripts, cron jobs and units to moi without changing a monitor or a token; every step but `finish` can be undone.
 - Distribution: `.deb` and `.rpm` packages, shell completions (`moi completions`), a man page, a Homebrew formula, an installer that verifies checksums; `moi --version` shows version, commit, build date and target.
 - `state.history_keep` folds history older than the limit into one commit and frees its space. Daemon jobs have time limits: a warning at the limit, a restart of the service at twice the limit.
+- `moi ssh up|status|connect|authorize|confirm|down`: SSH to the server from any computer through a Cloudflare Tunnel whose connector runs as a host service. Existing rules and records are adopted, DNS that points elsewhere is refused, a change made over the tunnel is kept only after `moi ssh confirm`. With it: the `ssh` check, an "SSH access" block in CONTEXT.md, an audit entry for an sshd that takes passwords at a public name, and a restore phase.
 
 ### Changed
 - The minimum Rust version is 1.89 (what the dependencies need; 1.88 was declared and did not build). CI checks it.

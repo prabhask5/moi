@@ -1,0 +1,10 @@
+moi ssh up — ssh.example.com (Cloudflare Tunnel)
+  ok      tunnel       FAKEtunn-0000-4000-8000-000000000001 of account FAKEaccount0000000000000000000001, found in [ssh] tunnel_token
+  ok      credentials  the API token may edit the tunnel and the DNS of example.com
+  ok      connector    cloudflared.service runs this tunnel on the host, metrics on 127.0.0.1:20241
+  adopt   ingress      ssh.example.com → ssh://localhost:22 is there already: adopted, unchanged
+  adopt   dns          CNAME ssh.example.com → FAKEtunn-0000-4000-8000-000000000001.cfargotunnel.com is there already: adopted
+  ok      sshd         public keys only, no root login with a password
+  note    verify       afterwards: an SSH handshake through https://ssh.example.com/
+  ok      records      [ssh] is in moi.toml, the `ssh` check and its monitor "SSH tunnel"
+everything already up to date

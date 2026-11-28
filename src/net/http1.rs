@@ -54,7 +54,11 @@ pub(crate) fn request(mut conn: Box<dyn Conn>, req: &Request<'_>) -> io::Result<
     let mut head =
         format!("{method} {} HTTP/1.1\r\nHost: {}\r\nUser-Agent: moi\r\nAccept: */*\r\n", req.target, req.host);
     if req.upgrade {
-        head.push_str("Connection: Upgrade\r\nUpgrade: tcp\r\n");
+        // Docker's raw streams unless the caller names another protocol (a WebSocket)
+        head.push_str("Connection: Upgrade\r\n");
+        if !req.headers.iter().any(|(name, _)| name.eq_ignore_ascii_case("upgrade")) {
+            head.push_str("Upgrade: tcp\r\n");
+        }
     } else {
         head.push_str("Connection: close\r\n");
     }

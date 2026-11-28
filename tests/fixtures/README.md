@@ -101,3 +101,12 @@ installation — `/var/lib/resource-check` (CPU counters, restart counts), `/var
 `/var/tmp/service-check-heal`, `/root/.config/restic/r2.env` with its password file, `/etc/serverstate.conf`,
 `/var/lib/serverstate` and `/usr/local/lib/serverstate`. Kept out of the host itself so that its snapshot,
 audit and context goldens stay what they are.
+
+## `tests/fakes/cloudflare.rs` and `ssh/`
+
+A fake Cloudflare API for the `moi ssh` tests (served on the fixture host's network as `api.cloudflare.com`): one
+tunnel with its remote configuration, the zone `example.com`, DNS records, and a token whose two permissions can be
+switched off. It refuses an ingress without a last catch-all, as the real API does, and panics if moi ever tries
+to delete a tunnel. Connector tokens are built at run time (`tunnel_token()`), so nothing token-shaped is committed.
+`fixtures/ssh/cloudflare-main.gpg` is Cloudflare's *public* package signing key, as published — the apply checks
+its hash, so the test needs the real file. `fixtures/expected/ssh/` holds the plan, `connect` and record goldens.

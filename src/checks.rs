@@ -10,6 +10,7 @@ mod custom;
 mod push;
 mod resources;
 mod services;
+mod ssh;
 mod storage;
 
 use std::collections::BTreeMap;
@@ -185,6 +186,13 @@ pub fn enabled(config: &Config) -> Vec<Arc<dyn Check>> {
     }
     if own_edge {
         checks.push(Arc::new(services::Services { part: services::Part::Edge }));
+    }
+    // the tunnel `ssh <server>` comes in by (16); provider `none` has nothing of moi's to watch
+    if config.ssh.enabled
+        && config.ssh.provider == crate::config::SshProvider::Cloudflare
+        && config.ssh.hostname.is_some()
+    {
+        checks.push(Arc::new(ssh::Ssh));
     }
     for (index, custom) in config.checks.custom.iter().enumerate() {
         if custom.common.enabled {

@@ -865,6 +865,78 @@ pub(super) fn users(doc: &mut Doc<'_>) {
         ]);
     }
     doc.table(&["User", "UID", "Home", "Shell", "Groups", "SSH keys"], &rows);
+    ssh_access(doc);
+}
+
+/// How the server is reached from outside (16 § Records): from what the `ssh` collector recorded.
+fn ssh_access(doc: &mut Doc<'_>) {
+    let access = doc.view.json("ssh/access.json");
+    let (Some(hostname), Some(alias)) = (access["hostname"].as_str(), access["alias"].as_str()) else { return };
+    doc.heading(3, "SSH access");
+    let user = access["user"].as_str().unwrap_or("root");
+    let via = if access["provider"] == "none" {
+        format!("`{hostname}` (reachable as it is; moi set up nothing in the path)")
+    } else {
+        format!(
+            "`{hostname}`: a Cloudflare Tunnel whose connector runs on the host as `cloudflared.service` and hands connections to sshd on port 22 — independent of Docker and the reverse proxy"
+        )
+    };
+    doc.line(format!(
+        "- **This server:** `ssh {alias}` (user `{user}`) from a computer set up with `moi ssh connect`, via {via}."
+    ));
+    if let Some(rules) = access["ingress"].as_array().filter(|r| !r.is_empty()) {
+        let list: Vec<String> = rules
+            .iter()
+            .map(|r| match r["hostname"].as_str() {
+                Some(name) => format!("`{name}` → `{}`", r["service"].as_str().unwrap_or_default()),
+                None => format!("everything else → `{}`", r["service"].as_str().unwrap_or_default()),
+            })
+            .collect();
+        doc.line(format!(
+            "- **Tunnel ingress** (in this order): {}. moi owns only the rule of `{hostname}`.",
+            list.join("; ")
+        ));
+    }
+    if let Some(dns) = access["dns"].as_str() {
+        doc.line(format!("- **DNS:** {dns}."));
+    }
+    let sshd = &access["sshd"];
+    if sshd.is_object() {
+        doc.line(format!(
+            "- **sshd:** passwords `{}`, root login `{}`.",
+            sshd["passwordauthentication"].as_str().unwrap_or("?"),
+            sshd["permitrootlogin"].as_str().unwrap_or("?")
+        ));
+    }
+    let keys: Vec<String> = access["authorized_keys"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|k| {
+            format!(
+                "{} `{}`",
+                k["comment"].as_str().filter(|c| !c.is_empty()).unwrap_or("(no comment)"),
+                k["fingerprint"].as_str().unwrap_or_default()
+            )
+        })
+        .collect();
+    if !keys.is_empty() {
+        doc.line(format!(
+            "- **Keys allowed to log in as `{user}`:** {}. Add one with `moi ssh authorize`.",
+            keys.join("; ")
+        ));
+    }
+    // the way into a VM when its own path is down: through this server
+    let instances: Vec<String> = doc
+        .view
+        .dir("incus/instances")
+        .into_iter()
+        .filter_map(|f| f.strip_suffix(".yaml").map(str::to_string))
+        .collect();
+    for instance in &instances {
+        doc.line(format!("- **Rescue for the VM `{instance}`** (when it cannot be reached on its own path): `ssh {alias}`, then `sudo incus exec {instance} -- bash`."));
+    }
+    doc.line("- Changing this path through itself is safe only with `moi ssh up` / `moi ssh down` (they arm a rollback and want `moi ssh confirm` from a new connection). Do not stop `cloudflared.service` or edit the tunnel's rule for this name by hand over SSH.");
 }
 
 pub(super) fn backups(doc: &mut Doc<'_>) {

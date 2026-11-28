@@ -345,6 +345,17 @@ impl Docker {
             .map(|_| ())
     }
 
+    /// Stop a container, by id or name. One that is not running is fine.
+    pub fn stop(&self, container: &str) -> Result<()> {
+        self.send("POST", &format!("/containers/{}/stop", http::encode(container)), None, false).map(|_| ())
+    }
+
+    /// Change a container's restart policy (`no`, `always`, `unless-stopped`, `on-failure`).
+    pub fn set_restart_policy(&self, container: &str, policy: &str) -> Result<()> {
+        let body = json!({ "RestartPolicy": { "Name": policy } });
+        self.send("POST", &format!("/containers/{}/update", http::encode(container)), Some(&body), false).map(|_| ())
+    }
+
     /// Restart a container (stop, then start), by id or name.
     pub fn restart(&self, container: &str) -> Result<()> {
         self.send("POST", &format!("/containers/{}/restart", http::encode(container)), None, false).map(|_| ())

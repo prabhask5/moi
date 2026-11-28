@@ -1,0 +1,10 @@
+moi ssh up — ssh.example.com (Cloudflare Tunnel)
+  ok      tunnel       FAKEtunn-0000-4000-8000-000000000001 of account FAKEaccount0000000000000000000001, found in container cloudflared; its token is stored as secret cloudflare_tunnel_token
+  ok      credentials  the API token may edit the tunnel and the DNS of example.com
+  change  connector    install cloudflared from Cloudflare's apt repository (signing key checked against the one moi knows); `cloudflared service install` (its own unit, started at boot); drop-in /etc/systemd/system/cloudflared.service.d/moi.conf (metrics on 127.0.0.1:20241); then wait for an edge connection
+  note    container    cloudflared also serves this tunnel and is managed by the swarm service cloudflared: `docker service scale cloudflared=0` — moi does not stop it; `moi ssh status` shows the second connector until it is gone
+  adopt   ingress      ssh.example.com → ssh://localhost:22 is there already: adopted, unchanged
+  adopt   dns          CNAME ssh.example.com → FAKEtunn-0000-4000-8000-000000000001.cfargotunnel.com is there already: adopted
+  ok      sshd         public keys only, no root login with a password
+  note    verify       afterwards: an SSH handshake through https://ssh.example.com/
+  change  records      write [ssh] to moi.toml; snapshot, CONTEXT.md, the `ssh` check and its monitor "SSH tunnel"

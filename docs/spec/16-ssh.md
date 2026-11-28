@@ -122,15 +122,32 @@ The public probe (step 8's handshake) runs at most every 15 minutes; the metrics
 - The printed command carries only public values: hostname, user, host key.
 - No new dependencies: the API and the probe use `net` (HTTPS, the WebSocket upgrade, one frame read), and secrets go through `redact`.
 
+## Decisions (M14)
+
+- **What counts as orchestrator-managed** (step 4): a swarm service's task (`com.docker.swarm.service.name`) and a Dokploy stack (a Compose working directory under `/etc/dokploy`, or `dokploy.*` labels) — something that reconciles and would start a stopped container again. A *plain* Compose project has nobody watching it, so its container is retired (this is cestmoi's `cloudflared` stack). Because moi's own `boot.compose_up` would be that somebody, the stack's directory is remembered (`ssh.retired_stacks` in `moi.db`) and the boot job leaves it down; `moi ssh down` forgets it again.
+- **The metrics address** is set through `Environment=TUNNEL_METRICS=<address>` in moi's drop-in — the variable cloudflared reads for `--metrics` — so the unit `cloudflared service install` wrote is not overridden and survives cloudflared's own updates of it.
+- **"Pinned by fingerprint"** is the SHA-256 of the key file Cloudflare publishes at `https://pkg.cloudflare.com/cloudflare-main.gpg` (`ssh::apply::KEY_SHA256`), not the OpenPGP fingerprint, which would need SHA-1 and a packet parser. Any other file stops the install before apt is touched. If Cloudflare rotates the key, the owner installs cloudflared by hand and moi goes on from there; the constant changes with the next release.
+- **Before `[ssh]` exists**, `moi ssh up` reads the secrets `cloudflare_api_token` and `cloudflare_tunnel_token` from `secrets.toml` (or `MOI_SECRET_*`) by name. A token found on the machine is appended to `secrets.toml` under that name.
+- **The `[ssh]` block** in `moi.toml` is appended between `# >>> moi ssh up …` and `# <<< moi ssh up`; `down` removes exactly that. An `[ssh]` section the owner wrote by hand is never rewritten: a different `--hostname` stops with a message.
+- **A cloudflared unit of another tunnel** is not replaced: the run stops and says so.
+- **Plan output**: one line per step — `ok`, `adopt`, `change`, `note` or `STOP`, the step's name, what it is about. A `STOP` ends the plan (exit 1, nothing changed). `--dry-run --json`: `{ hostname, changes, steps: [{name, action, text}] }`.
+- **Order of the apply**: connector installed and *connected* (an edge connection on `/ready`, 60 s) before the old container is stopped or the rule is touched; if it does not connect, the run ends there and what worked still works.
+- **Over the tunnel** means: `SSH_CONNECTION` is set, a rule for the hostname exists, and the plan touches the connector, the container or the rule. A first setup over a plain SSH port needs no timer. The outer process arms `moi-ssh-rollback` (`moi ssh down --rollback <archive>`), runs `moi ssh up --inner <archive>` in `moi-ssh-apply`, then writes the records and verifies; the pending change is remembered in `moi.db` (`ssh.pending`) and shown by `moi ssh status`. If the inner run fails, everything is put back at once and the timer is stopped.
+- **`down`** restores in the order that keeps a way in: the old container first, then the rule (its previous form, or removed when moi added it), the DNS record only if moi created it, the drop-in, the service only if moi installed it. The cloudflared package and apt repository stay (said, not removed). Adopted rules and records are never touched.
+- **The `ssh` check** exists for the `cloudflare` provider only. Between two looks from outside (15 minutes), a failed look is remembered and keeps the check down even though the connector itself is connected. A run by hand (`moi check ssh`) always looks from outside.
+- **Snapshot**: `snapshot/ssh/access.json` (hostname, alias, user, provider, tunnel id and where it was found, connector unit/version/metrics, ingress as hostname → service, DNS, the five sshd settings, authorized keys as fingerprint + comment) and `volatile/ssh-connector.txt` (the unit's state). Cloudflare is asked at most once a day (`ssh.cloudflare_cache`).
+- **Restore** (`ssh` phase): uses the *bundle's* `[ssh]` and secrets, applies only the provider's steps (the records come back with the `moi` phase), and verifies the handshake.
+- **Key validation in `authorize`**: Ed25519, ECDSA P-256/384/521, their security-key forms, RSA from 3072 bits; the key's inner type must match the one written in front of it.
+
 ## Acceptance
 
-- [ ] Fake Cloudflare API (in-process HTTP, `tests/fakes/cloudflare`): tunnel lookup, configurations GET/PUT, DNS list/create; permission errors → the named missing permission.
-- [ ] Tunnel discovery from a container token, a systemd unit token, a local `config.yml`, and the config secret (fixtures); no tunnel → the actionable message.
-- [ ] `up` plans golden for: fresh host with a tunnel, cestmoi (container connector with an existing `ssh.` rule; the plan adopts the rule and retires the container), orchestrated container (not stopped, reported), already set up (`everything already up to date`).
-- [ ] Ingress merge: other rules and their order kept, catch-all last, existing rule adopted, only `service` changed; DNS pointing elsewhere refused.
-- [ ] Over SSH: rollback timer armed before any change, apply in a transient unit, `confirm` keeps, no confirm restores (connector, container, ingress), timer unavailable → nothing changed.
-- [ ] `connect` output golden; `authorize` appends once, validates, sets modes and ownership.
-- [ ] `ssh` check messages golden for each state; monitor row adoption; snapshot, context and audit entries golden on the cestmoi fixture.
-- [ ] `down` restores byte for byte what `up` changed (files, unit drop-in, container restart policy, ingress, DNS it created), and never deletes the tunnel or records it didn't create.
-- [ ] Restore phase `ssh` on a fixture rebuild.
+- [x] Fake Cloudflare API (in-process HTTP, `tests/fakes/cloudflare`): tunnel lookup, configurations GET/PUT, DNS list/create; permission errors → the named missing permission.
+- [x] Tunnel discovery from a container token, a systemd unit token, a local `config.yml`, and the config secret (fixtures); no tunnel → the actionable message.
+- [x] `up` plans golden for: fresh host with a tunnel, cestmoi (container connector with an existing `ssh.` rule; the plan adopts the rule and retires the container), orchestrated container (not stopped, reported), already set up (`everything already up to date`).
+- [x] Ingress merge: other rules and their order kept, catch-all last, existing rule adopted, only `service` changed; DNS pointing elsewhere refused.
+- [x] Over SSH: rollback timer armed before any change, apply in a transient unit, `confirm` keeps, no confirm restores (connector, container, ingress), timer unavailable → nothing changed.
+- [x] `connect` output golden; `authorize` appends once, validates, sets modes and ownership.
+- [x] `ssh` check messages golden for each state; monitor row adoption; snapshot, context and audit entries golden on the cestmoi fixture.
+- [x] `down` restores byte for byte what `up` changed (files, unit drop-in, container restart policy, ingress, DNS it created), and never deletes the tunnel or records it didn't create.
+- [x] Restore phase `ssh` on a fixture rebuild.
 - [ ] With devbox's `ssh-v0.1.0` published: the printed command run in CI against a fake HOME and a fake tunnel origin (a WebSocket server bridging to a test sshd) connects with the real OpenSSH client.

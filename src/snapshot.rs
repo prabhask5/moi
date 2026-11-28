@@ -23,6 +23,7 @@ mod monitoring;
 mod network;
 mod packages;
 mod scripts;
+mod ssh;
 mod storage;
 mod systemd;
 mod trees;
@@ -107,6 +108,7 @@ pub fn collectors() -> Vec<Arc<dyn Collector>> {
         Arc::new(scripts::Scripts),
         Arc::new(incus::Incus),
         Arc::new(monitoring::Monitoring),
+        Arc::new(ssh::Ssh),
     ]
 }
 

@@ -26,6 +26,7 @@ pub mod net;
 pub mod redact;
 pub mod restore;
 pub mod snapshot;
+pub mod ssh;
 pub mod state;
 pub mod systemd;
 

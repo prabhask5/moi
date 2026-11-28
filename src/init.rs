@@ -45,6 +45,8 @@ pub struct Found {
     pub restic_env: Option<String>,
     /// Signs of an existing home-grown setup.
     pub legacy: Vec<String>,
+    /// Where a Cloudflare Tunnel connector was found (a container, a unit, a local config).
+    pub tunnel: Option<String>,
 }
 
 fn is_dir(host: &dyn Host, path: &str) -> bool {
@@ -223,6 +225,15 @@ pub fn discover(host: &Arc<dyn Host>) -> Found {
     paths.sort();
     found.backup_paths = paths;
 
+    // ---- a tunnel connector: `moi ssh up` can adopt it
+    found.tunnel = crate::ssh::cloudflare::connectors(&crate::docker::Docker::new(Arc::clone(host)))
+        .first()
+        .map(|c| format!("container {}", c.name))
+        .or_else(|| h.exists(Path::new(crate::ssh::cloudflare::UNIT)).then(|| "cloudflared.service".to_string()))
+        .or_else(|| {
+            h.exists(Path::new("/etc/cloudflared/config.yml")).then(|| "/etc/cloudflared/config.yml".to_string())
+        });
+
     // ---- what is there already
     found.restic_env =
         ["/etc/restic/env", "/etc/restic.env", "/root/.restic-env", "/etc/default/restic", "/opt/scripts/restic.env"]
@@ -324,6 +335,12 @@ pub fn config_text(found: &Found, observe: bool) -> String {
                 "# An existing restic setup was found ({env}): its repository can be adopted, see [backup.offsite].\n"
             ));
         }
+    }
+    if let Some(tunnel) = &found.tunnel {
+        out.push_str(&format!(
+            "\n# ------------------------------------------------------------------ ssh\n# A Cloudflare Tunnel connects this server ({tunnel}). `moi ssh up --hostname ssh.<your zone>` makes\n# `ssh {}` work from any computer through it, independent of Docker; it writes the [ssh] section itself\n# and changes nothing before showing its plan.\n",
+            found.server
+        ));
     }
     out
 }
