@@ -325,7 +325,10 @@ pub fn run(host: &Arc<dyn Host>, config: &Config, state: &StateDir) -> Result<Au
             misc::secrets(&view),
             misc::listeners(&view),
             misc::monitoring(&view, config),
-        ],
+        ]
+        .into_iter()
+        .chain(misc::ssh_access(&view))
+        .collect(),
     };
     let path = state.audit();
     host.write(&path, audit.markdown(1).as_bytes(), 0o600)

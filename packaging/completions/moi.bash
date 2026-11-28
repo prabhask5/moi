@@ -79,6 +79,9 @@ _moi() {
             moi,snapshot)
                 cmd="moi__subcmd__snapshot"
                 ;;
+            moi,ssh)
+                cmd="moi__subcmd__ssh"
+                ;;
             moi,status)
                 cmd="moi__subcmd__status"
                 ;;
@@ -205,6 +208,9 @@ _moi() {
             moi__subcmd__help,snapshot)
                 cmd="moi__subcmd__help__subcmd__snapshot"
                 ;;
+            moi__subcmd__help,ssh)
+                cmd="moi__subcmd__help__subcmd__ssh"
+                ;;
             moi__subcmd__help,status)
                 cmd="moi__subcmd__help__subcmd__status"
                 ;;
@@ -255,6 +261,24 @@ _moi() {
                 ;;
             moi__subcmd__help__subcmd__monitors,sync)
                 cmd="moi__subcmd__help__subcmd__monitors__subcmd__sync"
+                ;;
+            moi__subcmd__help__subcmd__ssh,authorize)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__authorize"
+                ;;
+            moi__subcmd__help__subcmd__ssh,confirm)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__confirm"
+                ;;
+            moi__subcmd__help__subcmd__ssh,connect)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__connect"
+                ;;
+            moi__subcmd__help__subcmd__ssh,down)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__down"
+                ;;
+            moi__subcmd__help__subcmd__ssh,status)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__status"
+                ;;
+            moi__subcmd__help__subcmd__ssh,up)
+                cmd="moi__subcmd__help__subcmd__ssh__subcmd__up"
                 ;;
             moi__subcmd__migrate,compare)
                 cmd="moi__subcmd__migrate__subcmd__compare"
@@ -316,6 +340,48 @@ _moi() {
             moi__subcmd__monitors__subcmd__help,sync)
                 cmd="moi__subcmd__monitors__subcmd__help__subcmd__sync"
                 ;;
+            moi__subcmd__ssh,authorize)
+                cmd="moi__subcmd__ssh__subcmd__authorize"
+                ;;
+            moi__subcmd__ssh,confirm)
+                cmd="moi__subcmd__ssh__subcmd__confirm"
+                ;;
+            moi__subcmd__ssh,connect)
+                cmd="moi__subcmd__ssh__subcmd__connect"
+                ;;
+            moi__subcmd__ssh,down)
+                cmd="moi__subcmd__ssh__subcmd__down"
+                ;;
+            moi__subcmd__ssh,help)
+                cmd="moi__subcmd__ssh__subcmd__help"
+                ;;
+            moi__subcmd__ssh,status)
+                cmd="moi__subcmd__ssh__subcmd__status"
+                ;;
+            moi__subcmd__ssh,up)
+                cmd="moi__subcmd__ssh__subcmd__up"
+                ;;
+            moi__subcmd__ssh__subcmd__help,authorize)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__authorize"
+                ;;
+            moi__subcmd__ssh__subcmd__help,confirm)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__confirm"
+                ;;
+            moi__subcmd__ssh__subcmd__help,connect)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__connect"
+                ;;
+            moi__subcmd__ssh__subcmd__help,down)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__down"
+                ;;
+            moi__subcmd__ssh__subcmd__help,help)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__help"
+                ;;
+            moi__subcmd__ssh__subcmd__help,status)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__status"
+                ;;
+            moi__subcmd__ssh__subcmd__help,up)
+                cmd="moi__subcmd__ssh__subcmd__help__subcmd__up"
+                ;;
             *)
                 ;;
         esac
@@ -323,7 +389,7 @@ _moi() {
 
     case "${cmd}" in
         moi)
-            opts="-q -h -V --config --secrets --json --quiet --help --version init snapshot log diff context notes audit check monitors backup push pull restore verify recovery-card firewall migrate config status daemon uninstall completions man help"
+            opts="-q -h -V --config --secrets --json --quiet --help --version init snapshot log diff context notes audit check monitors backup push pull restore verify recovery-card firewall migrate config status daemon uninstall ssh completions man help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -847,7 +913,7 @@ _moi() {
             return 0
             ;;
         moi__subcmd__help)
-            opts="init snapshot log diff context notes audit check monitors backup push pull restore verify recovery-card firewall migrate config status daemon uninstall completions man help"
+            opts="init snapshot log diff context notes audit check monitors backup push pull restore verify recovery-card firewall migrate config status daemon uninstall ssh completions man help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1339,6 +1405,104 @@ _moi() {
         moi__subcmd__help__subcmd__snapshot)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh)
+            opts="up status connect authorize confirm down"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__authorize)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__confirm)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__connect)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__down)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__status)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__help__subcmd__ssh__subcmd__up)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2000,6 +2164,288 @@ _moi() {
             fi
             case "${prev}" in
                 --state)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh)
+            opts="-q -h -V --config --secrets --json --quiet --help --version up status connect authorize confirm down help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__authorize)
+            opts="-q -h -V --name --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --name)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__confirm)
+            opts="-q -h -V --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__connect)
+            opts="-q -h -V --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__down)
+            opts="-q -h -V --dry-run --rollback --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --rollback)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help)
+            opts="up status connect authorize confirm down help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__authorize)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__confirm)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__connect)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__down)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__status)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__help__subcmd__up)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__status)
+            opts="-q -h -V --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --secrets)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        moi__subcmd__ssh__subcmd__up)
+            opts="-q -h -V --hostname --dry-run --yes --inner --config --secrets --json --quiet --help --version"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --hostname)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --inner)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

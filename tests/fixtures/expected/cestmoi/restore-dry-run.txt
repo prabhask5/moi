@@ -105,6 +105,9 @@ WARN: the operating system differs: package names and repositories may not match
     [dry-run] sysctl --system
     [dry-run] sshd -t, then (after asking) systemctl reload ssh
 
+==> phase: ssh — the tunnel connector for SSH from anywhere, its ingress and DNS confirmed; the public handshake
+    the old server had no [ssh]
+
 ==> phase: scripts — script directories and every script a unit or cron job refers to
     [dry-run] restore /usr/local/bin (3 files)
     [dry-run] restore /usr/local/sbin (1 files)

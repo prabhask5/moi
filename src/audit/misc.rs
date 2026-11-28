@@ -39,6 +39,32 @@ pub(super) fn secrets(view: &View<'_>) -> Section {
     s.or_nothing("none found")
 }
 
+/// sshd behind a public name (16): passwords and root logins are worth an entry of their own.
+pub(super) fn ssh_access(view: &View<'_>) -> Option<Section> {
+    let access = view.json("ssh/access.json");
+    let hostname = access["hostname"].as_str()?;
+    let mut s = Section::new("ssh", "SSH from outside");
+    let sshd = &access["sshd"];
+    if !sshd.is_object() {
+        s.review(format!("`sshd -T` could not be asked: check by hand that passwords and root logins are off — sshd answers at the public name {hostname}"));
+        return Some(s);
+    }
+    if sshd["passwordauthentication"] != "no" {
+        s.gap(format!("sshd accepts passwords, and it answers at the public name {hostname}: set `PasswordAuthentication no` (moi does not edit sshd)"));
+    }
+    if sshd["permitrootlogin"] == "yes" {
+        s.gap(format!("sshd lets root log in with a password, and it answers at the public name {hostname}: set `PermitRootLogin prohibit-password` or `no`"));
+    }
+    let keys = access["authorized_keys"].as_array().map_or(0, Vec::len);
+    if keys == 0 {
+        s.review(format!(
+            "no key may log in as {} yet: `moi ssh authorize` on the server, with the key a computer's setup prints",
+            access["user"].as_str().unwrap_or("the ssh user")
+        ));
+    }
+    Some(s.or_nothing(&format!("sshd at {hostname} takes public keys only; {keys} keys may log in")))
+}
+
 pub(super) fn listeners(view: &View<'_>) -> Section {
     let mut s = Section::new("listeners", "Programs listening on the host outside Docker");
     const EXPECTED: [&str; 6] = ["docker-proxy", "systemd-resolve", "sshd", "systemd", "chronyd", "dockerd"];

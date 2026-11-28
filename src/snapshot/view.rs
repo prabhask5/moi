@@ -73,6 +73,13 @@ impl<'a> View<'a> {
     }
 
     /// A JSON list under `snapshot/`; empty if absent.
+    /// The names in a directory of the snapshot, sorted.
+    pub fn dir(&self, rel: &str) -> Vec<String> {
+        let mut names = self.host.read_dir(&self.state.snapshot().join(rel)).unwrap_or_default();
+        names.sort();
+        names
+    }
+
     pub fn list(&self, rel: &str) -> Vec<Value> {
         match self.json(rel) {
             Value::Array(items) => items,

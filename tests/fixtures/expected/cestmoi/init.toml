@@ -56,3 +56,8 @@ url = "http://172.19.0.33:3001"
 #   "/opt/services",
 #   "/opt/yams",
 # ]
+
+# ------------------------------------------------------------------ ssh
+# A Cloudflare Tunnel connects this server (container cloudflared). `moi ssh up --hostname ssh.<your zone>` makes
+# `ssh cestmoi` work from any computer through it, independent of Docker; it writes the [ssh] section itself
+# and changes nothing before showing its plan.

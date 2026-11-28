@@ -119,11 +119,56 @@ pub enum Command {
         #[arg(long)]
         purge: bool,
     },
+    /// SSH to this server from anywhere, through a tunnel
+    #[command(subcommand)]
+    Ssh(SshCommand),
     /// Print a shell completion script (bash, zsh, fish)
     Completions { shell: clap_complete::Shell },
     /// Print the man page (roff)
     #[command(hide = true)]
     Man,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SshCommand {
+    /// Set up or adopt the tunnel path (idempotent)
+    Up {
+        /// The public host name that answers SSH (default: `[ssh] hostname`)
+        #[arg(long)]
+        hostname: Option<String>,
+        /// Print the plan without changing anything
+        #[arg(long)]
+        dry_run: bool,
+        /// Don't ask before applying the plan
+        #[arg(long)]
+        yes: bool,
+        /// Used by moi itself: apply the tunnel steps into this record (the unit behind the rollback timer)
+        #[arg(long, hide = true, value_name = "DIR")]
+        inner: Option<PathBuf>,
+    },
+    /// Connector, ingress, DNS, public handshake, keys
+    Status,
+    /// Print the one command to run on a computer
+    Connect,
+    /// Allow a computer's key to log in
+    Authorize {
+        /// The public key line, or a file that holds it
+        key: String,
+        /// A name for the key (its comment)
+        #[arg(long)]
+        name: Option<String>,
+    },
+    /// Keep a change made over the tunnel
+    Confirm,
+    /// Restore what `up` replaced
+    Down {
+        /// Print what would be restored without changing anything
+        #[arg(long)]
+        dry_run: bool,
+        /// Used by moi itself: undo this record (the rollback timer)
+        #[arg(long, hide = true, value_name = "DIR")]
+        rollback: Option<PathBuf>,
+    },
 }
 
 /// The completion script for a shell, as packages install it.
@@ -378,6 +423,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
             Ok(())
         }
         Command::Verify => verify(cli, host, out),
+        Command::Ssh(command) => ssh(cli, command, host, out),
         Command::Completions { shell } => {
             let _ = write!(out, "{}", completions(*shell));
             Ok(())
@@ -1688,6 +1734,206 @@ fn migrate_finish(cli: &Cli, now: bool, host: Arc<dyn Host>, out: &mut dyn Write
         }
     }
     Ok(())
+}
+
+fn ssh(cli: &Cli, command: &SshCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::ssh::{self, apply};
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    state.ensure(host.as_ref())?;
+    let db = state.open_db(host.as_ref())?;
+    let cx = apply::Cx { host: &host, loaded: &loaded, state: &state, db: &db };
+    let say = |out: &mut dyn Write, line: &str| {
+        let _ = writeln!(out, "{}", loaded.masker.mask(line));
+    };
+    // after a change: the server's description follows it
+    let record = |out: &mut dyn Write| {
+        // the configuration as it is now (an `up` may just have written [ssh])
+        let Ok(now) = crate::config::load(host.as_ref(), &cli.paths()) else { return };
+        let config = Arc::new(now.config);
+        match crate::snapshot::capture(&host, &config, &state, &db, &now.masker)
+            .and_then(|_| crate::context::write(host.as_ref(), &config, &state, &now.masker))
+        {
+            Ok(_) => say(out, "snapshot and CONTEXT.md updated"),
+            Err(e) => say(out, &format!("the snapshot afterwards failed ({e}): run `moi snapshot`")),
+        }
+    };
+    match command {
+        SshCommand::Up { hostname, dry_run, yes, inner } => {
+            let settings = ssh::settings(host.as_ref(), &loaded, hostname.as_deref())?;
+            let plan = ssh::provider(settings.provider).plan(&host, settings);
+            // the unit behind the rollback timer: the tunnel steps only, into the record it was given
+            if let Some(archive) = inner {
+                if let Some(stop) = plan.stopped() {
+                    return Err(Error::Usage(stop.text.clone()));
+                }
+                ssh::provider(plan.settings.provider).apply(&cx, &plan, archive).map_err(Error::Usage)?;
+                return Ok(());
+            }
+            if cli.json && *dry_run {
+                print_json(
+                    out,
+                    &json!({ "ok": plan.stopped().is_none(), "hostname": plan.settings.hostname, "changes": plan.changes(), "steps": plan.steps }),
+                );
+            } else {
+                let _ = write!(out, "{}", loaded.masker.mask(&ssh::render(&plan)));
+            }
+            if plan.stopped().is_some() {
+                return Err(Error::ProblemsFound);
+            }
+            if *dry_run || plan.changes() == 0 {
+                return Ok(());
+            }
+            if !*yes {
+                let answer = host
+                    .ask("Apply this plan? [y/N] ", std::time::Duration::from_secs(600))
+                    .ok()
+                    .flatten()
+                    .unwrap_or_default();
+                if !answer.trim().starts_with(['y', 'Y']) {
+                    say(out, "nothing was changed");
+                    return Ok(());
+                }
+            }
+            let (outcome, archive) = apply::up(&cx, &plan)?;
+            let (done, waiting) = match outcome {
+                apply::Outcome::Applied(done) => (done, false),
+                apply::Outcome::AwaitingConfirmation(done) => (done, true),
+            };
+            for line in &done {
+                say(out, &format!("  done   {line}"));
+            }
+            for line in apply::write_records(&cx, &plan, &archive).map_err(Error::Usage)? {
+                say(out, &format!("  done   {line}"));
+            }
+            record(out);
+            // the proof: an SSH server answers behind the public name
+            let verified = if plan.tunnel.is_some() {
+                match apply::handshake(&host, &plan.settings.hostname) {
+                    Ok(ms) => {
+                        say(
+                            out,
+                            &format!("  ✓ an SSH server answers at https://{}/ ({ms} ms)", plan.settings.hostname),
+                        );
+                        true
+                    }
+                    Err(e) => {
+                        say(
+                            out,
+                            &format!(
+                                "  ✗ the public handshake failed ({}: {}). DNS may need a minute: `moi ssh status`; `moi ssh down` puts everything back",
+                                e.stage, e.error
+                            ),
+                        );
+                        false
+                    }
+                }
+            } else {
+                true
+            };
+            if waiting {
+                say(
+                    out,
+                    &format!(
+                        "Now open a NEW connection (`ssh {}`) and run `sudo moi ssh confirm` within {} minutes.",
+                        plan.settings.alias,
+                        apply::CONFIRM.as_secs() / 60
+                    ),
+                );
+                say(out, "Without it, everything is put back as it was.");
+            } else {
+                say(out, "next: `moi ssh connect` prints the command for your computers");
+            }
+            if verified { Ok(()) } else { Err(Error::ProblemsFound) }
+        }
+        SshCommand::Status => {
+            let settings = ssh::settings(host.as_ref(), &loaded, None)?;
+            let status = ssh::status(&host, &settings, apply::pending(&db).is_some());
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "status": status }));
+            } else {
+                let _ = write!(out, "{}", loaded.masker.mask(&ssh::render_status(&status)));
+            }
+            if status.up { Ok(()) } else { Err(Error::ProblemsFound) }
+        }
+        SshCommand::Connect => {
+            let settings = ssh::settings(host.as_ref(), &loaded, None)?;
+            let text = ssh::connect(host.as_ref(), &settings)?;
+            if cli.json {
+                print_json(
+                    out,
+                    &json!({ "ok": true, "command": text.split("\n\n").next().unwrap_or_default(), "alias": settings.alias, "hostname": settings.hostname }),
+                );
+            } else {
+                let _ = write!(out, "{text}");
+            }
+            Ok(())
+        }
+        SshCommand::Authorize { key, name } => {
+            let user = loaded
+                .config
+                .ssh
+                .user
+                .clone()
+                .or_else(|| host.env("SUDO_USER"))
+                .filter(|u| !u.is_empty())
+                .unwrap_or_else(|| "root".to_string());
+            let done = ssh::authorize(host.as_ref(), &user, key, name.as_deref())?;
+            let (added, label) = match &done {
+                ssh::Authorized::Added(label) => (true, label),
+                ssh::Authorized::AlreadyThere(label) => (false, label),
+            };
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "added": added, "user": user, "name": label }));
+            } else if added {
+                say(out, &format!("{label} may now log in as {user}"));
+            } else {
+                say(out, &format!("that key is already allowed to log in as {user}: nothing was changed"));
+            }
+            Ok(())
+        }
+        SshCommand::Confirm => {
+            let said = apply::confirm(&cx)?;
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "message": said }));
+            } else {
+                say(out, &said);
+            }
+            Ok(())
+        }
+        SshCommand::Down { dry_run, rollback } => {
+            let found = match rollback {
+                Some(dir) => apply::load(host.as_ref(), dir).map(|record| (dir.clone(), record)),
+                None => apply::latest(host.as_ref(), &state),
+            };
+            let Some((archive, _)) = found else {
+                say(out, "nothing to restore: `moi ssh up` has changed nothing on this server");
+                return Ok(());
+            };
+            let token = loaded
+                .config
+                .ssh
+                .api_token
+                .clone()
+                .or_else(|| crate::config::secret_named(host.as_ref(), &loaded.paths, ssh::API_TOKEN_SECRET));
+            let said =
+                ssh::provider(loaded.config.ssh.provider).down(&cx, &archive, token, *dry_run).map_err(Error::Usage)?;
+            if cli.json {
+                print_json(out, &json!({ "ok": true, "dry_run": dry_run, "restored": said }));
+            } else {
+                for line in &said {
+                    say(out, &format!("  {line}"));
+                }
+                if said.is_empty() {
+                    say(out, "nothing had been changed");
+                }
+            }
+            if !*dry_run {
+                record(out);
+            }
+            Ok(())
+        }
+    }
 }
 
 fn verify(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {

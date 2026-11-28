@@ -23,7 +23,7 @@ use crate::error::Error;
 use crate::host::{self, Cmd, CmdOutput, FileKind, Host};
 
 /// The phases, in order, with what each does.
-pub const PHASES: [(&str, &str); 18] = [
+pub const PHASES: [(&str, &str); 19] = [
     ("preflight", "compare the old machine with this one; install base tools"),
     ("packages", "apt repositories and keys, manually installed packages, holds, snaps, pipx, npm"),
     ("users", "groups and users with the same ids, password hashes, group memberships"),
@@ -33,6 +33,7 @@ pub const PHASES: [(&str, &str); 18] = [
     ("docker-engine", "install Docker and the compose plugin; /etc/docker and its drop-ins"),
     ("data", "restore the backed-up data from the off-site repository"),
     ("config", "/etc as it was: ssh, sysctl, sudoers and every other captured file; hostname, time zone"),
+    ("ssh", "the tunnel connector for SSH from anywhere, its ingress and DNS confirmed; the public handshake"),
     ("scripts", "script directories and every script a unit or cron job refers to"),
     ("incus", "Incus with its storage pools, networks and profiles; instances as declared"),
     ("docker", "networks, databases first with their dumps, then every stack; swarm services"),
@@ -393,6 +394,7 @@ pub fn restore(host: &Arc<dyn Host>, bundle: &Path, options: &Options, out: &mut
             "docker-engine" => apps::docker_engine(&mut run),
             "data" => apps::data(&mut run),
             "config" => system::config(&mut run),
+            "ssh" => apps::ssh(&mut run),
             "scripts" => system::scripts(&mut run),
             "incus" => apps::incus(&mut run),
             "docker" => apps::docker(&mut run),

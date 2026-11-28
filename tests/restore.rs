@@ -100,6 +100,7 @@ fn list_shows_every_phase_in_order() {
             "docker-engine",
             "data",
             "config",
+            "ssh",
             "scripts",
             "incus",
             "docker",
@@ -123,7 +124,7 @@ fn only_from_and_skip_select_phases() {
             ..Options::default()
         })
     };
-    assert_eq!(phases(&[], None, &[]).unwrap().len(), 18);
+    assert_eq!(phases(&[], None, &[]).unwrap().len(), 19);
     assert_eq!(phases(&["cron", "users"], None, &[]).unwrap(), ["users", "cron"]);
     assert_eq!(phases(&[], Some("firewall"), &["monitors"]).unwrap(), ["firewall", "verify"]);
     let unknown = phases(&[], Some("disks"), &[]).unwrap_err().to_string();
@@ -150,7 +151,7 @@ fn full_dry_run_on_a_new_machine_changes_nothing() {
     // every phase is announced, in order
     let announced: Vec<&str> =
         out.lines().filter_map(|l| l.strip_prefix("==> phase: ")).map(|l| l.split(' ').next().unwrap()).collect();
-    assert_eq!(announced.len(), 18);
+    assert_eq!(announced.len(), 19);
     // only questions were asked of the machine
     let ran = host.commands_run()[before..].to_vec();
     for line in &ran {

@@ -1,0 +1,42 @@
+{
+  "alias": "cestmoi",
+  "authorized_keys": [
+    {
+      "comment": "laptop",
+      "fingerprint": "SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU"
+    }
+  ],
+  "connector": {
+    "drop_in": "/etc/systemd/system/cloudflared.service.d/moi.conf",
+    "metrics": "127.0.0.1:20241",
+    "unit": "/etc/systemd/system/cloudflared.service",
+    "version": "cloudflared version 2026.10.0"
+  },
+  "dns": "CNAME ssh.example.com → FAKEtunn-0000-4000-8000-000000000001.cfargotunnel.com",
+  "hostname": "ssh.example.com",
+  "ingress": [
+    {
+      "hostname": "ssh.example.com",
+      "service": "ssh://localhost:22"
+    },
+    {
+      "hostname": "status.example.com",
+      "service": "http://uptime-kuma:3001"
+    },
+    {
+      "hostname": null,
+      "service": "http_status:404"
+    }
+  ],
+  "provider": "cloudflare",
+  "sshd": {
+    "passwordauthentication": "no",
+    "permitrootlogin": "no"
+  },
+  "tunnel": {
+    "account": "FAKEaccount0000000000000000000001",
+    "found_in": "[ssh] tunnel_token",
+    "id": "FAKEtunn-0000-4000-8000-000000000001"
+  },
+  "user": "prabhas"
+}

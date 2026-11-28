@@ -106,6 +106,13 @@ pub fn load(host: &dyn Host, paths: &Paths) -> Result<Loaded, Error> {
     }
 }
 
+/// One secret by name, from `secrets.toml` or `MOI_SECRET_<NAME>`: for a command that has to work
+/// before the section that would refer to the secret is written (`moi ssh up`).
+pub fn secret_named(host: &dyn Host, paths: &Paths, name: &str) -> Option<Secret> {
+    let store = read_secrets(host, &paths.secrets, &mut Vec::new());
+    store.file.get(name).cloned().or_else(|| host.env(&SecretStore::env_name(name))).map(Secret::new)
+}
+
 /// `secrets.toml`: a single `[secrets]` table of strings, readable by its owner only. A missing file is
 /// fine (secrets may all come from the environment).
 fn read_secrets<'h>(host: &'h dyn Host, path: &Path, errors: &mut Vec<Diagnostic>) -> SecretStore<'h> {

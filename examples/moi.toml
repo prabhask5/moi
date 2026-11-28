@@ -240,5 +240,11 @@ restore_modified_conffiles = true
 name = "myserver"
 timezone = "Etc/UTC"
 
+[ssh]
+client_release = "ssh-v0.1.0"
+enabled = false
+metrics = "127.0.0.1:20241"
+provider = "cloudflare"
+
 [state]
 dir = "/var/lib/moi"

@@ -233,6 +233,95 @@ impl Client {
     }
 }
 
+/// Why a WebSocket did not deliver its first message: where it stopped, and what was said there.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HandshakeError {
+    /// `connect`, `tls`, `http`, `websocket` or `message`.
+    pub stage: &'static str,
+    pub error: String,
+}
+
+impl Client {
+    /// Open a WebSocket and return the first binary or text message the server sends — enough to
+    /// see that what answers behind a tunnel is an SSH server (16 § Verify). The
+    /// `Sec-WebSocket-Accept` value is not checked (that would need SHA-1): the caller judges the
+    /// message.
+    pub fn websocket_first_message(&self, url: &str) -> Result<Vec<u8>, HandshakeError> {
+        use std::io::Read;
+        let fail = |stage: &'static str| move |e: io::Error| HandshakeError { stage, error: e.to_string() };
+        let url = Url::parse(url).map_err(|error| HandshakeError { stage: "connect", error })?;
+        let mut conn = self.host.connect_tcp(&url.host, url.port, self.timeout).map_err(fail("connect"))?;
+        conn.set_timeout(Some(self.timeout)).map_err(fail("connect"))?;
+        if url.https {
+            conn = self.secure(conn, &url.host).map_err(fail("tls"))?;
+        }
+        let nonce = self.host.random_bytes(16).map_err(fail("http"))?;
+        let headers = [
+            ("Upgrade".to_string(), "websocket".to_string()),
+            ("Sec-WebSocket-Version".to_string(), "13".to_string()),
+            ("Sec-WebSocket-Key".to_string(), crate::context::share::base64(&nonce)),
+        ];
+        let authority = url.authority();
+        let request = http1::Request {
+            method: "GET",
+            target: &url.target,
+            host: &authority,
+            headers: &headers,
+            body: None,
+            upgrade: true,
+        };
+        let response = http1::request(conn, &request).map_err(fail("http"))?;
+        if response.status != 101 {
+            return Err(HandshakeError {
+                stage: "websocket",
+                error: format!("answered {} instead of switching protocols", response.status),
+            });
+        }
+        // one frame: flags and opcode, length (7 bits, or 16, or 64), payload. Servers do not mask.
+        let mut body = response.into_body();
+        let mut read = |n: usize| -> Result<Vec<u8>, HandshakeError> {
+            let mut buf = vec![0_u8; n];
+            body.read_exact(&mut buf).map_err(fail("message"))?;
+            Ok(buf)
+        };
+        loop {
+            let head = read(2)?;
+            let (opcode, masked) = (head[0] & 0x0f, head[1] & 0x80 != 0);
+            let len = match head[1] & 0x7f {
+                126 => usize::from(u16::from_be_bytes([read(1)?[0], read(1)?[0]])),
+                127 => {
+                    let wide = read(8)?;
+                    usize::try_from(u64::from_be_bytes([
+                        wide[0], wide[1], wide[2], wide[3], wide[4], wide[5], wide[6], wide[7],
+                    ]))
+                    .unwrap_or(usize::MAX)
+                }
+                short => usize::from(short),
+            };
+            // a banner is a line; nothing here needs more than this
+            if len > 64 * 1024 {
+                return Err(HandshakeError { stage: "message", error: format!("a first message of {len} bytes") });
+            }
+            let key = if masked { read(4)? } else { vec![0; 4] };
+            let mut payload = read(len)?;
+            for (i, byte) in payload.iter_mut().enumerate() {
+                *byte ^= key[i % 4];
+            }
+            match opcode {
+                1 | 2 => return Ok(payload),
+                8 => {
+                    return Err(HandshakeError {
+                        stage: "message",
+                        error: "the server closed the connection".to_string(),
+                    });
+                }
+                // pings and pongs are not what is waited for
+                _ => {}
+            }
+        }
+    }
+}
+
 /// Percent-encode a path segment or query value (everything but unreserved characters).
 pub fn encode(value: &str) -> String {
     http1::encode(value)

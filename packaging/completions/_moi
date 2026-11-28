@@ -736,6 +736,161 @@ _arguments "${_arguments_options[@]}" : \
 '--version[Print version]' \
 && ret=0
 ;;
+(ssh)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_moi__subcmd__ssh_commands" \
+"*::: :->ssh" \
+&& ret=0
+
+    case $state in
+    (ssh)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-ssh-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+'--hostname=[The public host name that answers SSH (default\: \`\[ssh\] hostname\`)]:HOSTNAME:_default' \
+'--inner=[Used by moi itself\: apply the tunnel steps into this record (the unit behind the rollback timer)]:DIR:_files' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--dry-run[Print the plan without changing anything]' \
+'--yes[Don'\''t ask before applying the plan]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(authorize)
+_arguments "${_arguments_options[@]}" : \
+'--name=[A name for the key (its comment)]:NAME:_default' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+':key -- The public key line, or a file that holds it:_default' \
+&& ret=0
+;;
+(confirm)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+'--rollback=[Used by moi itself\: undo this record (the rollback timer)]:DIR:_files' \
+'--config=[Config file]:CONFIG:_files' \
+'--secrets=[Secrets file \[default\: secrets.toml next to the config file\]]:SECRETS:_files' \
+'--dry-run[Print what would be restored without changing anything]' \
+'--json[Machine-readable JSON output where supported]' \
+'-q[Only print warnings and errors]' \
+'--quiet[Only print warnings and errors]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__ssh__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-ssh-help-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(authorize)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(confirm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
 (completions)
 _arguments "${_arguments_options[@]}" : \
 '--config=[Config file]:CONFIG:_files' \
@@ -975,6 +1130,46 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(ssh)
+_arguments "${_arguments_options[@]}" : \
+":: :_moi__subcmd__help__subcmd__ssh_commands" \
+"*::: :->ssh" \
+&& ret=0
+
+    case $state in
+    (ssh)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:moi-help-ssh-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(connect)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(authorize)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(confirm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (completions)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -1020,6 +1215,7 @@ _moi_commands() {
 'status:Daemon status, last results and next scheduled jobs' \
 'daemon:Run the daemon (used by moi.service)' \
 'uninstall:Remove moi and restore anything it replaced' \
+'ssh:SSH to this server from anywhere, through a tunnel' \
 'completions:Print a shell completion script (bash, zsh, fish)' \
 'man:Print the man page (roff)' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -1209,6 +1405,7 @@ _moi__subcmd__help_commands() {
 'status:Daemon status, last results and next scheduled jobs' \
 'daemon:Run the daemon (used by moi.service)' \
 'uninstall:Remove moi and restore anything it replaced' \
+'ssh:SSH to this server from anywhere, through a tunnel' \
 'completions:Print a shell completion script (bash, zsh, fish)' \
 'man:Print the man page (roff)' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -1409,6 +1606,48 @@ _moi__subcmd__help__subcmd__snapshot_commands() {
     local commands; commands=()
     _describe -t commands 'moi help snapshot commands' commands "$@"
 }
+(( $+functions[_moi__subcmd__help__subcmd__ssh_commands] )) ||
+_moi__subcmd__help__subcmd__ssh_commands() {
+    local commands; commands=(
+'up:Set up or adopt the tunnel path (idempotent)' \
+'status:Connector, ingress, DNS, public handshake, keys' \
+'connect:Print the one command to run on a computer' \
+'authorize:Allow a computer'\''s key to log in' \
+'confirm:Keep a change made over the tunnel' \
+'down:Restore what \`up\` replaced' \
+    )
+    _describe -t commands 'moi help ssh commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__authorize_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__authorize_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh authorize commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__confirm_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__confirm_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh confirm commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__connect_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__down_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__status_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__help__subcmd__ssh__subcmd__up_commands] )) ||
+_moi__subcmd__help__subcmd__ssh__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi help ssh up commands' commands "$@"
+}
 (( $+functions[_moi__subcmd__help__subcmd__status_commands] )) ||
 _moi__subcmd__help__subcmd__status_commands() {
     local commands; commands=()
@@ -1602,6 +1841,97 @@ _moi__subcmd__restore_commands() {
 _moi__subcmd__snapshot_commands() {
     local commands; commands=()
     _describe -t commands 'moi snapshot commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh_commands] )) ||
+_moi__subcmd__ssh_commands() {
+    local commands; commands=(
+'up:Set up or adopt the tunnel path (idempotent)' \
+'status:Connector, ingress, DNS, public handshake, keys' \
+'connect:Print the one command to run on a computer' \
+'authorize:Allow a computer'\''s key to log in' \
+'confirm:Keep a change made over the tunnel' \
+'down:Restore what \`up\` replaced' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi ssh commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__authorize_commands] )) ||
+_moi__subcmd__ssh__subcmd__authorize_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh authorize commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__confirm_commands] )) ||
+_moi__subcmd__ssh__subcmd__confirm_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh confirm commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__connect_commands] )) ||
+_moi__subcmd__ssh__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__down_commands] )) ||
+_moi__subcmd__ssh__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help_commands] )) ||
+_moi__subcmd__ssh__subcmd__help_commands() {
+    local commands; commands=(
+'up:Set up or adopt the tunnel path (idempotent)' \
+'status:Connector, ingress, DNS, public handshake, keys' \
+'connect:Print the one command to run on a computer' \
+'authorize:Allow a computer'\''s key to log in' \
+'confirm:Keep a change made over the tunnel' \
+'down:Restore what \`up\` replaced' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'moi ssh help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__authorize_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__authorize_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help authorize commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__confirm_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__confirm_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help confirm commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__connect_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__connect_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help connect commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__down_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help down commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__help_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help help commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__status_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__help__subcmd__up_commands] )) ||
+_moi__subcmd__ssh__subcmd__help__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh help up commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__status_commands] )) ||
+_moi__subcmd__ssh__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh status commands' commands "$@"
+}
+(( $+functions[_moi__subcmd__ssh__subcmd__up_commands] )) ||
+_moi__subcmd__ssh__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'moi ssh up commands' commands "$@"
 }
 (( $+functions[_moi__subcmd__status_commands] )) ||
 _moi__subcmd__status_commands() {

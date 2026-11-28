@@ -1,0 +1,7 @@
+- **This server:** `ssh cestmoi` (user `prabhas`) from a computer set up with `moi ssh connect`, via `ssh.example.com`: a Cloudflare Tunnel whose connector runs on the host as `cloudflared.service` and hands connections to sshd on port 22 — independent of Docker and the reverse proxy.
+- **Tunnel ingress** (in this order): `ssh.example.com` → `ssh://localhost:22`; `status.example.com` → `http://uptime-kuma:3001`; everything else → `http_status:404`. moi owns only the rule of `ssh.example.com`.
+- **DNS:** CNAME ssh.example.com → FAKEtunn-0000-4000-8000-000000000001.cfargotunnel.com.
+- **sshd:** passwords `no`, root login `no`.
+- **Keys allowed to log in as `prabhas`:** laptop `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU`. Add one with `moi ssh authorize`.
+- **Rescue for the VM `devbox`** (when it cannot be reached on its own path): `ssh cestmoi`, then `sudo incus exec devbox -- bash`.
+- Changing this path through itself is safe only with `moi ssh up` / `moi ssh down` (they arm a rollback and want `moi ssh confirm` from a new connection). Do not stop `cloudflared.service` or edit the tunnel's rule for this name by hand over SSH.

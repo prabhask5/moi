@@ -324,8 +324,16 @@ fn boot(core: &Arc<Core>) -> Result<(String, String), Error> {
                     act: true,
                 };
                 let mut started = 0;
+                // a stack whose only job was the tunnel connector that `moi ssh up` replaced stays down
+                let retired: Vec<String> = core
+                    .state
+                    .open_db(host.as_ref())
+                    .ok()
+                    .and_then(|db| db.setting(crate::ssh::apply::RETIRED_STACKS))
+                    .and_then(|v| serde_json::from_str(&v).ok())
+                    .unwrap_or_default();
                 for dir in stacks.iter().flat_map(|entry| compose_dirs(host.as_ref(), entry)) {
-                    if running.contains(&dir) {
+                    if running.contains(&dir) || retired.contains(&dir) {
                         continue;
                     }
                     match healer.compose_up(&dir) {
