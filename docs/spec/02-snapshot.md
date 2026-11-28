@@ -118,6 +118,10 @@ Every captured text file (scripts, units, crontabs, compose files and env files)
 
 When devbox is present, the `devbox` collector adds its config, routing file, gateway app description and status (secrets never) — 15 § Snapshot.
 
+### ssh
+
+With `[ssh]`, the `ssh` collector records the tunnel connector (unit, version, metrics address), its ingress rules, the DNS record, key `sshd -T` settings, and the authorized keys' fingerprints and comments, never the keys themselves — 16 § Records.
+
 ## History
 
 - The state dir is a git repository (gitoxide; no `git` binary needed). One commit per snapshot that changed `snapshot/` or `NOTES.md`; no-op snapshots create no commit.

@@ -60,6 +60,8 @@ Push: `GET {push_base}/api/push/{token}?status={up|down}&msg={urlencoded}&ping=`
 
 ## Built-ins
 
+With `[ssh]` there is one more built-in, `ssh` (the tunnel's health, its own messages and monitor), specified in 16 § Checks; it has no legacy script and so no parity contract.
+
 ### `resources`
 Exactly `resource-check.sh`:
 - CPU: `/proc/stat` first line, total = user+nice+system+idle+iowait+irq+softirq+steal, idle = idle+iowait; % = 100·(Δtotal−Δidle)/Δtotal using integer division; info `CPU {n}%`; sustained over `cpu_limit` → `CPU {n}% for {M}+ min` where M = `sustain_runs × interval` in minutes (defaults 2 × 5 → `for 10+ min`, exactly the script's text).

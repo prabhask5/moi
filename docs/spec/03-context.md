@@ -21,7 +21,7 @@
 15. **Services (systemd)** — custom units (state, description, ExecStart/User/WorkingDirectory/OnCalendar, notes), other enabled services, failed units.
 16. **Scripts** — path, description (header comment), called by, tags (backup/sync, docker), lines; notes override description.
 17. **Installed software** — apt manual, snaps, flatpaks, pipx, npm -g, manual binaries in /usr/local, /opt.
-18. **Users & access** — users, uid, home, shell, groups, SSH key comments.
+18. **Users & access** — users, uid, home, shell, groups, SSH key comments; with `[ssh]`, an **SSH access** block: how to reach the server (`ssh <alias>` via the tunnel hostname), the devbox path when devbox is present, and the rescue line for the VM (16 § Records).
 19. **Backups & rebuild** — backup jobs, what is backed up (auto-discovered DB dumps, volumes, paths), fungible paths, coverage table (path, what, ✓ / ✗ / read-only view / fungible), rebuild instructions.
 20. **Coverage & reboot audit** — the audit (04), demoted one heading level.
 21. **Recent changes** — last 25 commits.

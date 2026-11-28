@@ -14,7 +14,7 @@ moi is configured by `/etc/moi/moi.toml` (override with `--config` or `MOI_CONFI
 
 ### Decisions (M1)
 
-- **A feature is on when its section is present.** `[checks.resources]`, `[checks.storage]`, `[checks.services]`, `[checks.edge]`, `[backup]`, `[backup.offsite]`, `[backup.offsite.r2_guard]` and `[monitors.kuma]` are off in an empty config and on as soon as the section appears (a sub-section such as `[backup.offsite]` implies its parent). Each accepts `enabled = false` to switch it off without deleting its settings. `firewall.manage` stays an explicit opt-in. The effective config always contains every section, so defaults of features that are off are still shown.
+- **A feature is on when its section is present.** `[checks.resources]`, `[checks.storage]`, `[checks.services]`, `[checks.edge]`, `[ssh]`, `[backup]`, `[backup.offsite]`, `[backup.offsite.r2_guard]` and `[monitors.kuma]` are off in an empty config and on as soon as the section appears (a sub-section such as `[backup.offsite]` implies its parent). Each accepts `enabled = false` to switch it off without deleting its settings. `firewall.manage` stays an explicit opt-in. The effective config always contains every section, so defaults of features that are off are still shown.
 - **Required when enabled:** `backup.local_dir`; `backup.offsite.repository` and `.password`; `backup.offsite.r2_guard.account_id` and `.api_token`; `monitors.kuma.url`; `name` + `run` of a custom check; `name`, `when`, `action` of a heal rule; `name`/`target`/`path` of an http check; `name`/`container`/`cmd` of an exec check.
 - **Credentials must be references.** `password`, `api_token`, `api_key` and `backup.offsite.env` values whose name looks sensitive (`redact::is_sensitive_key`) are rejected unless written as `"secret:NAME"`. `username`, `repository` and `account_id` may be literal but are always masked in output.
 - **Secret names** use letters, digits and `_`. The environment fallback for `secret:restic_password` is `MOI_SECRET_RESTIC_PASSWORD` (name upper-cased); `secrets.toml` wins when both exist. A missing `secrets.toml` is not an error by itself. Every reference must resolve, also in sections that are switched off.
@@ -202,6 +202,18 @@ manage = true                    # moi applies these rules at boot; replaces a c
 chains = ["INPUT", "DOCKER-USER"]   # moi owns ONLY these chains; Docker owns the rest
 rules_v4 = "/etc/moi/firewall/rules4.txt"   # iptables-restore syntax, chain bodies only
 rules_v6 = "/etc/moi/firewall/rules6.txt"
+
+# ---------------------------------------------------------------- ssh (16)
+[ssh]                            # on when present; written by `moi ssh up`
+provider = "cloudflare"          # cloudflare | none
+hostname = "ssh.example.com"
+alias = "cestmoi"                # default: server.name
+user = "owner"                   # login used by the command `moi ssh connect` prints
+api_token = "secret:cloudflare_api_token"         # Cloudflare Tunnel: Edit + DNS: Edit (16)
+tunnel_token = "secret:cloudflare_tunnel_token"   # optional when the tunnel is found on the machine
+metrics = "127.0.0.1:20241"      # cloudflared metrics, added by moi's drop-in
+client_release = "ssh-v0.1.0"    # devbox release of devbox-ssh and its setup script
+monitor = "SSH tunnel"           # push monitor for the `ssh` check; "" for none
 
 # ---------------------------------------------------------------- backup (07)
 [backup]

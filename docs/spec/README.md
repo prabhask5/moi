@@ -19,5 +19,6 @@ Read [CLAUDE.md](../../CLAUDE.md) first. Each file states behaviour and ends wit
 | 13 | [Performance](13-performance.md) | budgets enforced in CI |
 | 14 | [Security](14-security.md) | secrets, egress, destructive ops, dependencies |
 | 15 | [devbox](15-devbox.md) | `moi devbox` over devbox's Rust library; snapshot, context, backup, monitor, restore integration |
+| 16 | [SSH from anywhere](16-ssh.md) | `moi ssh`: the main server over a Cloudflare Tunnel run as a host service; one command on the server, one on each computer, shared client contract with devbox |
 
 These specs were derived from a working prototype, serverstate (bash and Python; in this repository's history up to `69f44c0` under `reference/`). The legacy scripts that define check semantics live on in the cestmoi fixture, [`tests/fixtures/hosts/cestmoi/root/opt/scripts/`](../../tests/fixtures/hosts/cestmoi/root/opt/scripts/), where the parity tests run them.

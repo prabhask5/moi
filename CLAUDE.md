@@ -36,6 +36,7 @@ Product pillars, used to break ties:
 | `moi migrate {plan,shadow,compare,switch,rollback}` | Move a server from legacy scripts/cron to moi without breaking monitors | 11 |
 | `moi config check` | Validate config + secrets, print the effective config | 01 |
 | `moi devbox {up,down,status,doctor,connect,password}` | Set up and run a [devbox](https://github.com/prabhask5/devbox) VM through devbox's library, with moi's firewall, monitors and records | 15 |
+| `moi ssh {up,status,connect,authorize,confirm,down}` | SSH to the server from anywhere: a Cloudflare Tunnel connector as a host service, its ingress and DNS, the `ssh` check; prints the one command for a computer (devbox's `devbox-ssh` client and setup script) | 16 |
 | `moi uninstall [--purge]` | Remove moi, restore anything it replaced | 11 |
 
 ## 3. Architecture
@@ -53,7 +54,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `state` | State dir layout, git history (gitoxide), change summaries, NOTES.md stubs |
 | `context` | CONTEXT.md generation + redaction |
 | `audit` | Coverage, restorability, reboot survival, disk placement |
-| `checks` | Check engine + built-ins (`resources`, `storage`, `services`, `edge`, `backup`) + `custom` scripts; sustained-state store |
+| `checks` | Check engine + built-ins (`resources`, `storage`, `services`, `edge`, `backup`, `ssh`) + `custom` scripts; sustained-state store |
 | `monitors` | Uptime Kuma (socket.io client over HTTP long-polling, push HTTP, read-only `kuma.db` inventory), healthchecks.io awareness, adoption planner and its application |
 | `backup` | DB dump discovery/execution, volume/path selection, local archive, restic driver, R2 free-tier guard, retention |
 | `bundle` | State bundle (stored as a tagged restic snapshot), bootstrap |
@@ -64,6 +65,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `daemon` | The service loop (threads and a channel, no async runtime): scheduler, watchers (docker events, inotify), heal triggers, boot tasks, IPC socket `/run/moi.sock`, sd_notify + watchdog |
 | `migrate` | Legacy import (serverstate), shadow/compare/switch/rollback, cleanup |
 | `devbox` | `moi devbox`: the `Host` → `devbox_core::system::System` adapter, moi's firewall manager for devbox's rule, the devbox snapshot collector, context block, monitor row and restore phase. All logic beyond that lives in the `devbox-core` crate (15) |
+| `ssh` | `moi ssh`: the `ssh::Provider` trait and its `cloudflare` implementation (tunnel discovery, connector install, ingress/DNS through the Cloudflare API, safety timer), the `ssh` check, collector, context block, monitor row and restore phase (16) |
 | `log` | Structured journal entries under systemd (native protocol via `Host`), stderr lines otherwise; masks known secrets |
 | `net` | Outbound HTTP(S): a blocking HTTP/1.1 client over connections from `Host`, TLS by rustls with the system CA bundle; the staged probe (DNS → TCP → TLS → HTTP, each timed) |
 | `redact` | One place for secret detection and masking (env keys, URLs with credentials, tokens, hc-ping keys) |
@@ -71,7 +73,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 Rules:
 - **Every OS interaction goes through `host::Host`** so every feature is testable against fixtures in `tests/fixtures/`. A test never reads the real `/proc`, `/etc` or Docker socket.
 - No async runtime. The daemon is a loop sleeping on a channel with one thread per running job; outbound HTTP (`net`) is blocking, and so is Kuma's socket.io client, which uses the long-polling transport on top of it. The Docker API client is blocking (local socket, one short request per connection; the daemon follows the event stream on its own thread). Collectors may use rayon or tokio tasks; pick one per module and say why in a comment.
-- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` (and `ip6tables…`) / `nft`, `systemd-run` (the firewall's rollback timer), `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `docker compose up -d` (heal and boot: Compose has no API), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
+- External tools moi shells out to on purpose: `restic` (backups), `smartctl`, `journalctl -k` (kernel log for checks), `iptables` / `iptables-save/restore` (and `ip6tables…`) / `nft`, `systemd-run` (the firewall's and `moi ssh`'s rollback timers), `cloudflared` (`service install`), `apt-get` (installing cloudflared after confirmation), `sshd -T` (read-only), `pg_dumpall`/`mysqldump` (inside containers via Docker exec), `docker compose up -d` (heal and boot: Compose has no API), `incus`; and for snapshots the read-only system tools `systemctl`, `ip`, `ss`, `resolvectl`, `lsblk`, `blkid`, LVM/mdadm/zfs/btrfs, `ufw`/`fail2ban-client`/`cscli`, `tailscale`, `wg`. Each is optional and feature-detected (`snapshot::run_tool`): absent means "nothing to record", never an error.
 - Errors: `thiserror` in the library, `anyhow`-style context only at the CLI edge. User-facing errors say what to do next.
 - No `unsafe` without a comment proving it is needed. `#![forbid(unsafe_code)]` unless a module opts out explicitly.
 - Output that other systems consume (Kuma messages, `--json`) is covered by golden tests; changing it is a breaking change.
@@ -89,7 +91,8 @@ Rules:
 | `/var/lib/moi/archive/` | everything moi replaced or removed (legacy scripts, cron files, units) for rollback |
 | `/run/moi.sock` | daemon IPC |
 | `/run/moi-backup.lock` | held while a backup runs |
-| `/etc/systemd/system/moi.service` | the only unit moi installs |
+| `/etc/systemd/system/moi.service` | the only unit moi writes itself |
+| `/etc/systemd/system/cloudflared.service` + `cloudflared.service.d/moi.conf` | with `moi ssh up`: the tunnel connector's unit (written by `cloudflared service install`) and moi's drop-in adding the metrics address (16) |
 
 ## 4. Development
 
