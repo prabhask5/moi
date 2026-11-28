@@ -128,6 +128,13 @@ moi firewall apply
 moi snapshot
 moi backup
 moi push
+# the raw files of both databases stay out of the repository: their dumps are what is kept
+RESTIC_PASSWORD=fake-e2e-repository-password restic -r /srv/repo ls latest > /root/repo-files.txt
+grep -c 'pgdata/\|mysqldata/' /root/repo-files.txt || true
+if grep -q '/pgdata/.\|/mysqldata/.' /root/repo-files.txt; then
+  grep '/pgdata/.\|/mysqldata/.' /root/repo-files.txt | head -20
+  echo "raw database files were backed up" >&2; exit 1
+fi
 # the server as it is must pass its own verification, or the comparison later means nothing
 sleep 20
 moi verify
