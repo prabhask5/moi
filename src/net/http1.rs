@@ -226,3 +226,113 @@ pub(crate) fn demux(raw: &[u8]) -> (Vec<u8>, Vec<u8>) {
     }
     (stdout, stderr)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::{self, Read, Write};
+    use std::time::Duration;
+
+    use super::{Request, demux, request};
+    use crate::host::Conn;
+
+    /// A peer that answers with whatever bytes it is given.
+    #[derive(Debug)]
+    struct Bytes(io::Cursor<Vec<u8>>);
+
+    impl Read for Bytes {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            self.0.read(buf)
+        }
+    }
+
+    impl Write for Bytes {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl Conn for Bytes {
+        fn set_timeout(&mut self, _timeout: Option<Duration>) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn answer(bytes: &[u8]) -> io::Result<Vec<u8>> {
+        let req = Request { method: "GET", target: "/", host: "peer", headers: &[], body: None, upgrade: false };
+        request(Box::new(Bytes(io::Cursor::new(bytes.to_vec()))), &req)?.bytes()
+    }
+
+    #[test]
+    fn a_well_formed_answer_is_read() {
+        let body = answer(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n");
+        assert_eq!(body.ok().as_deref(), Some(b"hello".as_slice()));
+    }
+
+    /// Whatever a peer sends — cut off, garbled, lying about lengths — is an error or a body, never a
+    /// panic and never an allocation of the size the peer claims.
+    #[test]
+    fn no_answer_of_a_peer_can_crash_the_reader() {
+        let good: &[&[u8]] = &[
+            b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n3\r\nabc\r\n0\r\n\r\n",
+            b"HTTP/1.1 101 UPGRADED\r\nConnection: Upgrade\r\n\r\n\x01\x00\x00\x00\x00\x00\x00\x02ok",
+            b"HTTP/1.1 204 No Content\r\n\r\n",
+        ];
+        let nasty: &[&[u8]] = &[
+            b"",
+            b"\r\n\r\n",
+            b"HTTP/1.1\r\n\r\n",
+            b"HTTP/1.1 999999999999999999999 X\r\n\r\n",
+            b"HTTP/1.1 200 OK\r\nContent-Length: 18446744073709551615\r\n\r\nx",
+            b"HTTP/1.1 200 OK\r\nContent-Length: -1\r\n\r\nx",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nffffffffffffffff\r\nx",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nzz\r\nx",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhel",
+            b"HTTP/1.1 200 OK\r\n: \r\n:\r\nNoColon\r\n\r\n",
+            b"\xff\xfe\xfd 200 \xff\r\n\xff: \xff\r\n\r\n\xff",
+        ];
+        let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let mut tried = 0;
+        for input in good.iter().chain(nasty) {
+            let _ = answer(input);
+            let _ = demux(input);
+            // every truncation, and a few hundred garbled copies of each
+            for cut in 0..input.len() {
+                let _ = answer(&input[..cut]);
+                let _ = demux(&input[..cut]);
+                tried += 1;
+            }
+            for _ in 0..300 {
+                let mut bytes = input.to_vec();
+                for _ in 0..=(next() % 4) {
+                    if bytes.is_empty() {
+                        break;
+                    }
+                    let at = usize::try_from(next() % bytes.len() as u64).unwrap_or(0);
+                    match next() % 4 {
+                        0 => bytes[at] = (next() % 256) as u8,
+                        1 => {
+                            bytes.remove(at);
+                        }
+                        2 => bytes.insert(at, b"\r\n:0 9f"[usize::try_from(next() % 7).unwrap_or(0)]),
+                        _ => bytes.truncate(at),
+                    }
+                }
+                let _ = answer(&bytes);
+                let _ = demux(&bytes);
+                tried += 1;
+            }
+        }
+        assert!(tried > 4000, "{tried}");
+    }
+}

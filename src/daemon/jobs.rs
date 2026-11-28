@@ -103,6 +103,18 @@ fn daily(core: &Arc<Core>) -> Result<String, Error> {
             .iter()
             .filter(|e| crate::host::parse_rfc3339(&e.time).is_some_and(|t| crate::host::unix_seconds(t) > since))
             .count();
+        // history older than the owner wants to keep becomes one commit
+        if let Some(keep) = core.config.state.history_keep {
+            let cutoff = crate::host::unix_seconds(host.now()) - i64::try_from(keep.as_secs()).unwrap_or(i64::MAX);
+            match history.squash_before(host.as_ref(), &core.state, cutoff) {
+                Ok(0) => {}
+                Ok(folded) => log.info(
+                    &format!("history: {folded} snapshots older than state.history_keep folded into one"),
+                    &[("job", "daily")],
+                ),
+                Err(e) => log.warn(&format!("history: could not fold old snapshots: {e}"), &[("job", "daily")]),
+            }
+        }
         let stale: Vec<&str> = report.failed().map(|c| c.name.as_str()).collect();
         let mut message = format!("snapshot OK, {changes} changes today");
         if !stale.is_empty() {

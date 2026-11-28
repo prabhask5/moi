@@ -110,11 +110,11 @@ Specs: 15 (and the devbox rows in 01, 02, 03, 06, 09, 14). Starts when `devbox-c
 
 ## M12 — Performance & hardening
 Specs: 13, 14
-- [ ] `budgets` job with real measurements and thresholds
-- [ ] Fuzz config parsing and Docker payload parsing; review every `unwrap` on external data
-- [ ] `state.history_keep`: squash history older than the limit (the key is accepted and has no effect until then)
-- [ ] Daemon budgets measured on Linux (`daemon_rss_mb`, `daemon_cpu_percent`); a time limit for the daily job as a whole
-- [ ] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
+- [x] `budgets` job with real measurements and thresholds
+- [x] Fuzz config parsing and Docker payload parsing; review every `unwrap` on external data
+- [x] `state.history_keep`: squash history older than the limit (the key is accepted and has no effect until then)
+- [x] Daemon budgets measured on Linux (`daemon_rss_mb`, `daemon_cpu_percent`); a time limit for the daily job as a whole
+- [x] Cleanup pass (see top of this file); `scripts/check-hygiene.sh` green
 
 ## M13 — Public release readiness (v1.0.0)
 Specs: all; this milestone removes every development artifact

@@ -270,6 +270,114 @@ impl History {
         Ok(old.len())
     }
 
+    /// Fold every commit older than `cutoff` (unix seconds) into one: the state as it was at the last of
+    /// them, dated like it, saying how many snapshots it stands for. Newer commits keep everything but
+    /// their ids. Objects nothing refers to any more are deleted, so the space comes back. Returns how
+    /// many commits were folded (0 when fewer than two are that old).
+    pub fn squash_before(&self, host: &dyn Host, state: &StateDir, cutoff: i64) -> Result<usize, Error> {
+        let Some(head) = self.head() else { return Ok(0) };
+        let mut all: Vec<gix::ObjectId> = Vec::new();
+        for info in self.repo.rev_walk([head.id]).first_parent_only().all().map_err(git)? {
+            all.push(info.map_err(git)?.id);
+        }
+        all.reverse();
+        let seconds = |id: &gix::ObjectId| -> Result<i64, Error> {
+            Ok(self.repo.find_commit(*id).map_err(git)?.time().map_err(git)?.seconds)
+        };
+        let mut old = 0;
+        for id in &all {
+            if seconds(id)? >= cutoff {
+                break;
+            }
+            old += 1;
+        }
+        // the newest commit always stays itself, and one old commit is already as small as it gets
+        let old = old.min(all.len().saturating_sub(1));
+        if old < 2 {
+            return Ok(0);
+        }
+        let last_old = self.repo.find_commit(all[old - 1]).map_err(git)?;
+        let decoded = last_old.decode().map_err(git)?;
+        let when = seconds(&all[old - 1])?;
+        let date = host::format_rfc3339(
+            std::time::UNIX_EPOCH + std::time::Duration::from_secs(u64::try_from(when).unwrap_or(0)),
+        );
+        let root = gix::objs::Commit {
+            tree: last_old.tree_id().map_err(git)?.detach(),
+            parents: Default::default(),
+            author: decoded.author().map_err(git)?.to_owned().map_err(git)?,
+            committer: decoded.committer().map_err(git)?.to_owned().map_err(git)?,
+            encoding: None,
+            message: format!(
+                "history up to {} ({old} snapshots folded into one by state.history_keep)",
+                display_time(&date)
+            )
+            .into(),
+            extra_headers: Vec::new(),
+        };
+        let mut parent = self.repo.write_object(&root).map_err(git)?.detach();
+        for id in &all[old..] {
+            let commit = self.repo.find_commit(*id).map_err(git)?;
+            let decoded = commit.decode().map_err(git)?;
+            let rewritten = gix::objs::Commit {
+                tree: commit.tree_id().map_err(git)?.detach(),
+                parents: std::iter::once(parent).collect(),
+                author: decoded.author().map_err(git)?.to_owned().map_err(git)?,
+                committer: decoded.committer().map_err(git)?.to_owned().map_err(git)?,
+                encoding: None,
+                message: decoded.message.to_owned(),
+                extra_headers: Vec::new(),
+            };
+            parent = self.repo.write_object(&rewritten).map_err(git)?.detach();
+        }
+        self.repo
+            .reference(BRANCH, parent, gix::refs::transaction::PreviousValue::Any, "moi: old history folded")
+            .map_err(git)?;
+        self.prune(host, state, parent)?;
+        Ok(old)
+    }
+
+    /// Delete every loose object that the history ending in `tip` does not reach, and the reflog that
+    /// still names the old commits.
+    fn prune(&self, host: &dyn Host, state: &StateDir, tip: gix::ObjectId) -> Result<(), Error> {
+        let mut keep: std::collections::BTreeSet<gix::ObjectId> = std::collections::BTreeSet::new();
+        for info in self.repo.rev_walk([tip]).all().map_err(git)? {
+            let id = info.map_err(git)?.id;
+            keep.insert(id);
+            let mut trees = vec![self.repo.find_commit(id).map_err(git)?.tree_id().map_err(git)?.detach()];
+            while let Some(tree) = trees.pop() {
+                if !keep.insert(tree) {
+                    continue;
+                }
+                for entry in self.repo.find_tree(tree).map_err(git)?.iter() {
+                    let entry = entry.map_err(git)?;
+                    match entry.kind() {
+                        EntryKind::Tree => trees.push(entry.object_id()),
+                        _ => {
+                            keep.insert(entry.object_id());
+                        }
+                    }
+                }
+            }
+        }
+        let objects = state.state().join(".git/objects");
+        for fan in host.read_dir(&objects).unwrap_or_default().into_iter().filter(|n| n.len() == 2) {
+            let dir = objects.join(&fan);
+            for name in host.read_dir(&dir).unwrap_or_default() {
+                let reached =
+                    gix::ObjectId::from_hex(format!("{fan}{name}").as_bytes()).is_ok_and(|id| keep.contains(&id));
+                if !reached {
+                    let _ = host.remove_file(&dir.join(&name));
+                }
+            }
+        }
+        let logs = state.state().join(".git/logs");
+        if host.exists(&logs) {
+            let _ = crate::init::remove_tree(host, &logs);
+        }
+        Ok(())
+    }
+
     /// A commit and what it changed. `rev` is git revision syntax (`HEAD`, `HEAD~3`, an id prefix).
     pub fn show(&self, rev: &str) -> Result<(Entry, Vec<Change>), Error> {
         let id = self

@@ -130,6 +130,35 @@ pub struct Daemon {
     started: i64,
     /// Changes seen and not yet snapshotted.
     changes: watch::Debounce,
+    /// Running jobs: when each began, and whether it has been said that it is taking too long.
+    since: std::collections::BTreeMap<String, (i64, bool)>,
+}
+
+/// A running job that is past the time it may take.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Overdue {
+    pub job: String,
+    pub running_for: Duration,
+    pub limit: Duration,
+    /// Past twice its limit: it will not come back, and only a restart of the service ends it.
+    pub stuck: bool,
+}
+
+impl Work {
+    /// How long a job may run before the daemon says so. A thread cannot be stopped from outside, so
+    /// the limit is a report, and at twice the limit a restart. Backups and drills take as long as the
+    /// data is big: no limit.
+    fn limit(&self, config: &Config) -> Option<Duration> {
+        let minutes = |m: u64| Some(Duration::from_secs(m * 60));
+        match self {
+            Work::Check(check) => Some(check.timeout(config) + Duration::from_secs(60)),
+            Work::Daily | Work::Snapshot => minutes(30),
+            Work::Boot | Work::Verify => minutes(20),
+            Work::Heal(..) => minutes(15),
+            Work::Firewall => minutes(5),
+            Work::Backup | Work::Drill => None,
+        }
+    }
 }
 
 /// Something the loop wakes up for.
@@ -154,8 +183,14 @@ impl Daemon {
         let config = Arc::new(loaded.config);
         let core = Arc::new(Core { zone: Zone::load(host.as_ref()), host, config, masker: loaded.masker, state });
         let started = host::unix_seconds(core.host.now());
-        let mut daemon =
-            Self { core, paths: loaded.paths, jobs: Vec::new(), started, changes: watch::Debounce::default() };
+        let mut daemon = Self {
+            core,
+            paths: loaded.paths,
+            jobs: Vec::new(),
+            started,
+            changes: watch::Debounce::default(),
+            since: Default::default(),
+        };
         daemon.plan()?;
         Ok(daemon)
     }
@@ -348,6 +383,7 @@ impl Daemon {
     fn finish(&mut self, index: usize, outcome: Outcome) -> Result<(), Error> {
         let now = self.now();
         let core = Arc::clone(&self.core);
+        self.since.remove(&self.jobs[index].name);
         let job = &mut self.jobs[index];
         job.running = false;
         match &job.schedule {
@@ -391,11 +427,44 @@ impl Daemon {
     /// Mark a job as running and hand out its work.
     fn start(&mut self, index: usize) -> Work {
         self.jobs[index].running = true;
+        let now = self.now();
+        self.since.insert(self.jobs[index].name.clone(), (now, false));
         if self.jobs[index].name == "snapshot" {
             // what was seen so far is being acted on; later changes start a new wait
             self.changes.take();
         }
         self.jobs[index].work.clone()
+    }
+
+    /// Mark a job as running without running it (what the loop does before it hands the job to a thread).
+    pub fn begin(&mut self, name: &str) -> bool {
+        match self.jobs.iter().position(|j| j.name == name) {
+            Some(index) => {
+                self.start(index);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Running jobs that are past their limit. Each is returned once when it passes the limit, and
+    /// again (as `stuck`) every time it is asked about once it is past twice the limit.
+    pub fn overdue(&mut self) -> Vec<Overdue> {
+        let now = self.now();
+        let mut out = Vec::new();
+        for job in self.jobs.iter().filter(|j| j.running) {
+            let (Some(limit), Some((began, said))) = (job.work.limit(&self.core.config), self.since.get_mut(&job.name))
+            else {
+                continue;
+            };
+            let running_for = Duration::from_secs(u64::try_from(now - *began).unwrap_or(0));
+            let stuck = running_for >= limit * 2;
+            if stuck || (running_for >= limit && !*said) {
+                *said = true;
+                out.push(Overdue { job: job.name.clone(), running_for, limit, stuck });
+            }
+        }
+        out
     }
 
     /// Make a job due now (`moi status` shows it running; the CLI's triggers end up here).
@@ -501,6 +570,35 @@ impl Daemon {
                         Outcome { status: "failed".into(), message: format!("could not start: {e}"), duration_ms: 0 },
                     )?;
                 }
+            }
+            // a job that does not come back: said once, and at twice its limit the service gives up so
+            // that systemd starts a fresh one (a thread cannot be stopped; a process can)
+            for late in self.overdue() {
+                let minutes = |d: Duration| d.as_secs() / 60;
+                if late.stuck {
+                    log.error(
+                        &format!(
+                            "{} has been running for {} minutes (limit {}): restarting the service",
+                            late.job,
+                            minutes(late.running_for),
+                            minutes(late.limit)
+                        ),
+                        &[("job", &late.job)],
+                    );
+                    return Err(Error::Usage(format!(
+                        "the job {} is stuck: exiting so that systemd restarts moi",
+                        late.job
+                    )));
+                }
+                log.warn(
+                    &format!(
+                        "{} has been running for {} minutes (limit {}); at twice that the service restarts itself",
+                        late.job,
+                        minutes(late.running_for),
+                        minutes(late.limit)
+                    ),
+                    &[("job", &late.job)],
+                );
             }
             *shared.lock().unwrap_or_else(PoisonError::into_inner) = self.status();
             let _ = host.notify(&format!("WATCHDOG=1\nSTATUS={}", self.status_line()));

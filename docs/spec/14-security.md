@@ -35,3 +35,11 @@ Each dependency and why (keep this list current when adding one):
 | flate2 (pure-Rust `miniz_oxide` backend) | gzip for database dumps and the local archive. No zstd: it would bring a C library into the build for the local copy only (07) |
 | devbox-core (crates.io, `0.<minor>` until devbox 1.0) | `moi devbox`: devbox's setup/status/doctor engine, run through moi's `Host` (15). Blocking, no async runtime or HTTP crate, MSRV ≤ moi's — guaranteed by devbox's `compat` CI job against this repo's `deny.toml`. Brings `argon2` (password hashes) and `getrandom` |
 | tar (no default features) | writing (and, for restore, reading) the local archive, entry by entry from data read through `Host` — the crate never touches the file system itself |
+
+## Input from outside
+
+Everything moi reads is somebody else's: configuration typed by hand, answers of the Docker engine, of Uptime Kuma and of web servers, files of the system. None of it may crash moi.
+
+- The library has no `unwrap` or `expect` (clippy denies both); what remains to go wrong is arithmetic and slicing, which the tests below aim at.
+- **Mutation tests** (`tests/fuzz.rs`, and the HTTP reader's own in `src/net/http1.rs`) run on every CI run: 4,000 damaged configurations and secrets files through the loader; 240 damaged Docker answers (containers, an inspect, services, networks, volumes, info — values retyped, removed, made huge, cut off) through every check and the monitor plan; every truncation and several thousand garbled copies of HTTP responses and of Docker's multiplexed stream through the reader; 6,000 damaged time zone files; 20,000 hostile strings through the redaction code and the time parser. A panic fails the test and prints the input.
+- These are deterministic mutation tests, not coverage-guided fuzzing: they find the careless slice, not the input that needs a search to reach. A `cargo fuzz` setup needs a nightly toolchain and a second crate and is not part of this repository.

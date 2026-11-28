@@ -1,5 +1,5 @@
 # Performance budgets (docs/spec/13-performance.md). Checked by scripts/budgets.sh in CI.
-# Metrics without a measurement yet are skipped and listed as "pending" in the job summary.
+# The two daemon metrics are measured on Linux only (they are read from /proc).
 [budgets]
 version_ms = 10
 binary_mb = 15

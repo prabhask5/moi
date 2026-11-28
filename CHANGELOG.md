@@ -32,6 +32,7 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - `moi restore --bundle DIR`: rebuilds a server in eighteen phases (packages, users, storage, Docker, data from the backup, databases first from their dumps, stacks, swarm services, moi itself, firewall, monitors, verification and the guided reboot), with `--dry-run`, `--only`, `--from`, `--skip`, `--yes`. Disks are formatted only after typing `FORMAT` and the device; overwritten files are kept as `*.pre-moi`.
 - `moi migrate plan|shadow|compare|switch|rollback|finish`: moves a server from legacy scripts, cron jobs and units to moi without changing a monitor or a token; every step but `finish` can be undone.
 - Distribution: `.deb` and `.rpm` packages, shell completions (`moi completions`), a man page, a Homebrew formula, an installer that verifies checksums; `moi --version` shows version, commit, build date and target.
+- `state.history_keep` folds history older than the limit into one commit and frees its space. Daemon jobs have time limits: a warning at the limit, a restart of the service at twice the limit.
 
 ### Changed
 - Exit code 3 ("not implemented yet") no longer exists: every command is implemented.
