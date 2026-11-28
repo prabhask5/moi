@@ -367,6 +367,16 @@ fn backup_drill_push_and_pull_with_a_real_database_and_a_real_repository() {
     assert_eq!(s.moi(&["push", "--force"]), (0, "state bundle saved off-site\n".to_string()));
     assert_eq!((snapshots("moi-bundle").len(), snapshots("nightly").len()), (2, 1));
 
+    // ---- `moi snapshot --push`: the bundle follows the snapshot, when it changed
+    let (code, out) = s.moi(&["snapshot", "--push"]);
+    assert_eq!(code, 0, "{out}");
+    assert!(
+        out.ends_with("state bundle saved off-site\n")
+            || out.ends_with("state bundle: nothing changed since the last push\n"),
+        "{out}"
+    );
+    assert_eq!(snapshots("nightly").len(), 1);
+
     // ---- the drill: the dump goes into a throwaway Postgres and the table is there
     let (code, drill) = s.moi(&["backup", "--drill"]);
     assert_eq!(code, 0, "{drill}");

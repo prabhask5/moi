@@ -672,23 +672,37 @@ fn snapshot(cli: &Cli, args: &SnapshotArgs, host: Arc<dyn Host>, out: &mut dyn W
     let state = StateDir::new(state_root);
     state.ensure(host.as_ref())?;
     let db = state.open_db(host.as_ref())?;
-    let (report, commit) = crate::snapshot::capture(&host, &Arc::new(loaded.config), &state, &db, &loaded.masker)?;
+    let config = Arc::new(loaded.config);
+    let (report, commit) = crate::snapshot::capture(&host, &config, &state, &db, &loaded.masker)?;
 
     for failed in report.failed() {
         let error = failed.error.as_deref().unwrap_or_default();
         log.warn(&format!("{}: {error} (previous capture kept)", failed.name), &[("collector", &failed.name)]);
     }
-    if args.push {
-        log.warn("--push ignored: the state bundle arrives with milestone M7", &[]);
-    }
+    // the bundle goes off-site only if what it holds changed
+    let pushed = if args.push { Some(crate::bundle::push(&host, &config, &state, &db, false)?) } else { None };
+    let saved = pushed.as_ref().map(|p| *p == crate::bundle::Pushed::Saved);
     if cli.json {
-        print_json(out, &json!({ "ok": true, "state": state.state(), "snapshot": report, "commit": commit }));
+        let mut answer = json!({ "ok": true, "state": state.state(), "snapshot": report, "commit": commit });
+        if let Some(saved) = saved {
+            answer["pushed"] = json!(saved);
+        }
+        print_json(out, &answer);
     } else {
         let _ = write!(out, "snapshot saved to {}: {} files, ", state.state().display(), report.stable_files);
         let _ = match &commit {
             Some(c) => writeln!(out, "recorded {}\n  {}", &c.id[..10.min(c.id.len())], c.subject),
             None => writeln!(out, "no configuration changes"),
         };
+        match saved {
+            Some(true) => {
+                let _ = writeln!(out, "state bundle saved off-site");
+            }
+            Some(false) => {
+                let _ = writeln!(out, "state bundle: nothing changed since the last push");
+            }
+            None => {}
+        }
     }
     Ok(())
 }

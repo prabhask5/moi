@@ -4,7 +4,7 @@
 
 It replaces the cron jobs, shell scripts and one-off systemd units a self-hosted server accumulates.
 
-> **Status: pre-alpha, under active development.** Every command is implemented and tested against fixture servers, real service containers and (for backup → restore → reboot → verify) real virtual machines in CI; packaging, performance budgets for the daemon and the first real migration are still ahead ([docs/milestones.md](docs/milestones.md)). The spec is in [docs/spec](docs/spec/README.md).
+> **Status: 0.1, before its first real server.** Every command is implemented and tested in CI against fixture servers, real services and real virtual machines (backup → rebuild on a second machine → reboot → verify). The first migration of a real server is what stands between this and 1.0: see the [roadmap](docs/roadmap.md).
 
 ## What it does
 
@@ -23,7 +23,7 @@ curl -fsSL https://raw.githubusercontent.com/prabhask5/moi/main/install.sh | sh
 sudo moi init
 ```
 
-The installer downloads the static binary for your CPU from the GitHub release, checks it against the release's `SHA256SUMS`, and installs nothing if they disagree. Every release also has `.deb` and `.rpm` packages (binary in `/usr/bin`, the systemd unit — not enabled until `moi init` —, shell completions, man page), and the crate is `cestmoi` (`cargo install cestmoi`); a Homebrew formula is published to `prabhask5/tap` on release. `moi completions bash|zsh|fish` prints a completion script. See [distribution](docs/spec/12-distribution.md).
+The installer downloads the static binary for your CPU from the GitHub release, checks it against the release's `SHA256SUMS`, and installs nothing if they disagree. Every release also has `.deb` and `.rpm` packages (binary in `/usr/bin`, the systemd unit — not enabled until `moi init` —, shell completions, man page), which are on the [releases page](https://github.com/prabhask5/moi/releases). From source: `cargo install --git https://github.com/prabhask5/moi` (the crate `cestmoi` on crates.io and a Homebrew formula come with 1.0). `moi completions bash|zsh|fish` prints a completion script. See [distribution](docs/spec/12-distribution.md).
 
 ## Commands
 

@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
-# Repo hygiene: no implementation leftovers. Runs in CI on every PR.
-#   scripts/check-hygiene.sh            normal mode (during development)
-#   scripts/check-hygiene.sh --release  release mode (M13 and every release): zero scaffolding allowed
-#
-# Normal mode allows TODOs only when tagged with the milestone or issue that removes them: TODO(M10), TODO(#12).
-# Release mode allows none, and also forbids a reference/ directory coming back.
+# Repo hygiene: no implementation leftovers, no scaffolding. Runs in CI on every PR.
+# No TODO/FIXME is allowed: what is left to do is an issue, not a comment.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-release=0; [[ ${1:-} == --release ]] && release=1
 fail=0
 problem() { echo "✗ $*"; fail=1; }
 files=$(git ls-files)
@@ -17,13 +12,9 @@ src=$(echo "$files" | grep -E '\.(rs|sh|py|toml|yml|yaml)$' | grep -v '^scripts/
 hits=$(echo "$src" | grep '\.rs$' | xargs -r grep -nE '\b(dbg!|todo!|unimplemented!)\(' || true)
 [[ -n $hits ]] && problem "debug/placeholder macros:"$'\n'"$hits"
 
-# 2. TODO/FIXME/XXX/HACK must name the milestone or issue that removes them (none at all in release mode)
-if ((release)); then
-  hits=$(echo "$src" | xargs -r grep -nE '\b(TODO|FIXME|XXX|HACK)\b' || true)
-else
-  hits=$(echo "$src" | xargs -r grep -nE '\b(TODO|FIXME|XXX|HACK)\b' | grep -vE '\b(TODO|FIXME)\((M[0-9]+|#[0-9]+)\)' || true)
-fi
-[[ -n $hits ]] && problem "untracked TODO/FIXME (tag them TODO(M<n>) or TODO(#<issue>), or remove):"$'\n'"$hits"
+# 2. no TODO/FIXME/XXX/HACK: what is left to do is an issue
+hits=$(echo "$src" | xargs -r grep -nE '\b(TODO|FIXME|XXX|HACK)\b' || true)
+[[ -n $hits ]] && problem "TODO/FIXME left in the tree (open an issue instead):"$'\n'"$hits"
 
 # 3. stray files: editor/merge/backup leftovers, scratch dirs, OS junk
 # (a fixture host's or case's root/ imitates a server's filesystem, where *.bak and *.log files are the point)
@@ -41,12 +32,14 @@ done <<<"$files"
 hits=$(echo "$files" | grep '^tests/.*\.rs$' | xargs -r grep -nE '#\[ignore\]' || true)
 [[ -n $hits ]] && problem "#[ignore] without a reason — use #[ignore = \"needs MOI_IT services\"]:"$'\n'"$hits"
 
-# 6. release mode: no scaffolding, no reference material
-if ((release)); then
-  grep -rqE 'NotImplemented' src/ && problem "Error::NotImplemented still exists — every command must be implemented"
-  [[ -d reference ]] && problem "reference/ still exists — legacy semantics must live in tests/parity and the spec"
-  grep -qE '^## M[0-9]+.*' docs/milestones.md 2>/dev/null && grep -qE '^- \[ \]' docs/milestones.md && problem "unchecked items remain in docs/milestones.md"
-fi
+# 6. no scaffolding, no reference material, no build-time planning documents
+grep -rqE 'NotImplemented' src/ && problem "Error::NotImplemented exists — every command must be implemented"
+[[ -d reference ]] && problem "reference/ exists — legacy semantics live in tests/parity and the spec"
+[[ -e docs/milestones.md ]] && problem "docs/milestones.md is back — what is left to do is in docs/roadmap.md and the issues"
+for file in src/*.rs src/*/*.rs; do
+  # a module that is only its header comment is a stub
+  grep -qvE '^[[:space:]]*(//.*)?$' "$file" || problem "empty module: $file"
+done
 
 ((fail)) && exit 1
-echo "ok$( ((release)) && echo ' (release mode)')"
+echo "ok"
