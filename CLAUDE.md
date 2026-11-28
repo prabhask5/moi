@@ -49,8 +49,7 @@ Single crate, library + thin binary (`src/main.rs` only parses args and calls `c
 | `config` | `moi.toml` + `secrets.toml` schema (serde), defaults, validation, `secret:NAME` references |
 | `host` | **All system access**: files under a root prefix, `/proc`, `/sys`, commands, time, sockets, DNS, inotify, sd_notify. `RealHost` and `FixtureHost` (tests). Nothing else touches the OS directly |
 | `docker` | Docker Engine API over the unix socket (containers, networks, volumes, services/swarm, events, exec, logs): a small blocking HTTP/1.1 client on a connection from `Host`, payloads as JSON values. No `docker` CLI, no HTTP crate |
-| `systemd` | Unit states, timers, `TriggeredBy`, journal reads — through `systemctl` and `journalctl` (no D-Bus dependency) |
-| `snapshot` | Collectors (one per area, run in parallel) → normalized files in the state dir; volatile vs stable split |
+| `snapshot` | Collectors (one per area, run in parallel) → normalized files in the state dir; volatile vs stable split. systemd is read here (and by `verify`, `migrate`, `init`) through `systemctl` and `journalctl`: no D-Bus dependency |
 | `state` | State dir layout, git history (gitoxide), change summaries, NOTES.md stubs |
 | `context` | CONTEXT.md generation + redaction |
 | `audit` | Coverage, restorability, reboot survival, disk placement |
@@ -114,11 +113,11 @@ MOI_ROOT=tests/fixtures/hosts/cestmoi cargo run -- snapshot --state /tmp/moi-sta
 
 ## 5. How work is organized
 
-Milestones are in `docs/milestones.md` (also GitHub issues). One milestone ≈ one or a few PRs. For each:
-1. Read this file and the spec sections the milestone names. If the spec is ambiguous, decide, write the decision into the spec in the same PR.
+What is left before 1.0 and what may come later is in `docs/roadmap.md`; work is tracked as GitHub issues. For each change:
+1. Read this file and the spec sections it touches. If the spec is ambiguous, decide, write the decision into the spec in the same PR.
 2. Write tests from the acceptance criteria first, then implement.
-3. Cleanup pass: remove what the milestone superseded (stubs, `NotImplemented` arms), debug code, scratch files, unused fixtures and dependencies (`scripts/check-hygiene.sh`). The repo must be publishable after every milestone; M13 makes it public-ready (`check-hygiene.sh --release`).
-4. `scripts/ci.sh` green, update `README.md`/spec if user-visible behaviour changed, tick the milestone checkbox.
+3. Cleanup pass: remove what the change superseded, debug code, scratch files, unused fixtures and dependencies (`scripts/check-hygiene.sh`). The repo must be publishable after every PR.
+4. `scripts/ci.sh` green, update `README.md`/spec/`CHANGELOG.md` if user-visible behaviour changed.
 
 The agent workflow (prompts, PR conventions) is in `docs/agent-workflow.md`.
 

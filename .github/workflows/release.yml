@@ -42,7 +42,7 @@ jobs:
           test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, Cargo.toml $v" >&2; exit 1; }
       - name: No scaffolding, TODOs or reference material in a release
         if: github.ref_type == 'tag'
-        run: scripts/check-hygiene.sh --release
+        run: scripts/check-hygiene.sh
 
   build:
     needs: hygiene

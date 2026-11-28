@@ -410,4 +410,14 @@ fn backup_drill_push_and_pull_with_a_real_database_and_a_real_repository() {
     assert_eq!(pushed_state.keys().collect::<Vec<_>>(), pulled_state.keys().collect::<Vec<_>>());
     assert!(pushed_state == pulled_state, "the restored state differs from what was pushed");
     assert!(tree(&s.root.join("etc/moi")) == tree(&restored.join("etc/moi")), "the restored configuration differs");
+
+    // ---- `moi snapshot --push`: the bundle follows the snapshot, when it changed
+    let (code, out) = s.moi(&["snapshot", "--push"]);
+    assert_eq!(code, 0, "{out}");
+    assert!(
+        out.ends_with("state bundle saved off-site\n")
+            || out.ends_with("state bundle: nothing changed since the last push\n"),
+        "{out}"
+    );
+    assert_eq!(snapshots("nightly").len(), 1);
 }

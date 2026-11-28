@@ -29,7 +29,6 @@ pub mod restore;
 pub mod snapshot;
 pub mod ssh;
 pub mod state;
-pub mod systemd;
 
 /// Version string shown by `moi --version`: version, git sha, build date, target.
 pub const VERSION_LONG: &str = concat!(

@@ -5,8 +5,11 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-28
+
+The first release: every command, tested on fixture servers, real services and virtual machines; not yet on a real server.
+
 ### Added
-- Repository scaffold: spec, CLI surface for every command, tooling, CI, release workflow skeleton.
 - `moi config check` / `moi config path`: `moi.toml` + `secrets.toml` validation that reports every error with `file:line:col`, `secret:NAME` references resolved from `secrets.toml` or `MOI_SECRET_*`, effective config printed with secrets masked; `--secrets` / `MOI_SECRETS`.
 - `--json` output contract: one document with an `ok` field; errors as `{"ok": false, "error": {kind, message, exit_code}}`.
 - State directory layout and `moi.db` with versioned, forward-only schema migrations.
@@ -24,21 +27,17 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - Uptime Kuma: read-only inventory from `kuma.db` (no credentials), the adoption planner, `moi monitors list` and `moi monitors sync [--dry-run] [--update] [--prune]`, which adopts existing monitors (never changing their token), creates the missing ones over Kuma's socket API (1.23 and 2.x), and pauses — or with `--prune` deletes — only monitors it created.
 - The daemon: checks on their intervals (recorded, pushed, in the journal), a daily snapshot + audit with a freshness push, calendar jobs in the server's local time that are caught up after downtime, `sd_notify` readiness and watchdog, and `moi status` over `/run/moi.sock`. It watches the Docker engine and the file system and snapshots once things are quiet, keeps container monitors current, reloads its configuration when it changes, and runs heal rules on container events and file changes.
 - Firewall: `moi firewall apply|diff|status` replaces exactly the managed chains in one transaction, saves the previous rule set, and over SSH rolls back unless confirmed. Boot tasks: firewall, waiting for mounts and Docker, starting compose stacks that are not up.
-- `moi init` writes a first configuration from what it finds (disks, mounts, containers, Uptime Kuma; backups as a commented proposal), takes the first snapshot and installs `moi.service`; it never overwrites a configuration. `moi uninstall [--purge]` removes what moi installed.
+- `moi init` writes a first configuration from what it finds (disks, mounts, containers, Uptime Kuma; backups as a commented proposal), takes the first snapshot and installs `moi.service`; it never overwrites a configuration, and installs the service for one that has none. `moi uninstall [--purge]` removes what moi installed.
 - `moi backup [--dry-run]`: dumps every Postgres and MySQL/MariaDB database (swarm services included), archives the identity set with consistent copies of live SQLite databases, applies retention and the size limit, logs in the legacy format and reports to the backup monitor. The daemon runs it at `backup.schedule`.
 - Off-site backup with restic behind the legacy guards (one upload per interval, the R2 account's real usage checked first, repository size ceiling), weekly prune and integrity check; the state bundle with `moi push` / `moi pull`; `moi recovery-card`.
 - `moi backup --drill`: restores the latest dumps into throwaway database containers and compares a sample of archived files with the disk; optional schedule (`backup.drill`) and monitor (`checks.backup.drill_monitor`).
 - `moi verify`: a checklist of everything that ran at the last snapshot (containers, swarm services, ports, mounts, units, cron), the firewall, moi's checks, Kuma and the backup repository — with a fix hint per failure. The daemon runs it after every boot and reports to the journal, the login message and the boot monitor.
-- `moi restore --bundle DIR`: rebuilds a server in eighteen phases (packages, users, storage, Docker, data from the backup, databases first from their dumps, stacks, swarm services, moi itself, firewall, monitors, verification and the guided reboot), with `--dry-run`, `--only`, `--from`, `--skip`, `--yes`. Disks are formatted only after typing `FORMAT` and the device; overwritten files are kept as `*.pre-moi`.
+- `moi restore --bundle DIR`: rebuilds a server in twenty phases (packages, users, storage, Docker, data from the backup, databases first from their dumps, stacks, swarm services, moi itself, firewall, monitors, verification and the guided reboot), with `--dry-run`, `--only`, `--from`, `--skip`, `--yes`. Disks are formatted only after typing `FORMAT` and the device; overwritten files are kept as `*.pre-moi`.
 - `moi migrate plan|shadow|compare|switch|rollback|finish`: moves a server from legacy scripts, cron jobs and units to moi without changing a monitor or a token; every step but `finish` can be undone.
 - Distribution: `.deb` and `.rpm` packages, shell completions (`moi completions`), a man page, a Homebrew formula, an installer that verifies checksums; `moi --version` shows version, commit, build date and target.
 - `state.history_keep` folds history older than the limit into one commit and frees its space. Daemon jobs have time limits: a warning at the limit, a restart of the service at twice the limit.
 - `moi ssh up|status|connect|authorize|confirm|down`: SSH to the server from any computer through a Cloudflare Tunnel whose connector runs as a host service. Existing rules and records are adopted, DNS that points elsewhere is refused, a change made over the tunnel is kept only after `moi ssh confirm`. With it: the `ssh` check, an "SSH access" block in CONTEXT.md, an audit entry for an sshd that takes passwords at a public name, and a restore phase.
 - `moi devbox up|down|status|doctor|connect|password`: devbox's host commands through moi (its library `devbox-core`), with the firewall rule in moi's rules file, the health monitor in Uptime Kuma, devbox in the snapshot, the context file and the audit, and a restore phase that rebuilds the VM from the restored configuration.
 
-### Changed
-- `/etc/devbox/secrets.toml` is never copied into the state directory.
-- The minimum Rust version is 1.89 (what the dependencies need; 1.88 was declared and did not build). CI checks it.
-- `reference/` (the prototype and the legacy scripts) is gone from the tree; the legacy scripts the parity tests run are the cestmoi fixture's.
-- Exit code 3 ("not implemented yet") no longer exists: every command is implemented.
-- `examples/moi.toml` is now the generated reference of every default; the short example moved to `examples/minimal.toml`.
+- `moi snapshot --push` uploads the state bundle afterwards when it changed.
+- Built with Rust 1.89 or newer. `/etc/devbox/secrets.toml` is never copied into the state directory.

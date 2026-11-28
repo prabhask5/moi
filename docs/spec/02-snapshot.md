@@ -94,7 +94,7 @@ One collector per area, run concurrently, each with its own timeout (default 60 
 - `monitoring/kuma-monitors.json` is `{ "db": path, "monitors": [...] }` with the columns of Kuma's `monitor` table that describe a monitor, plus `notifications` (names only — never their configuration), `tags` and `group`. The last heartbeat of each monitor changes every minute, so it lives in `volatile/kuma-last.json` (`name → {status, msg, time}`), not in the stable file.
 - `monitoring/integrations.json` entries are `{file, kind, base, token, called_by[]}` (+ `"stale_copy": true` for `*.bak`, `*.old`, `*.orig`, `*~`) or `{container, env, kind, base, token}`; `kind` is `uptime-kuma-push` or `healthchecks`. Only files up to 512 KB are scanned.
 
-**`moi snapshot`** prints `snapshot saved to <state>: N files, M files changed` (or `no configuration changes`), warns per failed collector, and with `--json` prints `{ "ok": true, "state": "…", "snapshot": { "collectors": [{name, error, duration_ms}], "changed": […], "stable_files": N, "files_read": N } }`.
+**`moi snapshot`** prints `snapshot saved to <state>: N files, M files changed` (or `no configuration changes`), warns per failed collector, and with `--json` prints `{ "ok": true, "state": "…", "snapshot": { "collectors": [{name, error, duration_ms}], "changed": […], "stable_files": N, "files_read": N } }`. With `--push` the state bundle is uploaded afterwards if it changed (08): a last line `state bundle saved off-site` or `state bundle: nothing changed since the last push`, and `"pushed": true|false` in the JSON; without an off-site repository configured that is an error.
 
 ### Docker client
 
