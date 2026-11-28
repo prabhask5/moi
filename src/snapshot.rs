@@ -13,6 +13,7 @@
 
 mod collect;
 mod cron;
+mod devbox;
 mod docker;
 mod etc;
 mod files;
@@ -109,6 +110,7 @@ pub fn collectors() -> Vec<Arc<dyn Collector>> {
         Arc::new(incus::Incus),
         Arc::new(monitoring::Monitoring),
         Arc::new(ssh::Ssh),
+        Arc::new(devbox::Devbox),
     ]
 }
 

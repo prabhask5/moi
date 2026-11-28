@@ -27,6 +27,8 @@ pub const TAG: &str = "moi";
 pub enum Kind {
     Push,
     Docker,
+    /// Kuma asks a URL itself (devbox's health endpoint, 15).
+    Http,
 }
 
 impl Kind {
@@ -34,6 +36,7 @@ impl Kind {
         match self {
             Kind::Push => "push",
             Kind::Docker => "docker",
+            Kind::Http => "http",
         }
     }
 }
@@ -52,6 +55,9 @@ pub struct Desired {
     pub retries: u64,
     /// For docker monitors.
     pub container: Option<String>,
+    /// For http monitors: what Kuma asks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
 }
 
 /// What moi wants monitored, in plan order.
@@ -60,7 +66,15 @@ pub fn desired(config: &Config, docker: &Docker) -> Vec<Desired> {
     let server = &config.server.name;
     let mut out = Vec::new();
     let mut push = |owner: String, name: &str, interval: u64| {
-        out.push(Desired { owner, name: name.to_string(), kind: Kind::Push, interval, retries: 1, container: None });
+        out.push(Desired {
+            owner,
+            name: name.to_string(),
+            kind: Kind::Push,
+            interval,
+            retries: 1,
+            container: None,
+            url: None,
+        });
     };
     // a check may be late by a fifth of its interval before Kuma calls it down (5 min → 360 s)
     for check in crate::checks::enabled(config) {
@@ -82,6 +96,19 @@ pub fn desired(config: &Config, docker: &Docker) -> Vec<Desired> {
         // pushed once per boot: no heartbeat is expected in between
         push("boot:verify".to_string(), monitor, 30 * 86_400);
     }
+    // devbox's health endpoint: asleep is healthy there, so a sleeping VM never alerts (15)
+    if let (Some(name), Some(url)) = (&config.devbox.monitor, crate::devbox::health_url(docker.host().as_ref(), config))
+    {
+        out.push(Desired {
+            owner: "devbox".to_string(),
+            name: name.clone(),
+            kind: Kind::Http,
+            interval: 60,
+            retries: 2,
+            container: None,
+            url: Some(url),
+        });
+    }
     if kuma.containers {
         for container in docker.containers_inspect().unwrap_or_default() {
             let swarm_task =
@@ -97,6 +124,7 @@ pub fn desired(config: &Config, docker: &Docker) -> Vec<Desired> {
                     interval: 60,
                     retries: 1,
                     container: Some(name.to_string()),
+                    url: None,
                 });
             }
         }
@@ -293,6 +321,7 @@ pub fn plan(
             let detail = match want.kind {
                 Kind::Push => format!("interval {}s", want.interval),
                 Kind::Docker => format!("host {}", kuma.docker_host),
+                Kind::Http => format!("{} every {}s", want.url.as_deref().unwrap_or_default(), want.interval),
             };
             (Action::Create, None, detail)
         };
@@ -314,6 +343,18 @@ pub fn plan(
             let mut differs = Vec::new();
             if m.interval.is_some_and(|have| u64::try_from(have).ok() != Some(want.interval)) {
                 differs.push(format!("interval {} (moi default {})", m.interval.unwrap_or_default(), want.interval));
+            }
+            if want.kind == Kind::Http {
+                if m.url != want.url {
+                    differs.push(format!(
+                        "url {} (moi default {})",
+                        m.url.as_deref().unwrap_or("none"),
+                        want.url.as_deref().unwrap_or_default()
+                    ));
+                }
+                if m.retries.is_some_and(|have| u64::try_from(have).ok() != Some(want.retries)) {
+                    differs.push(format!("retries {} (moi default {})", m.retries.unwrap_or_default(), want.retries));
+                }
             }
             if !m.active {
                 differs.push("paused".to_string());

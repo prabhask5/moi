@@ -377,6 +377,19 @@ impl<'a, 'i> Tbl<'a, 'i> {
         self.checked_list(cx, key, default, absolute)
     }
 
+    /// `"auto"`, `true` or `false`: `None` is auto.
+    pub fn auto_or_bool(&mut self, cx: &mut Ctx<'_>, key: &'static str) -> Option<bool> {
+        let v = self.get(key)?;
+        match v.get_ref() {
+            DeValue::String(s) if s.as_ref() == "auto" => None,
+            DeValue::Boolean(b) => Some(*b),
+            _ => {
+                cx.err(&v.span(), &self.key(key), "expected \"auto\", true or false");
+                None
+            }
+        }
+    }
+
     /// `"auto"` or a list of strings each accepted by `check`.
     pub fn auto_or_list(
         &mut self,

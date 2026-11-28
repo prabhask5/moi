@@ -193,6 +193,12 @@ impl Context<'_> {
                 fields["docker_host"] = json!(self.docker_host(kuma)?);
                 None
             }
+            Kind::Http => {
+                fields["url"] = json!(want.url);
+                fields["method"] = json!("GET");
+                fields["accepted_statuscodes"] = json!(["200-299"]);
+                None
+            }
         };
         let id = kuma.add_monitor(fields)?;
         // the tag is how a human sees in Kuma that the monitor is moi's
@@ -230,8 +236,22 @@ pub fn apply(
                 }
                 (Action::Update, Some(id), Some(want)) => {
                     let mut monitor = kuma.monitor(id)?;
+                    let mut edited = false;
                     if monitor["interval"].as_u64() != Some(want.interval) {
                         monitor["interval"] = json!(want.interval);
+                        edited = true;
+                    }
+                    if want.kind == Kind::Http {
+                        if monitor["url"].as_str() != want.url.as_deref() {
+                            monitor["url"] = json!(want.url);
+                            edited = true;
+                        }
+                        if monitor["maxretries"].as_u64() != Some(want.retries) {
+                            monitor["maxretries"] = json!(want.retries);
+                            edited = true;
+                        }
+                    }
+                    if edited {
                         kuma.edit_monitor(&monitor)?;
                     }
                     if inventory.by_id(id).is_some_and(|m| !m.active) {

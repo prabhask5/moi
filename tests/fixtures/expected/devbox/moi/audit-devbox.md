@@ -1,0 +1,3 @@
+- ✓ `/etc/devbox` is in the backup (backup.paths)
+- ✓ `/var/lib/devbox/gateway` is in the backup (backup.paths)
+- fungible `/var/lib/incus` (the VM's disk and saved memory) — devbox VM — rebuilt from github.com/prabhask5/dotfiles

@@ -207,6 +207,9 @@ fungible = []
 
 [data.fungible_reason]
 
+[devbox]
+monitor = "Devbox"
+
 [firewall]
 chains = [
     "INPUT",

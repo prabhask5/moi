@@ -933,8 +933,19 @@ fn ssh_access(doc: &mut Doc<'_>) {
         .into_iter()
         .filter_map(|f| f.strip_suffix(".yaml").map(str::to_string))
         .collect();
+    let devbox = doc.view.json("devbox/status.json");
+    if let Some(name) = devbox["instance"].as_str() {
+        let listen = devbox["gateway_ssh"].as_str().unwrap_or(":2222").trim_start_matches(':').to_string();
+        doc.line(format!(
+            "- **devbox (`{name}`):** `ssh devbox` from a computer set up with `moi devbox connect` — through devbox's own gateway (port {listen} on this server's loopback, reached by jumping through `{alias}`), which wakes the VM. That path is devbox's; moi does not route SSH through it."
+        ));
+    }
     for instance in &instances {
-        doc.line(format!("- **Rescue for the VM `{instance}`** (when it cannot be reached on its own path): `ssh {alias}`, then `sudo incus exec {instance} -- bash`."));
+        let inside = match devbox["vm"]["user"].as_str().filter(|_| devbox["instance"] == instance.as_str()) {
+            Some(user) => format!("su - {user}"),
+            None => "bash".to_string(),
+        };
+        doc.line(format!("- **Rescue for the VM `{instance}`** (when it cannot be reached on its own path): `ssh {alias}`, then `sudo incus exec {instance} -- {inside}`."));
     }
     doc.line("- Changing this path through itself is safe only with `moi ssh up` / `moi ssh down` (they arm a rollback and want `moi ssh confirm` from a new connection). Do not stop `cloudflared.service` or edit the tunnel's rule for this name by hand over SSH.");
 }

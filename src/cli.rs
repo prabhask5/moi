@@ -122,11 +122,145 @@ pub enum Command {
     /// SSH to this server from anywhere, through a tunnel
     #[command(subcommand)]
     Ssh(SshCommand),
+    /// Set up and run a devbox VM (devbox's own commands, with moi's firewall and records)
+    #[command(subcommand)]
+    Devbox(DevboxCommand),
     /// Print a shell completion script (bash, zsh, fish)
     Completions { shell: clap_complete::Shell },
     /// Print the man page (roff)
     #[command(hide = true)]
     Man,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DevboxCommand {
+    /// Set up or adopt the VM, the gateway's config, routing and the firewall rule
+    Up(Box<DevboxUpArgs>),
+    /// Undo routing, firewall and config changes, restoring what was there
+    Down {
+        /// Keep the VM (the default; here so that the choice can be written out)
+        #[arg(long, conflicts_with = "destroy")]
+        keep_vm: bool,
+        /// Also delete the VM, if `devbox up` created it
+        #[arg(long)]
+        destroy: bool,
+        /// Show what would be undone and change nothing
+        #[arg(long)]
+        dry_run: bool,
+        /// Do not ask before undoing
+        #[arg(long)]
+        yes: bool,
+    },
+    /// Show the VM, gateway, routing, hub and health on one screen
+    Status,
+    /// Run every check and print the fix for each failure
+    Doctor,
+    /// Print the URLs, an SSH config snippet and how to install the phone app
+    Connect,
+    /// Rotate a password
+    Password {
+        /// Which password to rotate
+        which: DevboxPassword,
+        /// A file with the new password, instead of being asked for it
+        #[arg(long, value_name = "FILE")]
+        password_file: Option<PathBuf>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum DevboxPassword {
+    /// The password that wakes the VM
+    Wake,
+    /// The agents app password
+    App,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum DevboxRouting {
+    /// Write a Traefik dynamic configuration file
+    TraefikFile,
+    /// Route the hosts yourself
+    None,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum DevboxTokenSource {
+    Gh,
+    Env,
+}
+
+/// The flags of `devbox up` (the firewall is always moi's here, so `--firewall` is not among them).
+#[derive(Debug, Args)]
+pub struct DevboxUpArgs {
+    /// The domain: the editor is at code.<domain>, the agents app at agents.<domain>
+    #[arg(long)]
+    pub domain: Option<String>,
+    /// The editor's host, when it is not code.<domain>
+    #[arg(long, value_name = "HOST")]
+    pub code_host: Option<String>,
+    /// The agents app's host, when it is not agents.<domain>
+    #[arg(long, value_name = "HOST")]
+    pub agents_host: Option<String>,
+    /// The Incus instance [default: devbox]
+    #[arg(long, value_name = "NAME")]
+    pub instance: Option<String>,
+    /// Use an instance that exists already; its disk and data are kept
+    #[arg(long)]
+    pub adopt: bool,
+    /// vCPUs of a new VM [default: 3]
+    #[arg(long)]
+    pub cpu: Option<u32>,
+    /// Memory of a new VM [default: 5GiB]
+    #[arg(long)]
+    pub memory: Option<String>,
+    /// Disk of a new VM [default: 60GiB]
+    #[arg(long)]
+    pub disk: Option<String>,
+    /// Image of a new VM [default: images:ubuntu/26.04/cloud]
+    #[arg(long)]
+    pub image: Option<String>,
+    /// The user in the VM [default: the user who ran sudo]
+    #[arg(long)]
+    pub user: Option<String>,
+    /// Your dotfiles repository, cloned into the VM and applied
+    #[arg(long, value_name = "GIT URL")]
+    pub dotfiles: Option<String>,
+    /// Idle time before the VM sleeps [default: 15m]
+    #[arg(long, value_name = "DURATION")]
+    pub idle: Option<String>,
+    /// Agents not to install (claude, codex, opencode)
+    #[arg(long, value_name = "AGENTS", value_delimiter = ',')]
+    pub no_agents: Vec<String>,
+    /// How the hosts are routed to the gateway [default: traefik-file]
+    #[arg(long)]
+    pub routing: Option<DevboxRouting>,
+    /// The Traefik dynamic configuration file to write
+    #[arg(long, value_name = "PATH")]
+    pub traefik_file: Option<PathBuf>,
+    /// Give the VM this host's GitHub token: from gh, or from the environment
+    #[arg(long, value_name = "SOURCE")]
+    pub github_token_from: Option<DevboxTokenSource>,
+    /// SSH public keys for a new VM's user [default: the keys you log in with]
+    #[arg(long, value_name = "FILE")]
+    pub ssh_keys: Option<PathBuf>,
+    /// A file with the password that wakes the VM
+    #[arg(long, value_name = "FILE")]
+    pub wake_password_file: Option<PathBuf>,
+    /// A file with the password of the agents app
+    #[arg(long, value_name = "FILE")]
+    pub app_password_file: Option<PathBuf>,
+    /// A directory with devbox-hub and devbox built for the VM, instead of a release
+    #[arg(long, value_name = "DIR")]
+    pub binaries: Option<PathBuf>,
+    /// The release to install into the VM [default: the latest]
+    #[arg(long, value_name = "TAG")]
+    pub release: Option<String>,
+    /// Show what would change and change nothing
+    #[arg(long)]
+    pub dry_run: bool,
+    /// Do not ask before applying (never supplies a password)
+    #[arg(long)]
+    pub yes: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -424,6 +558,7 @@ fn dispatch(cli: &Cli, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), E
         }
         Command::Verify => verify(cli, host, out),
         Command::Ssh(command) => ssh(cli, command, host, out),
+        Command::Devbox(command) => devbox(cli, command, host, out),
         Command::Completions { shell } => {
             let _ = write!(out, "{}", completions(*shell));
             Ok(())
@@ -1734,6 +1869,142 @@ fn migrate_finish(cli: &Cli, now: bool, host: Arc<dyn Host>, out: &mut dyn Write
         }
     }
     Ok(())
+}
+
+fn devbox(cli: &Cli, command: &DevboxCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {
+    use crate::devbox;
+    use devbox_core::setup::{Routing, UpOptions};
+    let loaded = crate::config::load(host.as_ref(), &cli.paths())?;
+    if loaded.config.devbox.enabled == Some(false) {
+        return Err(Error::Usage(
+            "the devbox integration is switched off ([devbox] enabled = false in moi.toml)".to_string(),
+        ));
+    }
+    // nothing set up yet: only `up` makes sense, and says what it would do
+    if !matches!(command, DevboxCommand::Up(_)) && !host.exists(Path::new(devbox::CONFIG)) {
+        return Err(Error::Usage(format!(
+            "devbox is not set up on this server (no {}).\n`moi devbox up --domain <your domain> --dry-run` shows what setting it up would do: an Incus VM that sleeps when idle, VS Code and an agents app in the browser — see https://github.com/prabhask5/devbox",
+            devbox::CONFIG
+        )));
+    }
+    let state = StateDir::new(PathBuf::from(&loaded.config.state.dir));
+    let cx = devbox::Cx { host: &host, config: &loaded.config, state: &state };
+    let json = cli.json;
+    let done = match command {
+        DevboxCommand::Up(args) => {
+            state.ensure(host.as_ref())?;
+            let options = UpOptions {
+                domain: args.domain.clone(),
+                code_host: args.code_host.clone(),
+                agents_host: args.agents_host.clone(),
+                instance: args.instance.clone(),
+                adopt: args.adopt,
+                cpu: args.cpu,
+                memory: args.memory.clone(),
+                disk: args.disk.clone(),
+                image: args.image.clone(),
+                user: args.user.clone(),
+                dotfiles: args.dotfiles.clone(),
+                idle: args.idle.clone(),
+                no_agents: args.no_agents.clone(),
+                routing: args.routing.map(|routing| match routing {
+                    DevboxRouting::TraefikFile => Routing::TraefikFile,
+                    DevboxRouting::None => Routing::None,
+                }),
+                traefik_file: args.traefik_file.clone(),
+                github_token: args.github_token_from.is_some(),
+                ssh_keys: args.ssh_keys.clone(),
+                binaries: args.binaries.clone(),
+                release: args.release.clone(),
+                ..UpOptions::default()
+            };
+            let up = devbox::UpArgs {
+                options,
+                wake_password_file: args.wake_password_file.clone(),
+                app_password_file: args.app_password_file.clone(),
+                dry_run: args.dry_run,
+                yes: args.yes,
+            };
+            devbox::up(&cx, &up, out)?
+        }
+        DevboxCommand::Down { destroy, dry_run, yes, keep_vm: _ } => {
+            state.ensure(host.as_ref())?;
+            devbox::down(&cx, *destroy, *dry_run, *yes, out)?
+        }
+        DevboxCommand::Status => devbox::status(host.as_ref(), json, out)?,
+        DevboxCommand::Doctor => devbox::doctor(host.as_ref(), json, out)?,
+        DevboxCommand::Connect => devbox::connect(host.as_ref(), out)?,
+        DevboxCommand::Password { which, password_file } => {
+            devbox::password(&cx, matches!(which, DevboxPassword::App), password_file.as_ref(), out)?
+        }
+    };
+    // the health monitor: adopted by name, pointed at the health URL — shown, then done, because
+    // running `moi devbox up` is asking for it
+    if matches!(command, DevboxCommand::Up(args) if !args.dry_run)
+        && loaded.config.monitors.kuma.enabled
+        && loaded.config.devbox.monitor.is_some()
+    {
+        use crate::monitors::{self, Action, Options};
+        let docker = crate::docker::Docker::new(Arc::clone(&host));
+        let options = Options { update: true, prune: false };
+        let mine = |plan: &monitors::Plan| -> Vec<monitors::Step> {
+            plan.steps
+                .iter()
+                .filter(|s| {
+                    s.owner.as_deref() == Some("devbox")
+                        && matches!(s.action, Action::Adopt | Action::Create | Action::Update)
+                })
+                .cloned()
+                .collect()
+        };
+        let db = state.open_db(host.as_ref())?;
+        let planned = monitors::local_inventory(host.as_ref(), &loaded.config, &docker).and_then(|inventory| {
+            monitors::plan_for(host.as_ref(), &loaded.config, &docker, &state, &db, &inventory, options)
+        });
+        let steps = planned.as_ref().map(mine).unwrap_or_default();
+        for step in &steps {
+            let _ = writeln!(out, "moi: monitor \"{}\": {} ({})", step.monitor, step.action.as_str(), step.detail);
+        }
+        if !steps.is_empty() {
+            let applied = monitors::connect(&host, &loaded.config).and_then(|mut kuma| {
+                let inventory = kuma.inventory().map_err(Error::Monitors)?;
+                let plan =
+                    monitors::plan_for(host.as_ref(), &loaded.config, &docker, &state, &db, &inventory, options)?;
+                let plan = monitors::Plan { steps: mine(&plan), warnings: Vec::new() };
+                monitors::apply::apply(&host, &loaded.config, &docker, &db, &mut kuma, &plan, &inventory)
+            });
+            let _ = match applied {
+                Ok(report) if report.failed.is_empty() => writeln!(out, "moi: monitor done ({})", report.summary()),
+                Ok(report) => writeln!(
+                    out,
+                    "moi: monitor not changed: {}",
+                    report.failed.iter().map(|f| f.error.clone()).collect::<Vec<_>>().join("; ")
+                ),
+                Err(e) => writeln!(
+                    out,
+                    "moi: monitor not changed ({e}): `moi monitors sync --update` does it once Kuma can be reached"
+                ),
+            };
+        }
+    }
+    if done.changed {
+        // moi's records follow: devbox's identity among the backup paths, the snapshot, the context file
+        for path in devbox::records::extend_backup_paths(host.as_ref(), &loaded.config, &loaded.paths) {
+            let _ = writeln!(out, "moi: {path} added to backup.paths in {}", loaded.paths.config.display());
+        }
+        if let Ok(now) = crate::config::load(host.as_ref(), &cli.paths()) {
+            let config = Arc::new(now.config);
+            let recorded = state
+                .open_db(host.as_ref())
+                .and_then(|db| crate::snapshot::capture(&host, &config, &state, &db, &now.masker))
+                .and_then(|_| crate::context::write(host.as_ref(), &config, &state, &now.masker));
+            let _ = match recorded {
+                Ok(_) => writeln!(out, "moi: snapshot and CONTEXT.md updated"),
+                Err(e) => writeln!(out, "moi: the snapshot afterwards failed ({e}): run `moi snapshot`"),
+            };
+        }
+    }
+    if done.code == 0 { Ok(()) } else { Err(Error::ProblemsFound) }
 }
 
 fn ssh(cli: &Cli, command: &SshCommand, host: Arc<dyn Host>, out: &mut dyn Write) -> Result<(), Error> {

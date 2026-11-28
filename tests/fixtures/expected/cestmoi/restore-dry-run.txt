@@ -259,6 +259,9 @@ WARN: these services ran images that were built on the old server and exist nowh
     [dry-run] restore /etc/crontab (1 files)
     [dry-run] restore /etc/cron.d (3 files)
 
+==> phase: devbox — the devbox VM rebuilt from the restored /etc/devbox, or adopted when its disk came along
+    no /etc/devbox on this machine: the old server had no devbox, or its configuration was not in the backup
+
 ==> phase: firewall — the managed firewall chains, with the way back arranged first
     rules may name the old machine's interfaces: enp1s0 incusbr0
     managed chains: INPUT, DOCKER-USER

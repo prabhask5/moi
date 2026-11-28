@@ -1,0 +1,10 @@
+devbox — example.com
+
+  VM          devbox: running, 10.77.0.10
+  Gateway     container running, version 3f9c2d1
+  Health      ok
+  Editor      https://code.example.com
+  Agents app  https://agents.example.com
+  Routing     /etc/dokploy/traefik/dynamic/devbox.yml
+  Sleeps      after 15m idle (stateful)
+  Last sleep  2026-09-21T11:26:40Z (idle)

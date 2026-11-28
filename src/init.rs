@@ -47,6 +47,8 @@ pub struct Found {
     pub legacy: Vec<String>,
     /// Where a Cloudflare Tunnel connector was found (a container, a unit, a local config).
     pub tunnel: Option<String>,
+    /// devbox is set up here (`/etc/devbox/devbox.toml`).
+    pub devbox: bool,
 }
 
 fn is_dir(host: &dyn Host, path: &str) -> bool {
@@ -225,6 +227,12 @@ pub fn discover(host: &Arc<dyn Host>) -> Found {
     paths.sort();
     found.backup_paths = paths;
 
+    found.devbox = h.exists(Path::new(crate::devbox::CONFIG));
+    // the VM's disk and saved memory are rebuilt, never backed up
+    if found.devbox && !found.fungible.iter().any(|p| crate::backup::under("/var/lib/incus", p)) {
+        found.fungible.push("/var/lib/incus".to_string());
+        found.fungible.sort();
+    }
     // ---- a tunnel connector: `moi ssh up` can adopt it
     found.tunnel = crate::ssh::cloudflare::connectors(&crate::docker::Docker::new(Arc::clone(host)))
         .first()
@@ -285,7 +293,11 @@ pub fn config_text(found: &Found, observe: bool) -> String {
     }
     if !found.fungible.is_empty() {
         out.push_str("# These look like media or downloads. Declared replaceable, they are never backed up and never\n# reported as unprotected. Remove any that you could not get back.\n");
-        out.push_str(&format!("[data]\nfungible = {}\n\n", list(&found.fungible)));
+        out.push_str(&format!("[data]\nfungible = {}\n", list(&found.fungible)));
+        if found.devbox && found.fungible.iter().any(|p| p == "/var/lib/incus") {
+            out.push_str("fungible_reason = { \"/var/lib/incus\" = \"devbox VM, rebuilt by `moi devbox up`\" }\n");
+        }
+        out.push('\n');
     }
     if observe {
         out.push_str("# Written with --observe: moi only describes this server (snapshot, context, audit).\n# Run `moi init` again after deleting this file to add checks, monitors and backups.\n");
@@ -335,6 +347,9 @@ pub fn config_text(found: &Found, observe: bool) -> String {
                 "# An existing restic setup was found ({env}): its repository can be adopted, see [backup.offsite].\n"
             ));
         }
+    }
+    if found.devbox {
+        out.push_str("\n# ------------------------------------------------------------------ devbox\n# devbox is set up on this server: moi records it, watches its health and rebuilds its VM on a new\n# machine (`moi devbox status`, `moi devbox up`).\n[devbox]\nenabled = \"auto\"\nmonitor = \"Devbox\"\n");
     }
     if let Some(tunnel) = &found.tunnel {
         out.push_str(&format!(

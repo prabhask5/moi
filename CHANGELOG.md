@@ -34,8 +34,10 @@ Health-check message formats, config keys, CLI flags and the state layout are pa
 - Distribution: `.deb` and `.rpm` packages, shell completions (`moi completions`), a man page, a Homebrew formula, an installer that verifies checksums; `moi --version` shows version, commit, build date and target.
 - `state.history_keep` folds history older than the limit into one commit and frees its space. Daemon jobs have time limits: a warning at the limit, a restart of the service at twice the limit.
 - `moi ssh up|status|connect|authorize|confirm|down`: SSH to the server from any computer through a Cloudflare Tunnel whose connector runs as a host service. Existing rules and records are adopted, DNS that points elsewhere is refused, a change made over the tunnel is kept only after `moi ssh confirm`. With it: the `ssh` check, an "SSH access" block in CONTEXT.md, an audit entry for an sshd that takes passwords at a public name, and a restore phase.
+- `moi devbox up|down|status|doctor|connect|password`: devbox's host commands through moi (its library `devbox-core`), with the firewall rule in moi's rules file, the health monitor in Uptime Kuma, devbox in the snapshot, the context file and the audit, and a restore phase that rebuilds the VM from the restored configuration.
 
 ### Changed
+- `/etc/devbox/secrets.toml` is never copied into the state directory.
 - The minimum Rust version is 1.89 (what the dependencies need; 1.88 was declared and did not build). CI checks it.
 - `reference/` (the prototype and the legacy scripts) is gone from the tree; the legacy scripts the parity tests run are the cestmoi fixture's.
 - Exit code 3 ("not implemented yet") no longer exists: every command is implemented.

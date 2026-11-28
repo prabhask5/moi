@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 
 use serde_json::Value;
 
+use super::Level;
 use super::Section;
 use crate::config::Config;
 use crate::redact::mask_token;
@@ -37,6 +38,25 @@ pub(super) fn secrets(view: &View<'_>) -> Section {
         s.review(format!("{item} — captured and restored as it is; move it to `secrets.toml` (a migrated check reads `secret:` references instead)"));
     }
     s.or_nothing("none found")
+}
+
+/// devbox (15): its configuration and the gateway's history are identity; the VM's disk is not.
+pub(super) fn devbox(view: &View<'_>, identity: &crate::backup::Identity) -> Option<Section> {
+    use crate::backup::Coverage;
+    view.json("devbox/status.json")["instance"].as_str()?;
+    let mut s = Section::new("devbox", "devbox");
+    for path in crate::devbox::records::IDENTITY {
+        match identity.coverage(path) {
+            Coverage::Covered(why) => s.ok(format!("`{path}` is in the backup ({why})")),
+            _ => s.gap(format!("`{path}` is not in the backup: it is what a rebuilt devbox is made from — add it to `backup.paths` (`moi devbox up` does)")),
+        }
+    }
+    match identity.coverage("/var/lib/incus") {
+        Coverage::Fungible(reason) => s.finding(Level::Fungible, format!("`/var/lib/incus` (the VM's disk and saved memory){}", if reason.is_empty() { String::new() } else { format!(" — {reason}") })),
+        Coverage::Covered(_) => s.review("`/var/lib/incus` is in the backup: the VM's disk is large and `moi devbox up` rebuilds it — declare it under `[data] fungible`".to_string()),
+        _ => s.review("`/var/lib/incus` (the VM's disk) is neither backed up nor declared replaceable: add it to `[data] fungible` with the reason \"devbox VM, rebuilt by `moi devbox up`\"".to_string()),
+    }
+    Some(s)
 }
 
 /// sshd behind a public name (16): passwords and root logins are worth an entry of their own.

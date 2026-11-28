@@ -644,6 +644,58 @@ pub(super) fn docker(run: &mut Run<'_>) {
     }
 }
 
+/// devbox (15): the VM is rebuilt from the restored `/etc/devbox` — its disk was never in the backup
+/// — or adopted when the disk came along. No question is asked: the configuration says what the VM
+/// is, and the restored secrets hold the password hashes.
+pub(super) fn devbox(run: &mut Run<'_>) {
+    if !run.host.exists(Path::new(crate::devbox::CONFIG)) {
+        run.info(
+            "no /etc/devbox on this machine: the old server had no devbox, or its configuration was not in the backup",
+        );
+        return;
+    }
+    let Some(loaded) = restored_config(run) else {
+        run.warn("moi's configuration is not in place (run the moi phase first): devbox was not rebuilt — `moi devbox up` afterwards");
+        return;
+    };
+    let instance = run
+        .host
+        .read_to_string(Path::new(crate::devbox::CONFIG))
+        .ok()
+        .and_then(|text| text.parse::<toml::Table>().ok())
+        .and_then(|config| config.get("instance").and_then(toml::Value::as_str).map(str::to_string))
+        .unwrap_or_else(|| "devbox".to_string());
+    // there already (its disk was moved over): only the configuration is reconciled
+    let exists = run
+        .look(&["incus", "list", "-c", "n", "-f", "csv"])
+        .is_some_and(|o| o.status == 0 && o.stdout_str().lines().any(|l| l.trim() == instance));
+    run.info(&if exists {
+        format!("the instance {instance} exists: adopted, its disk and data kept")
+    } else {
+        format!("the instance {instance} does not exist: rebuilt from /etc/devbox (its disk was never backed up)")
+    });
+    let state = StateDir::new(loaded.config.state.dir.clone());
+    match crate::devbox::rebuild(run.host, &loaded.config, &state, exists, run.dry()) {
+        Ok((text, health)) => {
+            for line in text.lines() {
+                run.say(&format!("    {line}"));
+            }
+            match health.as_deref() {
+                Some("ok") => {
+                    run.ok("devbox answers: health ok. Repositories come back with its own sync on the first wake")
+                }
+                Some(other) => {
+                    run.warn(&format!("devbox is back but reports its health as {other}: `moi devbox doctor`"))
+                }
+                None if run.dry() => {}
+                None => run
+                    .warn("devbox was set up but its health could not be asked: `moi devbox status` after the restore"),
+            }
+        }
+        Err(why) => run.warn(&format!("devbox was not rebuilt: {why}")),
+    }
+}
+
 /// SSH from anywhere (16): the connector as a host service again, from the old server's `[ssh]` and
 /// secrets. The ingress rule and the DNS record are Cloudflare's to remember: they are confirmed, and
 /// only changed if they are not what they were.

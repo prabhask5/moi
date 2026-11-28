@@ -37,6 +37,7 @@ pub struct Config {
     pub restore: Restore,
     pub migrate: Migrate,
     pub ssh: Ssh,
+    pub devbox: Devbox,
     pub monitors: Monitors,
 }
 
@@ -59,6 +60,7 @@ impl Config {
             restore: Restore::read(root.table(cx, "restore"), cx),
             migrate: Migrate::read(root.table(cx, "migrate"), cx),
             ssh: Ssh::read(root.table(cx, "ssh"), cx, &mut used),
+            devbox: Devbox::read(root.table(cx, "devbox"), cx),
             monitors,
         };
         used.report(cx);
@@ -1070,6 +1072,29 @@ impl Restore {
         let this = Self {
             etc_paths: t.paths_or(cx, "etc_paths", &[]),
             restore_modified_conffiles: t.bool_or(cx, "restore_modified_conffiles", true),
+        };
+        t.finish(cx);
+        this
+    }
+}
+
+/// The devbox integration (15): on by itself where devbox is set up.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Devbox {
+    /// `None`: auto — on when `/etc/devbox/devbox.toml` exists.
+    pub enabled: Option<bool>,
+    /// The Uptime Kuma HTTP monitor of devbox's health endpoint; `None` for none.
+    pub monitor: Option<String>,
+}
+
+pub const DEVBOX_MONITOR: &str = "Devbox";
+
+impl Devbox {
+    fn read(mut t: Tbl<'_, '_>, cx: &mut Ctx<'_>) -> Self {
+        let this = Self {
+            enabled: t.auto_or_bool(cx, "enabled"),
+            // not a push monitor: nothing of moi's reports to it, so it is not among the names checks claim
+            monitor: Some(t.string_or(cx, "monitor", DEVBOX_MONITOR)).filter(|m| !m.is_empty()),
         };
         t.finish(cx);
         this

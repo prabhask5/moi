@@ -327,6 +327,7 @@ pub fn run(host: &Arc<dyn Host>, config: &Config, state: &StateDir) -> Result<Au
             misc::monitoring(&view, config),
         ]
         .into_iter()
+        .chain(misc::devbox(&view, &identity))
         .chain(misc::ssh_access(&view))
         .collect(),
     };

@@ -37,7 +37,7 @@ The installer downloads the static binary for your CPU from the GitHub release, 
 | `moi backup [--dry-run]` · `moi push` · `moi pull` | backups and the state bundle |
 | `moi restore` · `moi verify` | rebuild and prove it |
 | `moi migrate plan\|shadow\|compare\|switch\|rollback\|finish` | move off legacy scripts without breaking monitors |
-| `moi devbox up\|down\|status\|doctor` | *planned (not in this version)*: set up and run a [devbox](https://github.com/prabhask5/devbox) VM (sleeps when idle, agents from your phone) |
+| `moi devbox up\|down\|status\|doctor\|connect\|password` | set up and run a [devbox](https://github.com/prabhask5/devbox) VM (sleeps when idle, VS Code and coding agents from any browser): devbox's own commands, with moi's firewall, monitor, records and rebuild |
 | `moi ssh up\|status\|connect\|authorize\|confirm\|down` | `ssh <server>` from anywhere through a Cloudflare Tunnel run as a host service: one command on the server (`moi ssh up`), one on each computer (`moi ssh connect` prints it) |
 | `moi status` · `moi firewall apply\|diff\|status` · `moi uninstall` | the daemon's jobs; the managed firewall chains; remove moi |
 | `moi completions bash\|zsh\|fish` | shell completion script |
