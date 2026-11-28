@@ -23,9 +23,16 @@ sudo mkdir -p /run/sshd
 sudo /usr/sbin/sshd -p 2222 -o ListenAddress=127.0.0.1 -o PasswordAuthentication=no -o PidFile="$work/sshd.pid"
 
 # ---- the way in: a name with a certificate this machine trusts, answering WebSocket on 443
+# (a certificate authority and a leaf it signs: a self-signed leaf is refused by rustls, rightly)
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 2 \
-  -keyout "$work/key.pem" -out "$work/cert.pem" -subj "/CN=$name" -addext "subjectAltName=DNS:$name"
-sudo cp "$work/cert.pem" /usr/local/share/ca-certificates/moi-e2e.crt
+  -keyout "$work/ca-key.pem" -out "$work/ca.pem" -subj "/CN=moi e2e test authority" \
+  -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign"
+openssl req -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes \
+  -keyout "$work/key.pem" -out "$work/leaf.csr" -subj "/CN=$name"
+printf 'subjectAltName=DNS:%s\nbasicConstraints=CA:FALSE\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth\n' "$name" > "$work/leaf.ext"
+openssl x509 -req -in "$work/leaf.csr" -CA "$work/ca.pem" -CAkey "$work/ca-key.pem" -CAcreateserial \
+  -days 2 -extfile "$work/leaf.ext" -out "$work/cert.pem"
+sudo cp "$work/ca.pem" /usr/local/share/ca-certificates/moi-e2e.crt
 sudo update-ca-certificates
 echo "127.0.0.1 $name" | sudo tee -a /etc/hosts
 sudo sysctl -q net.ipv4.ip_unprivileged_port_start=443
