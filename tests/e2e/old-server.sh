@@ -25,6 +25,14 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 20
+  maria:
+    image: mariadb:11
+    container_name: app-maria
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: fake-e2e-maria-password
+    volumes:
+      - ./mysqldata:/var/lib/mysql
   web:
     image: nginx:alpine
     container_name: app-web
@@ -37,6 +45,8 @@ YAML
 docker compose --project-directory /opt/services/app up -d
 for _ in $(seq 60); do docker exec app-db pg_isready -q -U postgres && break; sleep 2; done
 docker exec app-db psql -q -U postgres -c "CREATE TABLE e2e (v text); INSERT INTO e2e VALUES ('survives');"
+for _ in $(seq 60); do docker exec app-maria mariadb -uroot -pfake-e2e-maria-password -e 'SELECT 1' >/dev/null 2>&1 && break; sleep 2; done
+docker exec app-maria mariadb -uroot -pfake-e2e-maria-password -e "CREATE DATABASE e2e; CREATE TABLE e2e.t (v text); INSERT INTO e2e.t VALUES ('survives too');"
 
 # ---- a swarm service
 docker swarm init --advertise-addr 127.0.0.1
@@ -62,9 +72,7 @@ systemctl daemon-reload
 systemctl enable --now hello.service
 useradd -m -u 1500 -s /bin/bash alice
 
-# ---- moi: installed as its owner would, then given the configuration this test needs
-moi init --non-interactive
-systemctl is-active moi.service
+# ---- moi: a configuration written by hand first; `moi init` then installs the service for it
 mkdir -p /etc/moi/firewall
 cat > /etc/moi/firewall/rules4.txt <<'RULES'
 -A INPUT -i lo -j ACCEPT
@@ -111,7 +119,11 @@ printf '[secrets]\nrestic_password = "fake-e2e-repository-password"\n' > /etc/mo
 RESTIC_PASSWORD=fake-e2e-repository-password restic -r /srv/repo init
 
 moi config check > /dev/null
-systemctl restart moi.service
+moi init --non-interactive | tee /root/init.txt
+grep -q "moi.service installed and started" /root/init.txt
+grep -q 'name = "e2e"' /etc/moi/moi.toml   # the configuration that was there is untouched
+systemctl is-active moi.service
+systemctl is-enabled moi.service
 moi firewall apply
 moi snapshot
 moi backup

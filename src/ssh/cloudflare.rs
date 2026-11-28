@@ -129,6 +129,22 @@ fn token_argument<'a>(args: impl Iterator<Item = &'a str>) -> Option<String> {
     })
 }
 
+/// The token a cloudflared unit runs with. Since cloudflared 2026.7.2 `service install` keeps it in a
+/// file (`--token-file /etc/cloudflared/token`); older installs have it on the command line.
+pub fn unit_token(host: &dyn Host, unit: &str) -> Option<String> {
+    unit.lines().filter_map(|l| l.trim().strip_prefix("ExecStart=")).find_map(|exec| {
+        let args: Vec<&str> = exec.split_whitespace().collect();
+        token_argument(args.iter().copied()).or_else(|| {
+            let file = args.iter().enumerate().find_map(|(i, arg)| match arg.strip_prefix("--token-file") {
+                Some("") => args.get(i + 1).map(|f| (*f).to_string()),
+                Some(rest) => rest.strip_prefix('=').map(str::to_string),
+                None => None,
+            })?;
+            host.read_to_string(Path::new(&file)).ok().map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
+        })
+    })
+}
+
 /// Every cloudflared container, running or not.
 pub fn connectors(docker: &Docker) -> Vec<Connector> {
     let mut out = Vec::new();
@@ -194,10 +210,7 @@ pub fn discover(host: &dyn Host, docker: &Docker, configured: Option<&Secret>) -
         return from_token(&token, Source::Container(connector.name));
     }
     if let Ok(unit) = host.read_to_string(Path::new(UNIT))
-        && let Some(token) = unit
-            .lines()
-            .filter_map(|l| l.trim().strip_prefix("ExecStart="))
-            .find_map(|exec| token_argument(exec.split_whitespace()))
+        && let Some(token) = unit_token(host, &unit)
     {
         return from_token(&token, Source::Unit(UNIT.to_string()));
     }
@@ -437,6 +450,8 @@ impl Api {
             .map(|r| r["config"].clone())
     }
 
+    /// Replace the tunnel's configuration: a full replace, so `config` is everything that was read
+    /// (keys moi does not know included) with the one change made.
     pub fn put_configuration(&self, tunnel: &Tunnel, config: &Value) -> Result<(), ApiError> {
         self.call(
             "PUT",
@@ -466,8 +481,8 @@ impl Api {
 
     /// A proxied CNAME to the tunnel. Returns the record's id.
     pub fn create_cname(&self, zone: &str, hostname: &str, target: &str) -> Result<String, ApiError> {
-        let record =
-            json!({ "type": "CNAME", "name": hostname, "content": target, "proxied": true, "comment": "moi ssh" });
+        // ttl 1 is Cloudflare's "automatic", the only value a proxied record takes
+        let record = json!({ "type": "CNAME", "name": hostname, "content": target, "proxied": true, "ttl": 1, "comment": "moi ssh" });
         self.call("POST", &format!("/zones/{zone}/dns_records"), Some(&record)).map(|r| text(&r["id"]).to_string())
     }
 

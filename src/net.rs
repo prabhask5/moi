@@ -247,6 +247,12 @@ impl Client {
     /// `Sec-WebSocket-Accept` value is not checked (that would need SHA-1): the caller judges the
     /// message.
     pub fn websocket_first_message(&self, url: &str) -> Result<Vec<u8>, HandshakeError> {
+        self.websocket_first_bytes(url, 1)
+    }
+
+    /// Like [`Client::websocket_first_message`], reading on until at least `enough` bytes have come:
+    /// a WebSocket that carries a byte stream cuts it into messages wherever it likes.
+    pub fn websocket_first_bytes(&self, url: &str, enough: usize) -> Result<Vec<u8>, HandshakeError> {
         use std::io::Read;
         let fail = |stage: &'static str| move |e: io::Error| HandshakeError { stage, error: e.to_string() };
         let url = Url::parse(url).map_err(|error| HandshakeError { stage: "connect", error })?;
@@ -284,6 +290,7 @@ impl Client {
             body.read_exact(&mut buf).map_err(fail("message"))?;
             Ok(buf)
         };
+        let mut collected = Vec::new();
         loop {
             let head = read(2)?;
             let (opcode, masked) = (head[0] & 0x0f, head[1] & 0x80 != 0);
@@ -308,7 +315,12 @@ impl Client {
                 *byte ^= key[i % 4];
             }
             match opcode {
-                1 | 2 => return Ok(payload),
+                0..=2 => {
+                    collected.extend(payload);
+                    if collected.len() >= enough {
+                        return Ok(collected);
+                    }
+                }
                 8 => {
                     return Err(HandshakeError {
                         stage: "message",

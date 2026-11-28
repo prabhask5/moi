@@ -302,7 +302,12 @@ impl Run<'_> {
         let ready: Vec<&str> = if db.engine == "postgres" {
             vec!["pg_isready", "-q", "-U", &db.user]
         } else {
-            vec!["mysqladmin", "ping", "--silent"]
+            // MariaDB's images no longer carry the `mysql*` names: whichever client the image has
+            vec![
+                "sh",
+                "-c",
+                "if command -v mariadb-admin >/dev/null 2>&1; then exec mariadb-admin ping --silent; else exec mysqladmin ping --silent; fi",
+            ]
         };
         let options = ExecOptions { env: db.env.clone(), ..ExecOptions::default() };
         let mut waited = 0;
@@ -313,7 +318,11 @@ impl Run<'_> {
         let client: Vec<&str> = if db.engine == "postgres" {
             vec!["psql", "-q", "-U", &db.user, "-d", "postgres", "-f", "-"]
         } else {
-            vec!["mysql", "-uroot"]
+            vec![
+                "sh",
+                "-c",
+                "if command -v mariadb >/dev/null 2>&1; then exec mariadb -uroot; else exec mysql -uroot; fi",
+            ]
         };
         let loaded = self.host.open(Path::new(&dump)).map_err(|e| e.to_string()).and_then(|file| {
             docker
